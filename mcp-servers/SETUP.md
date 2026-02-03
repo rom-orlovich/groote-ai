@@ -205,7 +205,7 @@ The Agent Engine connects to MCP servers using the configuration in `.claude/mcp
 cd mcp-servers/jira-mcp
 
 # Install dependencies
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
 # Run locally
 PORT=9002 JIRA_API_URL=http://localhost:3002 uvicorn main:app --port 9002
@@ -217,7 +217,7 @@ PORT=9002 JIRA_API_URL=http://localhost:3002 uvicorn main:app --port 9002
 cd mcp-servers/slack-mcp
 
 # Install dependencies
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
 # Run locally
 PORT=9003 SLACK_API_URL=http://localhost:3003 uvicorn main:app --port 9003
@@ -229,7 +229,7 @@ PORT=9003 SLACK_API_URL=http://localhost:3003 uvicorn main:app --port 9003
 cd mcp-servers/sentry-mcp
 
 # Install dependencies
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
 # Run locally
 PORT=9004 SENTRY_API_URL=http://localhost:3004 uvicorn main:app --port 9004

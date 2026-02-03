@@ -78,7 +78,7 @@ LOG_LEVEL=INFO
 
 ```bash
 # Install dependencies
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
 # Run service
 python main.py

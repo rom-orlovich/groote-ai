@@ -1,416 +1,454 @@
 # Groote AI
 
-A fully containerized, scalable multi-agent system that processes webhooks from GitHub, Jira, Slack, and Sentry to autonomously handle development tasks. The system uses specialized AI agents orchestrated through CLI providers (Claude Code CLI or Cursor CLI) to execute tasks using Test-Driven Development (TDD) methodology.
-
-## Overview
-
-Groote AI is a microservices-based platform that:
-
-- **Receives webhooks** from external services (GitHub, Jira, Slack, Sentry)
-- **Processes tasks** using specialized AI agents with TDD workflows
-- **Executes code changes** through CLI providers (Claude or Cursor)
-- **Posts responses** back to the originating service
-- **Scales horizontally** to handle multiple concurrent tasks
+A containerized multi-agent system that processes webhooks from GitHub, Jira, Slack, and Sentry to autonomously handle development tasks using AI agents (Claude Code CLI or Cursor CLI) with Test-Driven Development methodology.
 
 ## Architecture
 
-The system consists of 18 containerized services:
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'16px', 'primaryColor':'#2d2d2d', 'primaryTextColor':'#ffffff', 'primaryBorderColor':'#ffffff', 'lineColor':'#ffffff', 'secondaryColor':'#1a1a1a', 'tertiaryColor':'#2d2d2d'}}}%%
+graph TB
+    subgraph External["External Services"]
+        GitHub[GitHub]
+        Jira[Jira]
+        Slack[Slack]
+        Sentry[Sentry]
+    end
 
-| Service                | Port      | Purpose                                                        |
-| ---------------------- | --------- | -------------------------------------------------------------- |
-| **CLI (Agent Engine)** | 8080-8089 | Task execution (scalable)                                      |
-| **API Gateway**        | 8000      | Webhook reception                                              |
-| **Dashboard API**      | 5000      | Analytics & WebSocket hub                                      |
-| **External Dashboard** | 3005      | React monitoring UI                                            |
-| **OAuth Service**      | 8010      | Multi-provider OAuth flows                                     |
-| **Task Logger**        | 8090      | Task output logging                                            |
-| **Knowledge Graph**    | 4000      | Code entity indexing (Rust)                                    |
-| **LlamaIndex Service** | 8100      | Semantic search & RAG (optional)                               |
-| **Indexer Worker**     | 8004      | Data source indexing (optional)                                |
-| **ChromaDB**           | 8000      | Vector database (optional)                                     |
-| **MCP Servers**        | 9001-9005 | Tool interfaces (GitHub, Jira, Slack, Sentry, Knowledge Graph) |
-| **API Services**       | 3001-3004 | REST API wrappers (GitHub, Jira, Slack, Sentry)                |
-| **Redis**              | 6379      | Task queue & cache                                             |
-| **PostgreSQL**         | 5432      | Persistent storage                                             |
+    subgraph Gateway["API Gateway :8000"]
+        Webhooks["Webhook Handlers<br/>GitHub, Jira, Slack, Sentry"]
+    end
 
-### Key Components
+    subgraph Storage["Storage Layer"]
+        Redis[Redis :6379<br/>Task Queue & Cache]
+        Postgres[PostgreSQL :5432<br/>Persistent Data]
+    end
 
-- **13 Specialized Agents**: Brain, Planning, Executor, Verifier, GitHub handlers, Jira handler, Slack handler, and more
-- **9 Reusable Skills**: Discovery, Testing, Code Refactoring, GitHub/Jira/Slack operations, etc.
-- **MCP Protocol**: Model Context Protocol servers for external service integration
-- **TDD Workflow**: Test-Driven Development methodology enforced throughout
+    subgraph Engine["Agent Engine :8080-8089"]
+        Agents["AI Agents<br/>brain, planning, executor<br/>github-issue-handler<br/>github-pr-review<br/>jira-code-plan<br/>slack-inquiry, verifier"]
+        MCPConn["MCP Connections<br/>Server-Sent Events"]
+    end
 
-For detailed architecture documentation, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+    subgraph MCPServers["MCP Servers"]
+        GitHubMCP[GitHub MCP :9001]
+        JiraMCP[Jira MCP :9002]
+        SlackMCP[Slack MCP :9003]
+        SentryMCP[Sentry MCP :9004]
+        KGMCP[Knowledge Graph MCP :9005]
+        LlamaIndexMCP[LlamaIndex MCP :9006<br/>Optional]
+        GKGMcp[GKG MCP :9007<br/>Optional]
+    end
 
-For integration and implementation details, see [docs/INTEGRATION-IMPLEMENTATION-PLAN.md](docs/INTEGRATION-IMPLEMENTATION-PLAN.md).
+    subgraph APIServices["API Services<br/>Credentials Here"]
+        GitHubAPI[GitHub API :3001]
+        JiraAPI[Jira API :3002]
+        SlackAPI[Slack API :3003]
+        SentryAPI[Sentry API :3004]
+    end
 
-### Knowledge Layer (Optional)
+    subgraph Monitoring["Monitoring & Management"]
+        DashboardAPI[Dashboard API :5000<br/>WebSocket, Analytics]
+        ExternalDash[External Dashboard :3005<br/>React UI]
+        OAuth[OAuth Service :8010<br/>Multi-provider OAuth]
+        TaskLogger[Task Logger :8090<br/>Output Logging]
+    end
 
-The system includes an **optional knowledge layer** for enhanced context retrieval:
+    subgraph Knowledge["Knowledge Layer - Optional"]
+        ChromaDB[ChromaDB :8001<br/>Vector Database]
+        LlamaIndex[LlamaIndex Service :8002<br/>Hybrid RAG]
+        GKGService[GKG Service :8003<br/>Code Graph]
+        IndexerWorker[Indexer Worker :8004<br/>Background Indexing]
+    end
 
+    External -->|Webhooks| Gateway
+    Gateway -->|HTTP 200 OK| External
+    Webhooks --> Redis
+    Webhooks --> Postgres
+    Redis --> Engine
+    Postgres --> Engine
+    Engine --> Agents
+    Agents --> MCPConn
+    MCPConn -->|SSE| MCPServers
+    GitHubMCP -->|HTTP| GitHubAPI
+    JiraMCP -->|HTTP| JiraAPI
+    SlackMCP -->|HTTP| SlackAPI
+    SentryMCP -->|HTTP| SentryAPI
+    KGMCP -->|HTTP| Knowledge
+    LlamaIndexMCP -.->|HTTP| LlamaIndex
+    GKGMcp -.->|HTTP| GKGService
+    GitHubAPI --> GitHub
+    JiraAPI --> Jira
+    SlackAPI --> Slack
+    SentryAPI --> Sentry
+    LlamaIndex --> ChromaDB
+    GKGService --> ChromaDB
+    IndexerWorker --> ChromaDB
+    IndexerWorker --> GKGService
+    Engine --> DashboardAPI
+    DashboardAPI -->|WebSocket| ExternalDash
+    Engine --> TaskLogger
+    Engine --> OAuth
+
+    style External fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style Gateway fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style Storage fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style Engine fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style MCPServers fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style APIServices fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style Monitoring fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style Knowledge fill:#1a1a1a,color:#ffffff,stroke-width:2px
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Optional Knowledge Layer                      │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐       │
-│  │   Indexer    │    │  LlamaIndex  │    │   ChromaDB   │       │
-│  │   Worker     │───▶│   Service    │───▶│   (Vectors)  │       │
-│  └──────────────┘    └──────────────┘    └──────────────┘       │
-│         │                                                        │
-│         ▼                                                        │
-│  ┌──────────────┐                        ┌──────────────┐       │
-│  │    OAuth     │                        │  Knowledge   │       │
-│  │   Service    │                        │    Graph     │       │
-│  └──────────────┘                        └──────────────┘       │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+
+## Task Lifecycle
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'16px', 'primaryColor':'#2d2d2d', 'primaryTextColor':'#ffffff', 'primaryBorderColor':'#ffffff', 'lineColor':'#ffffff', 'secondaryColor':'#1a1a1a', 'tertiaryColor':'#2d2d2d'}}}%%
+flowchart TD
+    A[External Event<br/>GitHub, Jira, Slack, Sentry] --> B[Webhook → API Gateway :8000]
+    B -->|HTTP 200 OK<br/>Immediate Response| A2[External Service<br/>Receives Confirmation]
+    B --> C[Validate Signature<br/>Extract Metadata]
+    C --> D[Create Task in PostgreSQL]
+    D --> E[Enqueue to Redis<br/>agent:tasks queue]
+    E --> F[Agent Engine :8080<br/>Picks Up Task]
+    F --> G[Update Status:<br/>QUEUED → RUNNING]
+    G --> H[Execute CLI Provider<br/>Claude or Cursor]
+    H --> I[Stream Output to<br/>Redis Pub/Sub]
+    I --> J[Task Logger :8090<br/>Captures to Files]
+    I --> K[Dashboard API :5000<br/>Broadcasts via WebSocket]
+    H --> L[Agent Calls MCP Tools<br/>Via MCP Servers]
+    L --> M[Post Response Back<br/>To Source System]
+    M --> N[Update Status:<br/>RUNNING → COMPLETED/FAILED]
+
+    style A fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style A2 fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style B fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style C fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style D fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style E fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style F fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style G fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style H fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style I fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style J fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style K fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style L fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style M fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style N fill:#2d2d2d,color:#ffffff,stroke-width:2px
 ```
 
-**Key Features:**
+## How It Works
 
-- **Graceful Degradation**: Agent Engine works without knowledge services
-- **OAuth Integration**: Data sources use OAuth tokens for API access
-- **Multi-Source Support**: GitHub, Jira, Confluence indexing
-- **Runtime Toggle**: Enable/disable via API without restart
+### System Flow
 
-**Start with Knowledge Services:**
+1. **Webhook Reception**: External services (GitHub, Jira, Slack, Sentry) send webhooks to the API Gateway
+2. **Validation & Queuing**: API Gateway validates signatures, creates task in PostgreSQL, and enqueues to Redis
+3. **Task Pickup**: Agent Engine picks up task from Redis queue (`agent:tasks`)
+4. **CLI Execution**: Agent Engine executes task using Claude or Cursor CLI with specialized agents
+5. **MCP Tool Calls**: Agents use MCP tools (via SSE) to interact with external services
+6. **Response Posting**: Results are posted back to the originating service
+7. **Real-time Updates**: Output streams to Dashboard via WebSocket
 
-```bash
-# Start with knowledge profile
-docker-compose --profile knowledge up -d
+### Layer Architecture
 
-# Or set environment variable
-KNOWLEDGE_SERVICES_ENABLED=true make start
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'16px', 'primaryColor':'#2d2d2d', 'primaryTextColor':'#ffffff', 'primaryBorderColor':'#ffffff', 'lineColor':'#ffffff'}}}%%
+graph TB
+    subgraph Layer1["Layer 1: Presentation"]
+        Dashboard[External Dashboard :3005]
+        DashboardAPI[Dashboard API :5000]
+    end
+
+    subgraph Layer2["Layer 2: Core Services"]
+        AgentEngine[Agent Engine :8080]
+        APIGateway[API Gateway :8000]
+        OAuth[OAuth Service :8010]
+        TaskLogger[Task Logger :8090]
+    end
+
+    subgraph Layer3["Layer 3: Integration"]
+        MCPServers[MCP Servers :9001-9007]
+        APIServices[API Services :3001-3004]
+    end
+
+    subgraph Layer4["Layer 4: Storage"]
+        PostgreSQL[PostgreSQL :5432]
+        Redis[Redis :6379]
+    end
+
+    subgraph Layer5["Layer 5: Knowledge - Optional"]
+        LlamaIndex[LlamaIndex :8002]
+        GKG[GKG Service :8003]
+        ChromaDB[ChromaDB :8001]
+    end
+
+    Layer1 --> Layer2
+    Layer2 --> Layer3
+    Layer2 --> Layer4
+    Layer3 --> Layer4
+    Layer3 -.-> Layer5
+
+    style Layer1 fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style Layer2 fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style Layer3 fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style Layer4 fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style Layer5 fill:#1a1a1a,color:#ffffff,stroke-width:2px
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for complete knowledge layer documentation.
+### Key Design Principles
 
-## Setup Guide
-
-For complete step-by-step setup instructions, see **[SETUP.md](SETUP.md)**.
-
-The setup guide covers:
-- Prerequisites and required credentials
-- Detailed environment configuration
-- Service integration and webhook setup
-- Verification and troubleshooting
+- **Service Isolation**: Each service runs in its own Docker container
+- **Credential Security**: API keys only stored in API service containers
+- **Async Processing**: Webhooks respond immediately (HTTP 200), tasks processed asynchronously
+- **Horizontal Scaling**: Agent Engine can scale to multiple instances
+- **No Direct Imports**: Services communicate via API/Queue only
 
 ## Quick Start
 
-### Prerequisites
+```bash
+# 1. Clone and initialize
+git clone <repository-url>
+cd groote-ai
+make init
 
-- Docker and Docker Compose
-- Python 3.11+ (for local development)
-- API keys for external services (GitHub, Jira, Slack, Sentry)
-- CLI provider credentials (Anthropic API key for Claude or Cursor API key)
+# 2. Configure environment (minimum: ANTHROPIC_API_KEY)
+nano .env
 
-### Initial Setup
+# 3. Start all services
+make up
 
-1. **Clone the repository**:
+# 4. Start AI agent CLI
+make cli-claude    # or: make cli-cursor
 
-   ```bash
-   git clone <repository-url>
-   cd groote-ai
-   ```
+# 5. Verify health
+make health
+```
 
-2. **Configure environment**:
+**Access points:**
+- API Gateway: http://localhost:8000
+- Dashboard UI: http://localhost:3005
+- Dashboard API: http://localhost:5000
 
-   ```bash
-   cp .env.example .env
-   # Edit .env with your API keys and credentials
-   ```
+For detailed setup instructions, see **[SETUP.md](SETUP.md)**.
 
-3. **Initialize the project**:
+## Services
 
-   ```bash
-   make init
-   ```
+### Core Services
 
-4. **Start the CLI agent engine**:
+| Service | Port | Purpose |
+|---------|------|---------|
+| **Agent Engine (CLI)** | 8080-8089 | Task execution using Claude/Cursor CLI (scalable) |
+| **API Gateway** | 8000 | Webhook reception and validation |
+| **Dashboard API** | 5000 | Analytics, WebSocket hub for real-time updates |
+| **External Dashboard** | 3005 | React monitoring UI |
+| **OAuth Service** | 8010 | Multi-provider OAuth flows (GitHub, Jira, Slack) |
+| **Task Logger** | 8090 | Task output logging to files |
+| **Knowledge Graph** | 4000 | Code entity indexing (Rust) |
 
-   ```bash
-   # Start Claude CLI
-   make cli-up PROVIDER=claude SCALE=1
+### MCP Servers (Tool Interfaces)
 
-   # Or start Cursor CLI
-   make cli-up PROVIDER=cursor SCALE=1
-   ```
+| Service | Port | Purpose |
+|---------|------|---------|
+| **GitHub MCP** | 9001 | GitHub operations (PRs, issues, comments) |
+| **Jira MCP** | 9002 | Jira operations (tickets, transitions) |
+| **Slack MCP** | 9003 | Slack messaging and channels |
+| **Sentry MCP** | 9004 | Sentry error tracking |
+| **Knowledge Graph MCP** | 9005 | Code search and references |
+| **LlamaIndex MCP** | 9006 | Hybrid search (optional) |
+| **GKG MCP** | 9007 | Code graph queries (optional) |
 
-5. **Start all services** (optional):
+### API Services (Credentials Here)
 
-   ```bash
-   make start
-   ```
+| Service | Port | Purpose |
+|---------|------|---------|
+| **GitHub API** | 3001 | GitHub REST API wrapper |
+| **Jira API** | 3002 | Jira REST API wrapper |
+| **Slack API** | 3003 | Slack REST API wrapper |
+| **Sentry API** | 3004 | Sentry REST API wrapper |
 
-6. **Verify health**:
-   ```bash
-   make health
-   curl http://localhost:8000/health
-   ```
+### Storage
 
-For detailed setup instructions including webhook configuration and service integration, see **[SETUP.md](SETUP.md)**.
+| Service | Port | Purpose |
+|---------|------|---------|
+| **Redis** | 6379 | Task queue (`agent:tasks`) and cache |
+| **PostgreSQL** | 5432 | Persistent storage (tasks, OAuth tokens, analytics) |
+
+### Knowledge Layer (Optional)
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| **ChromaDB** | 8001 | Vector database for embeddings |
+| **LlamaIndex Service** | 8002 | Hybrid RAG orchestration |
+| **GKG Service** | 8003 | Code relationship graph |
+| **Indexer Worker** | 8004 | Background data source indexing |
 
 ## Key Commands
 
 ### CLI Management
 
 ```bash
-# Start Claude CLI
-make cli-claude
-
-# Start Cursor CLI
-make cli-cursor
-
-# Scale CLI instances
-make cli-up PROVIDER=claude SCALE=3
-
-# Stop CLI
-make cli-down PROVIDER=claude
-
-# View CLI logs
-make cli-logs PROVIDER=claude
-
-# Check CLI status
-make cli-status PROVIDER=claude
+make cli-claude                      # Start Claude CLI
+make cli-cursor                      # Start Cursor CLI
+make cli-up PROVIDER=claude SCALE=3  # Scale CLI instances
+make cli-down PROVIDER=claude        # Stop CLI
+make cli-logs PROVIDER=claude        # View CLI logs
+make cli-status PROVIDER=claude      # Check CLI status
 ```
 
 ### Service Management
 
 ```bash
-# Start all services
-make start
-
-# Stop all services
-make down
-
-# View logs
-docker-compose logs -f
-
-# Check service health
-make health
+make up                              # Start all services
+make down                            # Stop all services
+make health                          # Check service health
+make logs                            # View all logs
 ```
 
 ### Development
 
 ```bash
-# Run tests
-make test
+make init                            # Initialize project
+make test                            # Run all tests
+make lint                            # Lint code
+make format                          # Format code
+make db-migrate MSG="..."            # Create migration
+make db-upgrade                      # Apply migrations
+```
 
-# Lint code
-make lint
+### Knowledge Services (Optional)
 
-# Format code
-make format
-
-# Database migrations
-make db-migrate MSG="description"
-make db-upgrade
+```bash
+docker-compose --profile knowledge up -d  # Enable knowledge layer
+make knowledge-up                         # Alternative command
 ```
 
 ## Environment Variables
 
-### Required Configuration
+Minimum required configuration in `.env`:
 
 ```bash
-# CLI Provider (claude or cursor)
+# CLI Provider (choose one)
 CLI_PROVIDER=claude
+ANTHROPIC_API_KEY=sk-ant-xxx         # For Claude
+# CURSOR_API_KEY=xxx                 # For Cursor
 
-# Database
-POSTGRES_URL=postgresql://agent:agent@postgres:5432/agent_system
+# Database (defaults work for local dev)
+POSTGRES_PASSWORD=agent
 REDIS_URL=redis://redis:6379/0
 
-# External Service API Keys
+# External Services (configure as needed)
 GITHUB_TOKEN=ghp_xxx
+GITHUB_WEBHOOK_SECRET=xxx
+JIRA_URL=https://yourcompany.atlassian.net
+JIRA_EMAIL=your-email@company.com
 JIRA_API_TOKEN=xxx
 SLACK_BOT_TOKEN=xoxb-xxx
+SLACK_SIGNING_SECRET=xxx
 SENTRY_DSN=https://xxx@sentry.io/xxx
-
-# Webhook Secrets
-GITHUB_WEBHOOK_SECRET=xxx
-JIRA_WEBHOOK_SECRET=xxx
-SLACK_WEBHOOK_SECRET=xxx
-
-# CLI Provider Credentials
-ANTHROPIC_API_KEY=sk-ant-xxx  # For Claude
-CURSOR_API_KEY=xxx            # For Cursor
+SENTRY_AUTH_TOKEN=xxx
 ```
 
-See `.env.example` for the complete configuration template. For detailed environment variable documentation, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#environment-variables).
+See `.env.example` for complete configuration.
+
+## Health Checks
+
+```bash
+curl http://localhost:8000/health    # API Gateway
+curl http://localhost:8080/health    # Agent Engine
+curl http://localhost:5000/health    # Dashboard API
+curl http://localhost:8010/health    # OAuth Service
+curl http://localhost:8090/health    # Task Logger
+curl http://localhost:4000/health    # Knowledge Graph
+```
 
 ## Project Structure
 
 ```
 groote-ai/
-├── agent-engine/          # CLI task execution engine
-├── api-gateway/           # Webhook reception
-├── api-services/          # REST API wrappers
-├── dashboard-api/         # Analytics & WebSocket hub
-├── external-dashboard/    # React monitoring UI
-├── mcp-servers/          # MCP protocol servers
-├── oauth-service/         # OAuth flows
-├── task-logger/          # Task output logging
-├── knowledge-graph/      # Code entity indexing
-├── llamaindex-service/   # Semantic search (optional)
-├── indexer-worker/       # Data source indexing (optional)
-├── docs/                 # Documentation
-├── docker-compose.yml     # Main orchestration
-├── Makefile              # Development commands
-└── .env.example          # Environment template
+├── agent-engine/           # CLI task execution engine
+│   └── .claude/agents/     # 13 specialized agents
+│   └── .claude/skills/     # 9 reusable skills
+├── api-gateway/            # Webhook reception
+├── api-services/           # REST API wrappers (credentials here)
+│   ├── github-api/
+│   ├── jira-api/
+│   ├── slack-api/
+│   └── sentry-api/
+├── mcp-servers/            # MCP protocol servers
+│   ├── github-mcp/
+│   ├── jira-mcp/
+│   ├── slack-mcp/
+│   ├── sentry-mcp/
+│   ├── knowledge-graph-mcp/
+│   ├── llamaindex-mcp/     # Optional
+│   └── gkg-mcp/            # Optional
+├── dashboard-api/          # Analytics & WebSocket hub
+├── external-dashboard/     # React monitoring UI
+├── oauth-service/          # OAuth flows
+├── task-logger/            # Task output logging
+├── knowledge-graph/        # Code entity indexing (Rust)
+├── llamaindex-service/     # Hybrid RAG (optional)
+├── gkg-service/            # Code graph (optional)
+├── indexer-worker/         # Background indexing (optional)
+├── docs/                   # Documentation
+│   └── ARCHITECTURE.md     # Detailed architecture
+├── docker-compose.yml      # Service orchestration
+├── Makefile                # Development commands
+├── SETUP.md                # Setup guide
+└── .env.example            # Environment template
 ```
 
-Each service directory contains its own README with service-specific documentation. See the [Related Documentation](#related-documentation) section below for links.
+## Documentation
 
-## Development Guidelines
+### Getting Started
 
-### Critical Rules
-
-**STRICT ENFORCEMENT** - Must be followed for all code:
-
-1. **File Size Limits**: Maximum 300 lines per file
-
-   - Split into: `constants.py`, `models.py`, `exceptions.py`, `core.py`
-
-2. **Type Safety**: NO `any` types EVER
-
-   - Always use `ConfigDict(strict=True)` in Pydantic models
-   - Explicit types for all function signatures
-
-3. **Code Style**: NO comments in code
-
-   - Self-explanatory code only
-   - Use descriptive variable/function names
-   - Only docstrings for public APIs
-
-4. **Testing**: Tests MUST pass gracefully and run fast (< 5 seconds per file)
-
-   - NO flaky tests, NO real network calls
-   - Use `pytest-asyncio` for async code
-
-5. **Async/Await**: ALWAYS use async/await for I/O operations
-
-   - Use `httpx.AsyncClient`, NOT `requests`
-   - Use `asyncio.gather()` for parallel operations
-
-6. **Structured Logging**:
-   ```python
-   logger.info("task_started", task_id=task_id, user_id=user_id)
-   ```
-
-### TDD Workflow
-
-The project follows Test-Driven Development:
-
-1. **RED**: Write failing test
-2. **GREEN**: Implement minimal code to pass
-3. **REFACTOR**: Clean up while keeping tests green
-
-See [CLAUDE.md](CLAUDE.md) for complete development rules. For TDD methodology details, see [docs/INTEGRATION-IMPLEMENTATION-PLAN.md](docs/INTEGRATION-IMPLEMENTATION-PLAN.md).
-
-## Health Checks
-
-```bash
-# API Gateway
-curl http://localhost:8000/health
-
-# Agent Engine
-curl http://localhost:8080/health
-
-# Dashboard API
-curl http://localhost:5000/health
-
-# OAuth Service
-curl http://localhost:8010/health
-
-# Task Logger
-curl http://localhost:8090/health
-
-# Knowledge Graph
-curl http://localhost:4000/health
-```
-
-## Scaling
-
-The system supports horizontal scaling:
-
-```bash
-# Scale CLI workers
-make cli-up PROVIDER=claude SCALE=5
-
-# Scale specific service
-docker-compose up -d --scale cli=5 cli
-```
-
-Each replica independently consumes from the same Redis queue. For scaling strategies and deployment details, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#deployment).
-
-## Security Model
-
-- **Credential Isolation**: API keys only stored in API service containers
-- **Webhook Validation**: HMAC-SHA256 signature validation for all webhooks
-- **Loop Prevention**: Agent-posted content tracked to prevent infinite loops
-- **No Direct Imports**: Services communicate via API/Queue only
-
-For detailed security architecture, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#security-model).
-
-## Monitoring
-
-- **Real-time Updates**: WebSocket connections for live task status
-- **Task Logging**: All task output captured to files
-- **Analytics Dashboard**: React UI at `http://localhost:3005`
-- **Structured Logging**: JSON-formatted logs throughout
-
-## Related Documentation
-
-### Setup Guides
-
-- **[SETUP.md](SETUP.md)** - Complete system setup guide (start here)
-- **[api-gateway/SETUP.md](api-gateway/SETUP.md)** - API Gateway setup and webhook configuration
-- **[agent-engine/SETUP.md](agent-engine/SETUP.md)** - Agent Engine and CLI provider setup
-- **[dashboard-api/SETUP.md](dashboard-api/SETUP.md)** - Dashboard API setup
-- **[external-dashboard/SETUP.md](external-dashboard/SETUP.md)** - React dashboard setup
-- **[oauth-service/SETUP.md](oauth-service/SETUP.md)** - OAuth service and app configuration
-- **[mcp-servers/SETUP.md](mcp-servers/SETUP.md)** - MCP servers setup
-- **[api-services/SETUP.md](api-services/SETUP.md)** - API services and credentials setup
-- **[docs/SETUP-KNOWLEDGE.md](docs/SETUP-KNOWLEDGE.md)** - Knowledge layer setup (optional)
-
-### Core Documentation
-
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Complete system architecture, data flow, service interactions, and deployment details
-- **[docs/INTEGRATION-IMPLEMENTATION-PLAN.md](docs/INTEGRATION-IMPLEMENTATION-PLAN.md)** - Integration guide and TDD implementation plan
-- **[CLAUDE.md](CLAUDE.md)** - Development rules, conventions, and coding standards
+| Document | Description |
+|----------|-------------|
+| **[SETUP.md](SETUP.md)** | Complete setup guide - start here |
+| **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** | Detailed architecture, data flows, service interactions |
+| **[.claude/CLAUDE.md](.claude/CLAUDE.md)** | Development rules and coding standards |
 
 ### Service Documentation
 
-#### Core Services
+Each service has its own setup guide and README:
 
-- **[agent-engine/README.md](agent-engine/README.md)** - Agent Engine service details, CLI providers, and agent orchestration
-- **[api-gateway/README.md](api-gateway/README.md)** - Webhook reception and validation
-- **[dashboard-api/README.md](dashboard-api/README.md)** - Analytics API and WebSocket hub
-- **[external-dashboard/README.md](external-dashboard/README.md)** - React monitoring UI
+| Service | Setup | README |
+|---------|-------|--------|
+| Agent Engine | [SETUP.md](agent-engine/SETUP.md) | [README.md](agent-engine/README.md) |
+| API Gateway | [SETUP.md](api-gateway/SETUP.md) | [README.md](api-gateway/README.md) |
+| Dashboard API | [SETUP.md](dashboard-api/SETUP.md) | [README.md](dashboard-api/README.md) |
+| External Dashboard | [SETUP.md](external-dashboard/SETUP.md) | [README.md](external-dashboard/README.md) |
+| MCP Servers | [SETUP.md](mcp-servers/SETUP.md) | [README.md](mcp-servers/README.md) |
+| API Services | [SETUP.md](api-services/SETUP.md) | [README.md](api-services/README.md) |
+| OAuth Service | [SETUP.md](oauth-service/SETUP.md) | [README.md](oauth-service/README.md) |
+| Knowledge Layer | [SETUP-KNOWLEDGE.md](docs/SETUP-KNOWLEDGE.md) | - |
 
-#### Integration Services
+## Key Components
 
-- **[api-services/README.md](api-services/README.md)** - REST API wrappers overview
-  - [api-services/github-api/README.md](api-services/github-api/README.md) - GitHub API service
-  - [api-services/jira-api/README.md](api-services/jira-api/README.md) - Jira API service
-- **[mcp-servers/README.md](mcp-servers/README.md)** - MCP protocol servers overview
-  - [mcp-servers/jira-mcp/README.md](mcp-servers/jira-mcp/README.md) - Jira MCP server
-  - [mcp-servers/slack-mcp/README.md](mcp-servers/slack-mcp/README.md) - Slack MCP server
-  - [mcp-servers/sentry-mcp/README.md](mcp-servers/sentry-mcp/README.md) - Sentry MCP server
-  - [mcp-servers/knowledge-graph-mcp/README.md](mcp-servers/knowledge-graph-mcp/README.md) - Knowledge Graph MCP server
+### Agents
 
-#### Supporting Services
+The system includes **13 specialized agents**:
+- `brain` - Main orchestrator
+- `planning` - Discovery and planning
+- `executor` - TDD implementation
+- `verifier` - Quality assurance
+- `github-issue-handler` - GitHub issue processing
+- `github-pr-review` - PR review handling
+- `jira-code-plan` - Jira ticket handling
+- `slack-inquiry` - Slack Q&A
+- And more...
 
-- **[oauth-service/README.md](oauth-service/README.md)** - OAuth flows and multi-provider authentication
-- **[oauth-service/CLAUDE.md](oauth-service/CLAUDE.md)** - OAuth service architecture and integration guide
-- **[task-logger/README.md](task-logger/README.md)** - Task output logging and capture
-- **[knowledge-graph/README.md](knowledge-graph/README.md)** - Code entity indexing and graph database
+### Skills
 
-#### Knowledge Layer (Optional)
+**9 reusable skills** for agents:
+- Discovery, Testing, Code Refactoring
+- GitHub/Jira/Slack Operations
+- Human Approval, Verification, Knowledge Graph
 
-- **[llamaindex-service/README.md](llamaindex-service/README.md)** - Semantic search and RAG service
-- **[indexer-worker/README.md](indexer-worker/README.md)** - Data source indexing worker
-- **[agent-engine/CLAUDE.md](agent-engine/CLAUDE.md)** - Agent engine architecture and knowledge integration
+### Security Model
+
+- **Credential Isolation**: API keys only in API service containers
+- **Webhook Validation**: HMAC-SHA256 signature validation
+- **Loop Prevention**: Agent-posted content tracked in Redis
+- **No Direct Imports**: Services communicate via API/Queue only
 
 ## License
 

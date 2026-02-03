@@ -434,7 +434,7 @@ groote-ai/
 │
 └── docs/
     ├── ARCHITECTURE.md                 # This file
-    └── BUSINESS-LOGIC-TESTING.md       # Testing guide
+    └── SETUP-KNOWLEDGE.md              # Knowledge layer setup guide
 ```
 
 ---
@@ -1123,6 +1123,7 @@ KNOWLEDGE_SERVICES_ENABLED=true docker-compose up -d
 
 ## Related Documentation
 
-- [BUSINESS-LOGIC-TESTING.md](./BUSINESS-LOGIC-TESTING.md) - Testing strategy for business logic
-- [CLAUDE.md](../CLAUDE.md) - Development rules and conventions
+- [SETUP-KNOWLEDGE.md](./SETUP-KNOWLEDGE.md) - Knowledge layer setup guide
+- [CLAUDE.md](../.claude/CLAUDE.md) - Development rules and conventions
 - [README.md](../README.md) - Project overview and quick start
+- [SETUP.md](../SETUP.md) - Complete setup guide

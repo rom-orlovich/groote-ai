@@ -24,8 +24,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder /root/.cargo/bin/gkg /usr/local/bin/gkg
 
+RUN pip install uv
+
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN uv pip install --no-cache-dir --system -r requirements.txt
 
 COPY . .
 
