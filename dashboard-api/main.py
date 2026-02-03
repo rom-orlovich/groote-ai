@@ -2,9 +2,6 @@ from contextlib import asynccontextmanager
 
 import structlog
 import uvicorn
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
 from api import (
     analytics,
     conversations,
@@ -16,6 +13,8 @@ from api import (
 )
 from core.config import Settings
 from core.database import init_db, shutdown_db
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 logger = structlog.get_logger()
 

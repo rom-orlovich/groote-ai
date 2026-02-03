@@ -131,9 +131,7 @@ class MockGitHubClient:
             ],
         }
 
-    async def list_branches(
-        self, owner: str, repo: str, per_page: int = 30, page: int = 1
-    ) -> list:
+    async def list_branches(self, owner: str, repo: str, per_page: int = 30, page: int = 1) -> list:
         """List repository branches."""
         return [
             {"name": "main", "commit": {"sha": "abc123"}},

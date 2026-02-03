@@ -38,7 +38,7 @@ async def get_cli_version(provider: str) -> tuple[bool, str]:
         else:
             return False, stderr.decode().strip()
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return False, "Timeout"
     except FileNotFoundError:
         return False, "CLI not found"
@@ -50,9 +50,9 @@ async def log_status_to_db(provider: str, version: str, status: str):
     """Log CLI status to database and mark instance as active."""
     try:
         # Import here to avoid circular dependencies
-        from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-        from sqlalchemy.orm import sessionmaker
         from sqlalchemy import text
+        from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+        from sqlalchemy.orm import sessionmaker
 
         db_url = os.environ.get("DATABASE_URL")
         if not db_url:
@@ -60,9 +60,7 @@ async def log_status_to_db(provider: str, version: str, status: str):
             return
 
         engine = create_async_engine(db_url, echo=False)
-        async_session = sessionmaker(
-            engine, class_=AsyncSession, expire_on_commit=False
-        )
+        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         async with async_session() as session:
             # Create health log table if not exists

@@ -1,9 +1,9 @@
 from typing import Annotated, Any
-from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, ConfigDict
 
 from client import SlackClient
-from config import get_settings, Settings
+from config import Settings, get_settings
+from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, ConfigDict
 
 router = APIRouter(prefix="/api/v1", tags=["slack"])
 
@@ -110,6 +110,4 @@ async def update_message(
     request: UpdateMessageRequest,
     client: Annotated[SlackClient, Depends(get_slack_client)],
 ):
-    return await client.update_message(
-        request.channel, request.ts, request.text, request.blocks
-    )
+    return await client.update_message(request.channel, request.ts, request.text, request.blocks)

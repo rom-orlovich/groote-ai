@@ -1,7 +1,7 @@
 import pytest
+from core.query_engine import FeatureFlags, HybridQueryEngine
 
-from core.query_engine import HybridQueryEngine, FeatureFlags
-from tests.conftest import MockVectorStore, MockGraphStore, MockCache
+from tests.conftest import MockCache, MockGraphStore, MockVectorStore
 
 
 class TestHybridQueryBehavior:
@@ -15,9 +15,7 @@ class TestHybridQueryBehavior:
         """Querying multiple source types should return results from all sources."""
         engine = HybridQueryEngine(
             vector_store=mock_vector_store,
-            feature_flags=FeatureFlags(
-                enable_gkg_enrichment=False, enable_caching=False
-            ),
+            feature_flags=FeatureFlags(enable_gkg_enrichment=False, enable_caching=False),
         )
 
         response = await engine.query(
@@ -40,9 +38,7 @@ class TestHybridQueryBehavior:
         """Results should be limited to top_k items."""
         engine = HybridQueryEngine(
             vector_store=mock_vector_store,
-            feature_flags=FeatureFlags(
-                enable_gkg_enrichment=False, enable_caching=False
-            ),
+            feature_flags=FeatureFlags(enable_gkg_enrichment=False, enable_caching=False),
         )
 
         response = await engine.query(
@@ -61,9 +57,7 @@ class TestHybridQueryBehavior:
         """Results should be sorted by relevance score in descending order."""
         engine = HybridQueryEngine(
             vector_store=mock_vector_store,
-            feature_flags=FeatureFlags(
-                enable_gkg_enrichment=False, enable_caching=False
-            ),
+            feature_flags=FeatureFlags(enable_gkg_enrichment=False, enable_caching=False),
         )
 
         response = await engine.query(
@@ -88,9 +82,7 @@ class TestCodeQueryBehavior:
         """Code query should only search the code collection."""
         engine = HybridQueryEngine(
             vector_store=mock_vector_store,
-            feature_flags=FeatureFlags(
-                enable_gkg_enrichment=False, enable_caching=False
-            ),
+            feature_flags=FeatureFlags(enable_gkg_enrichment=False, enable_caching=False),
         )
 
         response = await engine.query_code(
@@ -109,9 +101,7 @@ class TestCodeQueryBehavior:
         """Code query should pass repository filter to vector store."""
         engine = HybridQueryEngine(
             vector_store=mock_vector_store,
-            feature_flags=FeatureFlags(
-                enable_gkg_enrichment=False, enable_caching=False
-            ),
+            feature_flags=FeatureFlags(enable_gkg_enrichment=False, enable_caching=False),
         )
 
         await engine.query_code(
@@ -137,9 +127,7 @@ class TestGraphEnrichmentBehavior:
         engine = HybridQueryEngine(
             vector_store=mock_vector_store,
             graph_store=mock_graph_store,
-            feature_flags=FeatureFlags(
-                enable_gkg_enrichment=True, enable_caching=False
-            ),
+            feature_flags=FeatureFlags(enable_gkg_enrichment=True, enable_caching=False),
         )
 
         response = await engine.query(
@@ -162,9 +150,7 @@ class TestGraphEnrichmentBehavior:
         engine = HybridQueryEngine(
             vector_store=mock_vector_store,
             graph_store=mock_graph_store,
-            feature_flags=FeatureFlags(
-                enable_gkg_enrichment=False, enable_caching=False
-            ),
+            feature_flags=FeatureFlags(enable_gkg_enrichment=False, enable_caching=False),
         )
 
         await engine.query(
@@ -189,9 +175,7 @@ class TestCachingBehavior:
         engine = HybridQueryEngine(
             vector_store=mock_vector_store,
             cache=mock_cache,
-            feature_flags=FeatureFlags(
-                enable_caching=True, enable_gkg_enrichment=False
-            ),
+            feature_flags=FeatureFlags(enable_caching=True, enable_gkg_enrichment=False),
         )
 
         first_response = await engine.query(
@@ -224,9 +208,7 @@ class TestCachingBehavior:
         engine = HybridQueryEngine(
             vector_store=mock_vector_store,
             cache=mock_cache,
-            feature_flags=FeatureFlags(
-                enable_caching=False, enable_gkg_enrichment=False
-            ),
+            feature_flags=FeatureFlags(enable_caching=False, enable_gkg_enrichment=False),
         )
 
         await engine.query(query="test", org_id="org", source_types=["code"], top_k=5)

@@ -1,6 +1,6 @@
 from typing import Any
-import httpx
 
+import httpx
 from config import get_settings
 
 
@@ -54,9 +54,7 @@ class SlackAPI:
             params["oldest"] = oldest
         if latest:
             params["latest"] = latest
-        response = await client.get(
-            f"/api/v1/channels/{channel}/history", params=params
-        )
+        response = await client.get(f"/api/v1/channels/{channel}/history", params=params)
         response.raise_for_status()
         return response.json()
 
@@ -71,9 +69,7 @@ class SlackAPI:
         response.raise_for_status()
         return response.json()
 
-    async def add_reaction(
-        self, channel: str, timestamp: str, emoji: str
-    ) -> dict[str, Any]:
+    async def add_reaction(self, channel: str, timestamp: str, emoji: str) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.post(
             "/api/v1/reactions",
@@ -88,9 +84,7 @@ class SlackAPI:
         response.raise_for_status()
         return response.json()
 
-    async def list_channels(
-        self, limit: int = 100, cursor: str | None = None
-    ) -> dict[str, Any]:
+    async def list_channels(self, limit: int = 100, cursor: str | None = None) -> dict[str, Any]:
         client = await self._get_client()
         params: dict[str, Any] = {"limit": limit}
         if cursor:

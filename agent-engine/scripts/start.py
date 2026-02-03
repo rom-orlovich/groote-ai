@@ -36,9 +36,8 @@ def main():
     print(f"Starting agent-engine (provider: {provider})...")
 
     # Install Cursor if needed
-    if provider == "cursor":
-        if not install_cursor_cli():
-            sys.exit(1)
+    if provider == "cursor" and not install_cursor_cli():
+        sys.exit(1)
 
     # Run CLI test
     if not run_cli_test():

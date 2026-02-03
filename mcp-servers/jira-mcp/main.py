@@ -1,8 +1,8 @@
 from typing import Any
-from fastmcp import FastMCP
 
-from jira_mcp import JiraAPI
 from config import get_settings
+from fastmcp import FastMCP
+from jira_mcp import JiraAPI
 
 mcp = FastMCP("Jira MCP Server")
 jira_api = JiraAPI()
@@ -75,9 +75,7 @@ async def add_jira_comment(issue_key: str, body: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-async def search_jira_issues(
-    jql: str, max_results: int = 50, start_at: int = 0
-) -> dict[str, Any]:
+async def search_jira_issues(jql: str, max_results: int = 50, start_at: int = 0) -> dict[str, Any]:
     """
     Search for Jira issues using JQL.
 

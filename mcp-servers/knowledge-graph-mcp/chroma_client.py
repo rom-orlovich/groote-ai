@@ -74,15 +74,9 @@ class ChromaDBClient:
                 formatted_results.append(
                     {
                         "id": doc_id,
-                        "content": results["documents"][0][i]
-                        if results["documents"]
-                        else "",
-                        "metadata": results["metadatas"][0][i]
-                        if results["metadatas"]
-                        else {},
-                        "distance": results["distances"][0][i]
-                        if results["distances"]
-                        else 0.0,
+                        "content": results["documents"][0][i] if results["documents"] else "",
+                        "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
+                        "distance": results["distances"][0][i] if results["distances"] else 0.0,
                         "collection": collection_name,
                     }
                 )

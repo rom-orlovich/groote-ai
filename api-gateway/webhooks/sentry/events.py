@@ -1,4 +1,5 @@
 from typing import Any
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -10,10 +11,7 @@ def should_process_event(action: str, data: dict[str, Any]) -> bool:
     if action not in SUPPORTED_ACTIONS:
         return False
 
-    if action == "created":
-        return True
-
-    return False
+    return action == "created"
 
 
 def extract_task_info(action: str, data: dict[str, Any]) -> dict[str, Any]:

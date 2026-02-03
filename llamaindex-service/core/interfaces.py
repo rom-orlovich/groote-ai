@@ -1,5 +1,6 @@
 from typing import Protocol, runtime_checkable
-from core.models import SearchResult, GraphEntity
+
+from core.models import GraphEntity, SearchResult
 
 
 @runtime_checkable

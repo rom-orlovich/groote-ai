@@ -15,6 +15,20 @@ export interface Message {
   timestamp: string;
 }
 
+interface ConversationApiItem {
+  conversation_id: string;
+  title: string;
+  updated_at?: string;
+  created_at?: string;
+}
+
+interface MessageApiItem {
+  message_id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+}
+
 export function useChat() {
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -24,7 +38,7 @@ export function useChat() {
     queryFn: async () => {
       const res = await fetch("/api/conversations");
       const data = await res.json();
-      return data.map((conv: any) => ({
+      return data.map((conv: ConversationApiItem) => ({
         id: conv.conversation_id,
         title: conv.title,
         lastMessage: "", // Backend doesn't provide lastMessage directly in list
@@ -40,7 +54,7 @@ export function useChat() {
       console.log(`FETCH_MESSAGES: /api/conversations/${selectedId}/messages`);
       const res = await fetch(`/api/conversations/${selectedId}/messages`);
       const data = await res.json();
-      return data.map((msg: any) => ({
+      return data.map((msg: MessageApiItem) => ({
         id: msg.message_id,
         role: msg.role,
         content: msg.content,
@@ -57,7 +71,7 @@ export function useChat() {
       const sessionId = "default-session";
       const params = new URLSearchParams({ session_id: sessionId });
       if (selectedId) params.append("conversation_id", selectedId);
-      
+
       const res = await fetch(`/api/chat?${params.toString()}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -110,7 +124,7 @@ export function useChat() {
     onError: (error) => {
       console.error("Delete conversation error:", error);
       alert("Failed to delete conversation. Please try again.");
-    }
+    },
   });
 
   return {

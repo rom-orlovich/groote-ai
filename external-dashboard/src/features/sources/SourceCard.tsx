@@ -1,4 +1,14 @@
-import { GitBranch, FileText, TicketIcon, RefreshCw, Trash2, Power, PowerOff, Link2, AlertTriangle } from "lucide-react";
+import {
+  AlertTriangle,
+  FileText,
+  GitBranch,
+  Link2,
+  Power,
+  PowerOff,
+  RefreshCw,
+  TicketIcon,
+  Trash2,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import type { DataSource } from "./hooks/useSources";
 
@@ -59,9 +69,7 @@ export function SourceCard({
   return (
     <div
       className={`border p-4 transition-all ${
-        source.enabled
-          ? "border-gray-200 bg-white"
-          : "border-gray-100 bg-gray-50 opacity-60"
+        source.enabled ? "border-gray-200 bg-white" : "border-gray-100 bg-gray-50 opacity-60"
       }`}
     >
       <div className="flex items-start justify-between mb-3">
@@ -71,25 +79,18 @@ export function SourceCard({
           </div>
           <div>
             <div className="font-heading text-sm">{source.name}</div>
-            <div className="text-[10px] text-gray-400 uppercase">
-              {source.source_type}
-            </div>
+            <div className="text-[10px] text-gray-400 uppercase">{source.source_type}</div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {!source.oauth_connected && (
-            <div
-              className="text-amber-500"
-              title="OAuth not connected"
-            >
+            <div className="text-amber-500" title="OAuth not connected">
               <AlertTriangle size={14} />
             </div>
           )}
           <div
-            className={`w-2 h-2 rounded-full ${getStatusColor(
-              source.last_sync_status
-            )}`}
+            className={`w-2 h-2 rounded-full ${getStatusColor(source.last_sync_status)}`}
             title={source.last_sync_status || "Not synced"}
           />
         </div>
@@ -101,9 +102,7 @@ export function SourceCard({
             <AlertTriangle size={10} />
             <span className="font-heading">OAUTH_NOT_CONNECTED</span>
           </div>
-          <p className="text-amber-600 mb-2">
-            Connect {source.oauth_platform} to enable syncing.
-          </p>
+          <p className="text-amber-600 mb-2">Connect {source.oauth_platform} to enable syncing.</p>
           <Link
             to="/integrations"
             className="inline-flex items-center gap-1 text-amber-700 hover:text-amber-900 font-heading"
@@ -121,9 +120,7 @@ export function SourceCard({
         </div>
         <div className="flex justify-between">
           <span>Status:</span>
-          <span className="font-mono uppercase">
-            {source.last_sync_status || "PENDING"}
-          </span>
+          <span className="font-mono uppercase">{source.last_sync_status || "PENDING"}</span>
         </div>
         {source.source_type === "github" && config.include_patterns && (
           <div className="flex justify-between">
@@ -176,8 +173,8 @@ export function SourceCard({
             !source.oauth_connected && !source.enabled
               ? "Connect OAuth first"
               : source.enabled
-              ? "Disable source"
-              : "Enable source"
+                ? "Disable source"
+                : "Enable source"
           }
         >
           {source.enabled ? <PowerOff size={12} /> : <Power size={12} />}

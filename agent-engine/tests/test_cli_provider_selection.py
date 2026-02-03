@@ -5,7 +5,6 @@ Tests how agent types map to CLI providers and models.
 
 from unittest.mock import MagicMock
 
-
 COMPLEX_AGENTS = ["planning", "consultation", "question_asking", "brain"]
 EXECUTION_AGENTS = ["executor", "github-issue-handler", "jira-code-plan"]
 
@@ -27,17 +26,9 @@ def get_model_for_agent(
     is_complex_task = agent_type.lower() in COMPLEX_AGENTS
 
     if settings.cli_provider == "cursor":
-        return (
-            settings.cursor_model_complex
-            if is_complex_task
-            else settings.cursor_model_execution
-        )
+        return settings.cursor_model_complex if is_complex_task else settings.cursor_model_execution
     elif settings.cli_provider == "claude":
-        return (
-            settings.claude_model_complex
-            if is_complex_task
-            else settings.claude_model_execution
-        )
+        return settings.claude_model_complex if is_complex_task else settings.claude_model_execution
 
     return "sonnet"
 
@@ -68,9 +59,7 @@ class TestModelSelection:
 
         for agent in COMPLEX_AGENTS:
             model = get_model_for_agent(agent, settings=mock_engine_settings)
-            assert model == "claude-sonnet-4.5", (
-                f"{agent} should use Cursor complex model"
-            )
+            assert model == "claude-sonnet-4.5", f"{agent} should use Cursor complex model"
 
     def test_cursor_execution_agents_use_standard_model(self, mock_engine_settings):
         """Business requirement: Cursor uses appropriate execution model."""

@@ -1,9 +1,9 @@
 import os
-import structlog
 
-from core.interfaces import GraphAnalyzerProtocol, CacheProtocol
-from core.graph_analyzer import GraphAnalyzerService, FeatureFlags
+import structlog
 from adapters.gkg_binary_adapter import GKGBinaryAdapter
+from core.graph_analyzer import FeatureFlags, GraphAnalyzerService
+from core.interfaces import CacheProtocol, GraphAnalyzerProtocol
 
 logger = structlog.get_logger()
 

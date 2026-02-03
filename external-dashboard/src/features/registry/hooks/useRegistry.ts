@@ -8,6 +8,18 @@ export interface RegistryAsset {
   version?: string;
 }
 
+interface SkillApiItem {
+  name: string;
+  description: string;
+  is_builtin: boolean;
+}
+
+interface AgentApiItem {
+  name: string;
+  description: string;
+  is_builtin: boolean;
+}
+
 export function useRegistry() {
   const queryClient = useQueryClient();
   const { data: skills, isLoading: isSkillsLoading } = useQuery<RegistryAsset[]>({
@@ -15,7 +27,7 @@ export function useRegistry() {
     queryFn: async () => {
       const res = await fetch("/api/registry/skills");
       const data = await res.json();
-      return data.map((s: any) => ({
+      return data.map((s: SkillApiItem) => ({
         name: s.name,
         description: s.description,
         is_builtin: s.is_builtin,
@@ -30,7 +42,7 @@ export function useRegistry() {
     queryFn: async () => {
       const res = await fetch("/api/registry/agents");
       const data = await res.json();
-      return data.map((a: any) => ({
+      return data.map((a: AgentApiItem) => ({
         name: a.name,
         description: a.description,
         is_builtin: a.is_builtin,

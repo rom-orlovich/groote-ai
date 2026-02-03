@@ -1,5 +1,4 @@
 import uvicorn
-
 from api.server import create_app
 from config.settings import get_settings
 

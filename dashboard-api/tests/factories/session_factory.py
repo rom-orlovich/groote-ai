@@ -1,7 +1,7 @@
 """Session data factory for testing."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .task_factory import Task
 
@@ -13,7 +13,7 @@ class Session:
     session_id: str
     user_id: str
     machine_id: str
-    connected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    connected_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     disconnected_at: datetime | None = None
     total_cost_usd: float = 0.0
     total_tasks: int = 0
@@ -29,7 +29,7 @@ class Session:
 
     def disconnect(self) -> None:
         """Mark session as disconnected."""
-        self.disconnected_at = datetime.now(timezone.utc)
+        self.disconnected_at = datetime.now(UTC)
 
     def set_rate_limited(self) -> None:
         """Mark session as rate limited."""

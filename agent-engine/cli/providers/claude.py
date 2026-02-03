@@ -2,10 +2,11 @@ import asyncio
 import json
 import os
 from pathlib import Path
+
 import structlog
 
 from cli.base import CLIResult
-from cli.sanitization import sanitize_sensitive_content, contains_sensitive_data
+from cli.sanitization import contains_sensitive_data, sanitize_sensitive_content
 
 logger = structlog.get_logger()
 
@@ -25,9 +26,7 @@ class ClaudeCLIRunner:
     ) -> CLIResult:
         cmd = self._build_command(prompt, model, allowed_tools, agents, debug_mode)
 
-        logger.info(
-            "starting_claude_cli", task_id=task_id, working_dir=str(working_dir)
-        )
+        logger.info("starting_claude_cli", task_id=task_id, working_dir=str(working_dir))
 
         process = await asyncio.create_subprocess_exec(
             *cmd,
@@ -84,9 +83,7 @@ class ClaudeCLIRunner:
                                 has_streaming_output = True
 
                         if msg_type == "result":
-                            cost_usd = data.get(
-                                "total_cost_usd", data.get("cost_usd", 0.0)
-                            )
+                            cost_usd = data.get("total_cost_usd", data.get("cost_usd", 0.0))
                             usage = data.get("usage", {})
                             input_tokens = usage.get("input_tokens", 0)
                             output_tokens = usage.get("output_tokens", 0)
@@ -136,7 +133,7 @@ class ClaudeCLIRunner:
                 error=error_msg,
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             if process:
                 process.kill()
                 await process.wait()
@@ -160,9 +157,7 @@ class ClaudeCLIRunner:
                 await process.wait()
             await output_queue.put(None)
 
-            logger.error(
-                "claude_cli_error", task_id=task_id, error=str(e), exc_info=True
-            )
+            logger.error("claude_cli_error", task_id=task_id, error=str(e), exc_info=True)
 
             return CLIResult(
                 success=False,
@@ -171,7 +166,7 @@ class ClaudeCLIRunner:
                 cost_usd=cost_usd,
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
-                error=f"Unexpected error: {str(e)}",
+                error=f"Unexpected error: {e!s}",
             )
 
     def _build_command(
@@ -239,9 +234,7 @@ class ClaudeCLIRunner:
             )
 
         elif msg_type == "user":
-            await self._handle_user_message(
-                data, accumulated_output, output_queue, task_id
-            )
+            await self._handle_user_message(data, accumulated_output, output_queue, task_id)
 
         elif msg_type == "stream_event":
             event = data.get("event", {})
@@ -330,9 +323,7 @@ class ClaudeCLIRunner:
 
         if stderr_lines:
             cleaned_lines = [
-                line
-                for line in stderr_lines
-                if not line.startswith("[LOG]") and line.strip()
+                line for line in stderr_lines if not line.startswith("[LOG]") and line.strip()
             ]
             if cleaned_lines:
                 return "\n".join(cleaned_lines) + f"\n\n(Exit code: {returncode})"

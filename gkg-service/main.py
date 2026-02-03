@@ -1,9 +1,9 @@
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
-import structlog
 
-from factory import ServiceContainer, ServiceConfig
+import structlog
 from api.routes import create_analysis_router, create_health_router
+from factory import ServiceConfig, ServiceContainer
+from fastapi import FastAPI
 
 logger = structlog.get_logger()
 

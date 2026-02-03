@@ -1,8 +1,8 @@
+import { Activity, Database, Plus, RefreshCw } from "lucide-react";
 import { useState } from "react";
-import { RefreshCw, Plus, Database, Activity } from "lucide-react";
+import { AddSourceModal } from "./AddSourceModal";
 import { useSources } from "./hooks/useSources";
 import { SourceCard } from "./SourceCard";
-import { AddSourceModal } from "./AddSourceModal";
 
 export function SourcesFeature() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,17 +25,14 @@ export function SourcesFeature() {
   } = useSources();
 
   if (isLoading) {
-    return (
-      <div className="p-8 text-center font-heading">LOADING_SOURCES...</div>
-    );
+    return <div className="p-8 text-center font-heading">LOADING_SOURCES...</div>;
   }
 
   if (isError) {
     return (
       <div className="p-8 text-center">
         <div className="text-red-500 font-heading mb-4">
-          ERROR:{" "}
-          {error instanceof Error ? error.message : "Failed to load sources"}
+          ERROR: {error instanceof Error ? error.message : "Failed to load sources"}
         </div>
         <button
           type="button"
@@ -49,12 +46,8 @@ export function SourcesFeature() {
   }
 
   const enabledCount = sources.filter((s) => s.enabled).length;
-  const syncedCount = sources.filter(
-    (s) => s.last_sync_status === "completed"
-  ).length;
-  const runningJobs = jobs.filter(
-    (j) => j.status === "running" || j.status === "queued"
-  );
+  const syncedCount = sources.filter((s) => s.last_sync_status === "completed").length;
+  const runningJobs = jobs.filter((j) => j.status === "running" || j.status === "queued");
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -63,30 +56,18 @@ export function SourcesFeature() {
           <div className="flex gap-8">
             <div className="stat-mini">
               <div className="text-[10px] font-heading text-gray-400">TOTAL</div>
-              <div className="text-xl font-heading font-black">
-                {sources.length}
-              </div>
+              <div className="text-xl font-heading font-black">{sources.length}</div>
             </div>
             <div className="stat-mini">
-              <div className="text-[10px] font-heading text-gray-400">
-                ENABLED
-              </div>
-              <div className="text-xl font-heading font-black text-green-500">
-                {enabledCount}
-              </div>
+              <div className="text-[10px] font-heading text-gray-400">ENABLED</div>
+              <div className="text-xl font-heading font-black text-green-500">{enabledCount}</div>
             </div>
             <div className="stat-mini">
-              <div className="text-[10px] font-heading text-gray-400">
-                SYNCED
-              </div>
-              <div className="text-xl font-heading font-black text-blue-500">
-                {syncedCount}
-              </div>
+              <div className="text-[10px] font-heading text-gray-400">SYNCED</div>
+              <div className="text-xl font-heading font-black text-blue-500">{syncedCount}</div>
             </div>
             <div className="stat-mini">
-              <div className="text-[10px] font-heading text-gray-400">
-                RUNNING
-              </div>
+              <div className="text-[10px] font-heading text-gray-400">RUNNING</div>
               <div className="text-xl font-heading font-black text-yellow-500">
                 {runningJobs.length}
               </div>
@@ -116,20 +97,17 @@ export function SourcesFeature() {
         </div>
 
         <p className="text-[10px] text-gray-400 mb-6">
-          Configure data sources for indexing. Each source provides searchable
-          context for the AI agent. Sources can be enabled/disabled individually
-          without affecting others.
+          Configure data sources for indexing. Each source provides searchable context for the AI
+          agent. Sources can be enabled/disabled individually without affecting others.
         </p>
 
         {sources.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed border-gray-200">
             <Database size={32} className="text-gray-300 mb-3" />
-            <div className="font-heading text-sm text-gray-500 mb-1">
-              NO_SOURCES_CONFIGURED
-            </div>
+            <div className="font-heading text-sm text-gray-500 mb-1">NO_SOURCES_CONFIGURED</div>
             <p className="text-[10px] text-gray-400 mb-4 max-w-xs">
-              Add data sources to enable knowledge-based features. The agent can
-              operate without sources, but with reduced context.
+              Add data sources to enable knowledge-based features. The agent can operate without
+              sources, but with reduced context.
             </p>
             <button
               type="button"
@@ -146,9 +124,7 @@ export function SourcesFeature() {
               <SourceCard
                 key={source.source_id}
                 source={source}
-                onSync={() =>
-                  sync({ sourceId: source.source_id, jobType: "incremental" })
-                }
+                onSync={() => sync({ sourceId: source.source_id, jobType: "incremental" })}
                 onToggle={() =>
                   update({
                     sourceId: source.source_id,
@@ -157,9 +133,7 @@ export function SourcesFeature() {
                 }
                 onDelete={() => {
                   if (
-                    window.confirm(
-                      `Delete source "${source.name}"? This action cannot be undone.`
-                    )
+                    window.confirm(`Delete source "${source.name}"? This action cannot be undone.`)
                   ) {
                     remove(source.source_id);
                   }
@@ -191,40 +165,23 @@ export function SourcesFeature() {
         </div>
 
         {jobs.length === 0 ? (
-          <div className="text-center py-8 text-[10px] text-gray-400">
-            No indexing jobs yet
-          </div>
+          <div className="text-center py-8 text-[10px] text-gray-400">No indexing jobs yet</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-[10px]">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-2 px-2 font-heading text-gray-400">
-                    JOB_ID
-                  </th>
-                  <th className="text-left py-2 px-2 font-heading text-gray-400">
-                    TYPE
-                  </th>
-                  <th className="text-left py-2 px-2 font-heading text-gray-400">
-                    STATUS
-                  </th>
-                  <th className="text-left py-2 px-2 font-heading text-gray-400">
-                    PROGRESS
-                  </th>
-                  <th className="text-left py-2 px-2 font-heading text-gray-400">
-                    CREATED
-                  </th>
+                  <th className="text-left py-2 px-2 font-heading text-gray-400">JOB_ID</th>
+                  <th className="text-left py-2 px-2 font-heading text-gray-400">TYPE</th>
+                  <th className="text-left py-2 px-2 font-heading text-gray-400">STATUS</th>
+                  <th className="text-left py-2 px-2 font-heading text-gray-400">PROGRESS</th>
+                  <th className="text-left py-2 px-2 font-heading text-gray-400">CREATED</th>
                 </tr>
               </thead>
               <tbody>
                 {jobs.slice(0, 10).map((job) => (
-                  <tr
-                    key={job.job_id}
-                    className="border-b border-gray-100 hover:bg-gray-50"
-                  >
-                    <td className="py-2 px-2 font-mono">
-                      {job.job_id.slice(0, 8)}...
-                    </td>
+                  <tr key={job.job_id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-2 px-2 font-mono">{job.job_id.slice(0, 8)}...</td>
                     <td className="py-2 px-2 uppercase">{job.job_type}</td>
                     <td className="py-2 px-2">
                       <span
@@ -232,10 +189,10 @@ export function SourcesFeature() {
                           job.status === "completed"
                             ? "bg-green-100 text-green-700"
                             : job.status === "failed"
-                            ? "bg-red-100 text-red-700"
-                            : job.status === "running"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-gray-100 text-gray-700"
+                              ? "bg-red-100 text-red-700"
+                              : job.status === "running"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-gray-100 text-gray-700"
                         }`}
                       >
                         {job.status}
@@ -264,24 +221,20 @@ export function SourcesFeature() {
       </section>
 
       <section className="panel" data-label="INFO">
-        <h2 className="text-sm mb-4 font-heading text-gray-400">
-          KNOWLEDGE_SYSTEM_INFO
-        </h2>
+        <h2 className="text-sm mb-4 font-heading text-gray-400">KNOWLEDGE_SYSTEM_INFO</h2>
         <div className="space-y-3 text-[10px] text-gray-600">
           <p>
-            <span className="font-heading text-gray-800">INDEPENDENCE:</span>{" "}
-            The agent engine can operate without knowledge services. Sources are
-            optional enhancements.
+            <span className="font-heading text-gray-800">INDEPENDENCE:</span> The agent engine can
+            operate without knowledge services. Sources are optional enhancements.
           </p>
           <p>
-            <span className="font-heading text-gray-800">MODULARITY:</span> Each
-            source type (GitHub, Jira, Confluence) is independent and can be
-            enabled/disabled without affecting others.
+            <span className="font-heading text-gray-800">MODULARITY:</span> Each source type
+            (GitHub, Jira, Confluence) is independent and can be enabled/disabled without affecting
+            others.
           </p>
           <p>
-            <span className="font-heading text-gray-800">GRACEFUL_DEGRADATION:</span>{" "}
-            If knowledge services are unavailable, the agent continues
-            operating with reduced context.
+            <span className="font-heading text-gray-800">GRACEFUL_DEGRADATION:</span> If knowledge
+            services are unavailable, the agent continues operating with reduced context.
           </p>
         </div>
       </section>

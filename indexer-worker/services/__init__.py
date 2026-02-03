@@ -1,15 +1,15 @@
 from services.token_client import (
-    TokenProviderProtocol,
+    HybridTokenProvider,
     OAuthTokenClient,
     StaticTokenProvider,
-    HybridTokenProvider,
+    TokenProviderProtocol,
     create_token_provider,
 )
 
 __all__ = [
-    "TokenProviderProtocol",
+    "HybridTokenProvider",
     "OAuthTokenClient",
     "StaticTokenProvider",
-    "HybridTokenProvider",
+    "TokenProviderProtocol",
     "create_token_provider",
 ]

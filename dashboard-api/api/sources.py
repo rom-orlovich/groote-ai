@@ -1,21 +1,19 @@
 import json
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 import structlog
-from fastapi import APIRouter, HTTPException, Depends
+from core.database.knowledge_models import (
+    DataSourceDB,
+    IndexingJobDB,
+    OrganizationDB,
+)
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from core.database.knowledge_models import (
-    OrganizationDB,
-    DataSourceDB,
-    IndexingJobDB,
-)
-
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/sources", tags=["sources"])
@@ -316,9 +314,7 @@ async def create_data_source(
                 f"Please connect {platform} in the Integrations page first.",
             )
 
-    org_result = await db.execute(
-        select(OrganizationDB).where(OrganizationDB.org_id == org_id)
-    )
+    org_result = await db.execute(select(OrganizationDB).where(OrganizationDB.org_id == org_id))
     org = org_result.scalar_one_or_none()
 
     if not org:
@@ -390,7 +386,7 @@ async def update_data_source(
     if request.enabled is not None:
         source.enabled = request.enabled
 
-    source.updated_at = datetime.now(timezone.utc)
+    source.updated_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(source)
 
@@ -446,7 +442,7 @@ async def trigger_sync(
         source_id=request.source_id,
         job_type=request.job_type,
         status="queued",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db.add(job)
     await db.commit()

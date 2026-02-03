@@ -1,10 +1,11 @@
 """Database initialization and management."""
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 import structlog
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from core.config import settings
-from .models import Base, SessionDB, TaskDB, EntityDB
+
+from .models import Base, EntityDB, SessionDB, TaskDB
 
 logger = structlog.get_logger()
 
@@ -54,17 +55,13 @@ async def migrate_conversations_table() -> None:
             for column_name, column_def in columns_to_add:
                 try:
                     # Try to query the column - if it exists, this will succeed
-                    await conn.execute(
-                        text(f"SELECT {column_name} FROM conversations LIMIT 1")
-                    )
+                    await conn.execute(text(f"SELECT {column_name} FROM conversations LIMIT 1"))
                     # Column exists, skip
                 except Exception:
                     # Column doesn't exist, add it
                     try:
                         await conn.execute(
-                            text(
-                                f"ALTER TABLE conversations ADD COLUMN {column_name} {column_def}"
-                            )
+                            text(f"ALTER TABLE conversations ADD COLUMN {column_name} {column_def}")
                         )
                         logger.info(
                             "Added missing column",
@@ -114,13 +111,9 @@ async def migrate_tasks_table() -> None:
                     # Column doesn't exist, add it
                     try:
                         await conn.execute(
-                            text(
-                                f"ALTER TABLE tasks ADD COLUMN {column_name} {column_def}"
-                            )
+                            text(f"ALTER TABLE tasks ADD COLUMN {column_name} {column_def}")
                         )
-                        logger.info(
-                            "Added missing column", table="tasks", column=column_name
-                        )
+                        logger.info("Added missing column", table="tasks", column=column_name)
                     except Exception as e:
                         logger.warning(
                             "Failed to add column",
@@ -132,9 +125,7 @@ async def migrate_tasks_table() -> None:
             # Create index on flow_id if it doesn't exist
             try:
                 await conn.execute(
-                    text(
-                        "CREATE INDEX IF NOT EXISTS idx_tasks_flow_id ON tasks(flow_id)"
-                    )
+                    text("CREATE INDEX IF NOT EXISTS idx_tasks_flow_id ON tasks(flow_id)")
                 )
             except Exception:
                 pass  # Index might already exist
@@ -157,12 +148,12 @@ async def get_session() -> AsyncSession:
 
 __all__ = [
     "Base",
+    "EntityDB",
     "SessionDB",
     "TaskDB",
-    "EntityDB",
-    "engine",
     "async_session_factory",
+    "engine",
+    "get_session",
     "init_db",
     "shutdown_db",
-    "get_session",
 ]

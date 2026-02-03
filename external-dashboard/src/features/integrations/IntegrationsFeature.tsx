@@ -1,6 +1,6 @@
 import { RefreshCw } from "lucide-react";
-import { IntegrationCard } from "./IntegrationCard";
 import { useOAuthStatus } from "./hooks/useOAuthStatus";
+import { IntegrationCard } from "./IntegrationCard";
 
 const PLATFORM_ORDER = ["github", "jira", "slack", "sentry"];
 
@@ -18,9 +18,7 @@ export function IntegrationsFeature() {
   } = useOAuthStatus();
 
   if (isLoading) {
-    return (
-      <div className="p-8 text-center font-heading">LOADING_INTEGRATIONS...</div>
-    );
+    return <div className="p-8 text-center font-heading">LOADING_INTEGRATIONS...</div>;
   }
 
   if (isError) {
@@ -40,9 +38,7 @@ export function IntegrationsFeature() {
     );
   }
 
-  const orderedStatuses = PLATFORM_ORDER.map(
-    (platform) => statuses?.[platform]
-  ).filter(Boolean);
+  const orderedStatuses = PLATFORM_ORDER.map((platform) => statuses?.[platform]).filter(Boolean);
 
   const connectedCount = orderedStatuses.filter((s) => s?.connected).length;
   const configuredCount = orderedStatuses.filter((s) => s?.configured).length;
@@ -53,26 +49,16 @@ export function IntegrationsFeature() {
         <div className="flex justify-between items-center mb-6">
           <div className="flex gap-8">
             <div className="stat-mini">
-              <div className="text-[10px] font-heading text-gray-400">
-                CONNECTED
-              </div>
-              <div className="text-xl font-heading font-black text-green-500">
-                {connectedCount}
-              </div>
+              <div className="text-[10px] font-heading text-gray-400">CONNECTED</div>
+              <div className="text-xl font-heading font-black text-green-500">{connectedCount}</div>
             </div>
             <div className="stat-mini">
-              <div className="text-[10px] font-heading text-gray-400">
-                CONFIGURED
-              </div>
-              <div className="text-xl font-heading font-black">
-                {configuredCount}
-              </div>
+              <div className="text-[10px] font-heading text-gray-400">CONFIGURED</div>
+              <div className="text-xl font-heading font-black">{configuredCount}</div>
             </div>
             <div className="stat-mini">
               <div className="text-[10px] font-heading text-gray-400">TOTAL</div>
-              <div className="text-xl font-heading font-black">
-                {PLATFORM_ORDER.length}
-              </div>
+              <div className="text-xl font-heading font-black">{PLATFORM_ORDER.length}</div>
             </div>
           </div>
           <button
@@ -85,9 +71,8 @@ export function IntegrationsFeature() {
         </div>
 
         <p className="text-[10px] text-gray-400 mb-6">
-          Connect your external services to enable webhook integrations and
-          automated workflows. OAuth connections allow the agent to interact
-          with these services on your behalf.
+          Connect your external services to enable webhook integrations and automated workflows.
+          OAuth connections allow the agent to interact with these services on your behalf.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -102,15 +87,13 @@ export function IntegrationsFeature() {
                   isConnecting={isInstalling}
                   isDisconnecting={isRevoking}
                 />
-              )
+              ),
           )}
         </div>
       </section>
 
       <section className="panel" data-label="CONFIGURATION_GUIDE">
-        <h2 className="text-sm mb-4 font-heading text-gray-400">
-          SETUP_INSTRUCTIONS
-        </h2>
+        <h2 className="text-sm mb-4 font-heading text-gray-400">SETUP_INSTRUCTIONS</h2>
         <div className="space-y-4 text-[10px] font-mono text-gray-600">
           <div>
             <div className="font-heading text-gray-800 mb-1">GitHub</div>

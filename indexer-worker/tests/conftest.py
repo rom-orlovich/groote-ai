@@ -1,6 +1,5 @@
 import pytest
-
-from core.models import JobStatus, CodeChunk, DocumentChunk
+from core.models import CodeChunk, DocumentChunk, JobStatus
 
 
 class MockSourceIndexer:

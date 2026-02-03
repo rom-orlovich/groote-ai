@@ -1,15 +1,16 @@
 """SQLAlchemy database models."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from sqlalchemy import (
-    Column,
-    String,
-    Integer,
-    Float,
-    DateTime,
-    Text,
-    ForeignKey,
     Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
 )
 from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -22,7 +23,7 @@ def utc_now():
     deprecation warnings. This function provides a clean callable that returns
     timezone-aware UTC datetime.
     """
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Base(AsyncAttrs, DeclarativeBase):
@@ -43,9 +44,7 @@ class SessionDB(Base):
     disconnected_at = Column(DateTime, nullable=True, index=True)
     total_cost_usd = Column(Float, default=0.0, nullable=False)
     total_tasks = Column(Integer, default=0, nullable=False)
-    active = Column(
-        Boolean, default=True, nullable=False
-    )  # CLI access active (not rate limited)
+    active = Column(Boolean, default=True, nullable=False)  # CLI access active (not rate limited)
 
     # Relationships
     tasks = relationship("TaskDB", back_populates="session")
@@ -57,9 +56,7 @@ class TaskDB(Base):
     __tablename__ = "tasks"
 
     task_id = Column(String(255), primary_key=True)
-    session_id = Column(
-        String(255), ForeignKey("sessions.session_id"), nullable=False, index=True
-    )
+    session_id = Column(String(255), ForeignKey("sessions.session_id"), nullable=False, index=True)
     user_id = Column(String(255), nullable=False, index=True)
 
     # Assignment
@@ -107,9 +104,7 @@ class EntityDB(Base):
     __tablename__ = "entities"
 
     name = Column(String(255), primary_key=True)
-    entity_type = Column(
-        String(50), nullable=False, index=True
-    )  # webhook, agent, skill
+    entity_type = Column(String(50), nullable=False, index=True)  # webhook, agent, skill
     config = Column(Text, nullable=False)  # JSON serialized Pydantic model
     is_builtin = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=utc_now, nullable=False)
@@ -134,9 +129,7 @@ class WebhookConfigDB(Base):
     commands = relationship(
         "WebhookCommandDB", back_populates="webhook", cascade="all, delete-orphan"
     )
-    events = relationship(
-        "WebhookEventDB", back_populates="webhook", cascade="all, delete-orphan"
-    )
+    events = relationship("WebhookEventDB", back_populates="webhook", cascade="all, delete-orphan")
 
 
 class WebhookCommandDB(Base):
@@ -193,17 +186,13 @@ class ConversationDB(Base):
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
     is_archived = Column(Boolean, default=False, nullable=False)
-    metadata_json = Column(
-        Text, default="{}", nullable=False
-    )  # JSON for additional metadata
+    metadata_json = Column(Text, default="{}", nullable=False)  # JSON for additional metadata
 
     # Flow tracking
     initiated_task_id = Column(
         String(255), nullable=True
     )  # Root task that started this conversation
-    flow_id = Column(
-        String(255), nullable=True, index=True
-    )  # Flow ID for end-to-end tracking
+    flow_id = Column(String(255), nullable=True, index=True)  # Flow ID for end-to-end tracking
 
     # Aggregated metrics
     total_cost_usd = Column(Float, default=0.0, nullable=False)
@@ -235,13 +224,9 @@ class ConversationMessageDB(Base):
     )
     role = Column(String(50), nullable=False)  # user, assistant, system
     content = Column(Text, nullable=False)
-    task_id = Column(
-        String(255), nullable=True
-    )  # Link to task if this message created a task
+    task_id = Column(String(255), nullable=True)  # Link to task if this message created a task
     created_at = Column(DateTime, default=utc_now, nullable=False)
-    metadata_json = Column(
-        Text, default="{}", nullable=False
-    )  # JSON for tokens, cost, etc.
+    metadata_json = Column(Text, default="{}", nullable=False)  # JSON for tokens, cost, etc.
 
     # Relationships
     conversation = relationship("ConversationDB", back_populates="messages")
@@ -295,9 +280,7 @@ class SubagentExecutionDB(Base):
     agent_name = Column(String(255), nullable=False)
     mode = Column(String(50), nullable=False)  # foreground, background, parallel
     status = Column(String(50), nullable=False)  # running, completed, failed, stopped
-    permission_mode = Column(
-        String(50), default="default"
-    )  # default, auto-deny, acceptEdits
+    permission_mode = Column(String(50), default="default")  # default, auto-deny, acceptEdits
     started_at = Column(DateTime, default=utc_now)
     completed_at = Column(DateTime, nullable=True)
     context_tokens = Column(Integer, default=0)
@@ -329,9 +312,7 @@ class AuditLogDB(Base):
     __tablename__ = "audit_log"
 
     log_id = Column(String(255), primary_key=True)
-    action = Column(
-        String(100), nullable=False, index=True
-    )  # webhook_create, subagent_spawn, etc.
+    action = Column(String(100), nullable=False, index=True)  # webhook_create, subagent_spawn, etc.
     actor = Column(String(255), nullable=False)  # user_id or system
     target_type = Column(String(100), nullable=True)  # webhook, subagent, agent, skill
     target_id = Column(String(255), nullable=True)
@@ -339,9 +320,7 @@ class AuditLogDB(Base):
     created_at = Column(DateTime, default=utc_now, index=True)
 
 
-async def update_conversation_metrics(
-    conversation_id: str, task: TaskDB, db: AsyncSession
-) -> None:
+async def update_conversation_metrics(conversation_id: str, task: TaskDB, db: AsyncSession) -> None:
     """
     Update conversation aggregated metrics when a task completes.
 
@@ -371,14 +350,14 @@ async def update_conversation_metrics(
         # Ensure timezone-aware comparison
         task_started = task.started_at
         if task_started.tzinfo is None:
-            task_started = task_started.replace(tzinfo=timezone.utc)
+            task_started = task_started.replace(tzinfo=UTC)
 
         if conversation.started_at is None:
             conversation.started_at = task_started
         else:
             conv_started = conversation.started_at
             if conv_started.tzinfo is None:
-                conv_started = conv_started.replace(tzinfo=timezone.utc)
+                conv_started = conv_started.replace(tzinfo=UTC)
             if task_started < conv_started:
                 conversation.started_at = task_started
 
@@ -387,18 +366,18 @@ async def update_conversation_metrics(
         # Ensure timezone-aware comparison
         task_completed = task.completed_at
         if task_completed.tzinfo is None:
-            task_completed = task_completed.replace(tzinfo=timezone.utc)
+            task_completed = task_completed.replace(tzinfo=UTC)
 
         if conversation.completed_at is None:
             conversation.completed_at = task_completed
         else:
             conv_completed = conversation.completed_at
             if conv_completed.tzinfo is None:
-                conv_completed = conv_completed.replace(tzinfo=timezone.utc)
+                conv_completed = conv_completed.replace(tzinfo=UTC)
             if task_completed > conv_completed:
                 conversation.completed_at = task_completed
 
     # Update updated_at timestamp
-    conversation.updated_at = datetime.now(timezone.utc)
+    conversation.updated_at = datetime.now(UTC)
 
     db.add(conversation)

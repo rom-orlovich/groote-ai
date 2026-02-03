@@ -10,8 +10,12 @@ import structlog
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from typing import TYPE_CHECKING
+
 from cli.factory import get_cli_runner
-from cli.base import CLIResult
+
+if TYPE_CHECKING:
+    from cli.base import CLIResult
 
 logger = structlog.get_logger()
 
@@ -98,7 +102,7 @@ async def main() -> int:
         logger.error("version_test_failed", error=version)
         return 1
 
-    prompt_ok, details = await test_prompt(provider)
+    prompt_ok, _details = await test_prompt(provider)
 
     if version_ok and prompt_ok:
         logger.info("cli_tests_passed", provider=provider, version=version)

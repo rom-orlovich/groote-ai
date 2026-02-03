@@ -1,9 +1,8 @@
-from fastapi import Request
-from fastapi.responses import JSONResponse
 import httpx
 import structlog
-
 from client.slack_client import SlackAPIError
+from fastapi import Request
+from fastapi.responses import JSONResponse
 
 logger = structlog.get_logger(__name__)
 

@@ -2,10 +2,11 @@ import asyncio
 import json
 import os
 from pathlib import Path
+
 import structlog
 
 from cli.base import CLIResult
-from cli.sanitization import sanitize_sensitive_content, contains_sensitive_data
+from cli.sanitization import contains_sensitive_data, sanitize_sensitive_content
 
 logger = structlog.get_logger()
 
@@ -27,9 +28,7 @@ class CursorCLIRunner:
     ) -> CLIResult:
         cmd = self._build_command(prompt, model, mode, force)
 
-        logger.info(
-            "starting_cursor_cli", task_id=task_id, working_dir=str(working_dir)
-        )
+        logger.info("starting_cursor_cli", task_id=task_id, working_dir=str(working_dir))
 
         process = await asyncio.create_subprocess_exec(
             *cmd,
@@ -109,9 +108,7 @@ class CursorCLIRunner:
             await process.wait()
             await output_queue.put(None)
 
-            error_msg = self._determine_error_message(
-                process.returncode or 0, stderr_lines
-            )
+            error_msg = self._determine_error_message(process.returncode or 0, stderr_lines)
 
             logger.info(
                 "cursor_cli_completed",
@@ -130,7 +127,7 @@ class CursorCLIRunner:
                 error=error_msg,
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             if process:
                 process.kill()
                 await process.wait()
@@ -154,9 +151,7 @@ class CursorCLIRunner:
                 await process.wait()
             await output_queue.put(None)
 
-            logger.error(
-                "cursor_cli_error", task_id=task_id, error=str(e), exc_info=True
-            )
+            logger.error("cursor_cli_error", task_id=task_id, error=str(e), exc_info=True)
 
             return CLIResult(
                 success=False,
@@ -165,7 +160,7 @@ class CursorCLIRunner:
                 cost_usd=cost_usd,
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
-                error=f"Unexpected error: {str(e)}",
+                error=f"Unexpected error: {e!s}",
             )
 
     def _build_command(
@@ -273,9 +268,7 @@ class CursorCLIRunner:
                 return str(result)
         return ""
 
-    def _determine_error_message(
-        self, returncode: int, stderr_lines: list[str]
-    ) -> str | None:
+    def _determine_error_message(self, returncode: int, stderr_lines: list[str]) -> str | None:
         if returncode == 0:
             return None
 

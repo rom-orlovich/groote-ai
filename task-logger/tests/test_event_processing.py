@@ -4,8 +4,8 @@ Tests the core event processing logic and routing.
 """
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
-from datetime import datetime, timezone
 
 
 class MockTaskLogger:
@@ -48,9 +48,7 @@ webhook_buffer: dict[str, list[dict]] = {}
 loggers_cache: dict[str, MockTaskLogger] = {}
 
 
-def get_or_create_mock_logger(
-    task_id: str, logs_dir: Path = Path("/tmp")
-) -> MockTaskLogger:
+def get_or_create_mock_logger(task_id: str, logs_dir: Path = Path("/tmp")) -> MockTaskLogger:
     """Get or create a mock logger for testing."""
     if task_id not in loggers_cache:
         loggers_cache[task_id] = MockTaskLogger(task_id, logs_dir)
@@ -69,7 +67,7 @@ async def process_webhook_event_mock(event: dict):
     webhook_event_id = event.get("webhook_event_id")
     event_type = event.get("type")
     data = event.get("data", {})
-    timestamp = event.get("timestamp", datetime.now(timezone.utc).isoformat())
+    timestamp = event.get("timestamp", datetime.now(UTC).isoformat())
 
     if isinstance(data, str):
         data = json.loads(data)
@@ -110,7 +108,7 @@ async def process_task_event_mock(event: dict):
 
     event_type = event.get("type")
     data = event.get("data", {})
-    timestamp = event.get("timestamp", datetime.now(timezone.utc).isoformat())
+    timestamp = event.get("timestamp", datetime.now(UTC).isoformat())
 
     if isinstance(data, str):
         data = json.loads(data)
@@ -436,7 +434,7 @@ async def process_knowledge_event_mock(event: dict):
 
     event_type = event.get("type")
     data = event.get("data", {})
-    timestamp = event.get("timestamp", datetime.now(timezone.utc).isoformat())
+    timestamp = event.get("timestamp", datetime.now(UTC).isoformat())
 
     if isinstance(data, str):
         data = json.loads(data)
@@ -696,8 +694,7 @@ class TestKnowledgeEventProcessing:
         )
 
         many_results = [
-            {"source_id": f"file-{i}.py", "relevance_score": 0.9 - i * 0.05}
-            for i in range(10)
+            {"source_id": f"file-{i}.py", "relevance_score": 0.9 - i * 0.05} for i in range(10)
         ]
 
         await process_knowledge_event_mock(

@@ -1,12 +1,12 @@
 import hashlib
-from pathlib import Path
 from fnmatch import fnmatch
-import structlog
-import httpx
-from git import Repo
+from pathlib import Path
 
+import httpx
+import structlog
 from config import settings
-from models import GitHubSourceConfig, CodeChunk
+from git import Repo
+from models import CodeChunk, GitHubSourceConfig
 
 logger = structlog.get_logger()
 
@@ -68,9 +68,7 @@ class GitHubIndexer:
                                 break
 
                             for repo in page_repos:
-                                if fnmatch(
-                                    repo["name"], repo_pattern.replace("*", "*")
-                                ):
+                                if fnmatch(repo["name"], repo_pattern.replace("*", "*")):
                                     if not self._is_excluded(repo["full_name"]):
                                         repos.append(repo)
                             page += 1
@@ -91,10 +89,7 @@ class GitHubIndexer:
         return repos
 
     def _is_excluded(self, repo_full_name: str) -> bool:
-        for pattern in self.config.exclude_patterns:
-            if fnmatch(repo_full_name, pattern):
-                return True
-        return False
+        return any(fnmatch(repo_full_name, pattern) for pattern in self.config.exclude_patterns)
 
     async def clone_or_pull_repo(self, repo_url: str, repo_name: str) -> Path:
         repo_path = self.repos_dir / repo_name
@@ -149,16 +144,10 @@ class GitHubIndexer:
         return chunks
 
     def _matches_file_patterns(self, file_path: str) -> bool:
-        for pattern in self.config.file_patterns:
-            if fnmatch(file_path, pattern):
-                return True
-        return False
+        return any(fnmatch(file_path, pattern) for pattern in self.config.file_patterns)
 
     def _matches_exclude_patterns(self, file_path: str) -> bool:
-        for pattern in self.config.exclude_file_patterns:
-            if fnmatch(file_path, pattern):
-                return True
-        return False
+        return any(fnmatch(file_path, pattern) for pattern in self.config.exclude_file_patterns)
 
     def _detect_language(self, file_path: Path) -> str:
         suffix = file_path.suffix.lower()
@@ -202,9 +191,7 @@ class GitHubIndexer:
                 )
 
                 overlap_lines = int(overlap / (char_count / len(current_chunk)))
-                current_chunk = (
-                    current_chunk[-overlap_lines:] if overlap_lines > 0 else []
-                )
+                current_chunk = current_chunk[-overlap_lines:] if overlap_lines > 0 else []
                 current_start = max(1, i - overlap_lines + 1)
                 char_count = sum(len(line) + 1 for line in current_chunk)
 

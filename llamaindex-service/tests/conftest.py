@@ -1,6 +1,5 @@
 import pytest
-
-from core.models import SearchResult, GraphEntity
+from core.models import GraphEntity, SearchResult
 
 
 class MockVectorStore:
@@ -26,11 +25,9 @@ class MockVectorStore:
                 "filters": filters,
             }
         )
-        return [
-            r
-            for r in self._results
-            if r.source_type == self._map_collection(collection)
-        ][:top_k]
+        return [r for r in self._results if r.source_type == self._map_collection(collection)][
+            :top_k
+        ]
 
     async def list_collections(self) -> list[str]:
         return self._collections

@@ -1,6 +1,7 @@
-from pydantic import BaseModel, ConfigDict
-from typing import Literal
 from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict
 
 
 class IndexJobRequest(BaseModel):

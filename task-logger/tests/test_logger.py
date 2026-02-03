@@ -1,6 +1,5 @@
 import json
 
-
 from logger import TaskLogger
 
 
@@ -18,7 +17,7 @@ def test_write_metadata(tmp_path):
     metadata_file = tmp_path / "test-001" / "metadata.json"
     assert metadata_file.exists()
 
-    with open(metadata_file, "r") as f:
+    with open(metadata_file) as f:
         loaded = json.load(f)
         assert loaded == metadata
 
@@ -31,7 +30,7 @@ def test_write_input(tmp_path):
     input_file = tmp_path / "test-001" / "01-input.json"
     assert input_file.exists()
 
-    with open(input_file, "r") as f:
+    with open(input_file) as f:
         loaded = json.load(f)
         assert loaded == input_data
 
@@ -50,7 +49,7 @@ def test_append_user_input(tmp_path):
     user_input_file = tmp_path / "test-001" / "02-user-inputs.jsonl"
     assert user_input_file.exists()
 
-    with open(user_input_file, "r") as f:
+    with open(user_input_file) as f:
         lines = f.readlines()
         assert len(lines) == 1
         assert json.loads(lines[0]) == user_input
@@ -67,7 +66,7 @@ def test_append_webhook_event(tmp_path):
     webhook_file = tmp_path / "test-001" / "03-webhook-flow.jsonl"
     assert webhook_file.exists()
 
-    with open(webhook_file, "r") as f:
+    with open(webhook_file) as f:
         lines = f.readlines()
         assert len(lines) == 2
         assert json.loads(lines[0]) == event1
@@ -83,7 +82,7 @@ def test_append_agent_output(tmp_path):
     output_file = tmp_path / "test-001" / "04-agent-output.jsonl"
     assert output_file.exists()
 
-    with open(output_file, "r") as f:
+    with open(output_file) as f:
         lines = f.readlines()
         assert len(lines) == 1
         assert json.loads(lines[0]) == output
@@ -118,7 +117,7 @@ def test_append_knowledge_interaction(tmp_path):
     knowledge_file = tmp_path / "test-001" / "05-knowledge-interactions.jsonl"
     assert knowledge_file.exists()
 
-    with open(knowledge_file, "r") as f:
+    with open(knowledge_file) as f:
         lines = f.readlines()
         assert len(lines) == 2
         assert json.loads(lines[0]) == query_event
@@ -139,7 +138,7 @@ def test_write_final_result(tmp_path):
     result_file = tmp_path / "test-001" / "06-final-result.json"
     assert result_file.exists()
 
-    with open(result_file, "r") as f:
+    with open(result_file) as f:
         loaded = json.load(f)
         assert loaded == result
 

@@ -1,9 +1,9 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from providers.github import GitHubOAuthProvider
-from providers.slack import SlackOAuthProvider
 from providers.jira import JiraOAuthProvider
+from providers.slack import SlackOAuthProvider
 
 
 @pytest.fixture

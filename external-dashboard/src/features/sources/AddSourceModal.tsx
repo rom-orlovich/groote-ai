@@ -1,5 +1,13 @@
+import {
+  AlertTriangle,
+  CheckCircle,
+  FileText,
+  GitBranch,
+  Link2,
+  TicketIcon,
+  X,
+} from "lucide-react";
 import { useState } from "react";
-import { X, GitBranch, TicketIcon, FileText, AlertTriangle, Link2, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { CreateSourceRequest, SourceTypeInfo } from "./hooks/useSources";
 import { useSourceTypes } from "./hooks/useSources";
@@ -39,12 +47,7 @@ interface ConfluenceConfig {
   content_types: string;
 }
 
-export function AddSourceModal({
-  isOpen,
-  onClose,
-  onSubmit,
-  isSubmitting,
-}: AddSourceModalProps) {
+export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddSourceModalProps) {
   const [step, setStep] = useState<"select" | "configure">("select");
   const [selectedType, setSelectedType] = useState<SourceType | null>(null);
   const [selectedTypeInfo, setSelectedTypeInfo] = useState<SourceTypeInfo | null>(null);
@@ -158,11 +161,7 @@ export function AddSourceModal({
           <h2 className="font-heading text-sm">
             {step === "select" ? "ADD_DATA_SOURCE" : "CONFIGURE_SOURCE"}
           </h2>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="p-1 hover:bg-gray-100"
-          >
+          <button type="button" onClick={handleClose} className="p-1 hover:bg-gray-100">
             <X size={16} />
           </button>
         </div>
@@ -171,8 +170,8 @@ export function AddSourceModal({
           {step === "select" && (
             <div className="grid gap-3">
               <p className="text-[10px] text-gray-500 mb-2">
-                Select the type of data source you want to add. Each source will
-                be indexed and made searchable for the AI agent.
+                Select the type of data source you want to add. Each source will be indexed and made
+                searchable for the AI agent.
               </p>
               {isLoadingTypes ? (
                 <div className="text-center py-4 text-[10px] text-gray-500">
@@ -204,9 +203,7 @@ export function AddSourceModal({
                             <AlertTriangle size={12} className="text-amber-500" />
                           )}
                         </div>
-                        <div className="text-[10px] text-gray-500">
-                          {typeInfo.description}
-                        </div>
+                        <div className="text-[10px] text-gray-500">{typeInfo.description}</div>
                         {!typeInfo.oauth_connected && (
                           <div className="text-[10px] text-amber-600 mt-1">
                             OAuth not connected -
@@ -237,8 +234,8 @@ export function AddSourceModal({
                     <span className="font-heading">OAUTH_NOT_CONNECTED</span>
                   </div>
                   <p className="text-amber-600 mb-2">
-                    You can configure this source, but it will be created as disabled.
-                    Connect {selectedTypeInfo.oauth_platform} OAuth to enable syncing.
+                    You can configure this source, but it will be created as disabled. Connect{" "}
+                    {selectedTypeInfo.oauth_platform} OAuth to enable syncing.
                   </p>
                   <Link
                     to="/integrations"
@@ -253,14 +250,14 @@ export function AddSourceModal({
               <div>
                 <label className="block text-[10px] font-heading text-gray-500 mb-1">
                   SOURCE_NAME
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 text-sm focus:outline-none focus:border-gray-400 mt-1"
+                    placeholder="Enter source name"
+                  />
                 </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 text-sm focus:outline-none focus:border-gray-400"
-                  placeholder="Enter source name"
-                />
               </div>
 
               {selectedType === "github" && (
@@ -268,53 +265,53 @@ export function AddSourceModal({
                   <div>
                     <label className="block text-[10px] font-heading text-gray-500 mb-1">
                       INCLUDE_PATTERNS (comma-separated)
+                      <input
+                        type="text"
+                        value={githubConfig.include_patterns}
+                        onChange={(e) =>
+                          setGithubConfig({
+                            ...githubConfig,
+                            include_patterns: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                        placeholder="owner/repo, owner/repo-*"
+                      />
                     </label>
-                    <input
-                      type="text"
-                      value={githubConfig.include_patterns}
-                      onChange={(e) =>
-                        setGithubConfig({
-                          ...githubConfig,
-                          include_patterns: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400"
-                      placeholder="owner/repo, owner/repo-*"
-                    />
                   </div>
                   <div>
                     <label className="block text-[10px] font-heading text-gray-500 mb-1">
                       BRANCHES (comma-separated)
+                      <input
+                        type="text"
+                        value={githubConfig.branches}
+                        onChange={(e) =>
+                          setGithubConfig({
+                            ...githubConfig,
+                            branches: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                        placeholder="main, master, develop"
+                      />
                     </label>
-                    <input
-                      type="text"
-                      value={githubConfig.branches}
-                      onChange={(e) =>
-                        setGithubConfig({
-                          ...githubConfig,
-                          branches: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400"
-                      placeholder="main, master, develop"
-                    />
                   </div>
                   <div>
                     <label className="block text-[10px] font-heading text-gray-500 mb-1">
                       FILE_PATTERNS (comma-separated)
+                      <input
+                        type="text"
+                        value={githubConfig.file_patterns}
+                        onChange={(e) =>
+                          setGithubConfig({
+                            ...githubConfig,
+                            file_patterns: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                        placeholder="**/*.py, **/*.ts"
+                      />
                     </label>
-                    <input
-                      type="text"
-                      value={githubConfig.file_patterns}
-                      onChange={(e) =>
-                        setGithubConfig({
-                          ...githubConfig,
-                          file_patterns: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400"
-                      placeholder="**/*.py, **/*.ts"
-                    />
                   </div>
                 </>
               )}
@@ -324,49 +321,47 @@ export function AddSourceModal({
                   <div>
                     <label className="block text-[10px] font-heading text-gray-500 mb-1">
                       JQL_FILTER (optional)
+                      <input
+                        type="text"
+                        value={jiraConfig.jql}
+                        onChange={(e) => setJiraConfig({ ...jiraConfig, jql: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                        placeholder="project = PROJ AND status != Done"
+                      />
                     </label>
-                    <input
-                      type="text"
-                      value={jiraConfig.jql}
-                      onChange={(e) =>
-                        setJiraConfig({ ...jiraConfig, jql: e.target.value })
-                      }
-                      className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400"
-                      placeholder="project = PROJ AND status != Done"
-                    />
                   </div>
                   <div>
                     <label className="block text-[10px] font-heading text-gray-500 mb-1">
                       ISSUE_TYPES (comma-separated)
+                      <input
+                        type="text"
+                        value={jiraConfig.issue_types}
+                        onChange={(e) =>
+                          setJiraConfig({
+                            ...jiraConfig,
+                            issue_types: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                        placeholder="Bug, Story, Task"
+                      />
                     </label>
-                    <input
-                      type="text"
-                      value={jiraConfig.issue_types}
-                      onChange={(e) =>
-                        setJiraConfig({
-                          ...jiraConfig,
-                          issue_types: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400"
-                      placeholder="Bug, Story, Task"
-                    />
                   </div>
                   <div>
                     <label className="block text-[10px] font-heading text-gray-500 mb-1">
                       MAX_RESULTS
+                      <input
+                        type="number"
+                        value={jiraConfig.max_results}
+                        onChange={(e) =>
+                          setJiraConfig({
+                            ...jiraConfig,
+                            max_results: parseInt(e.target.value, 10) || 1000,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                      />
                     </label>
-                    <input
-                      type="number"
-                      value={jiraConfig.max_results}
-                      onChange={(e) =>
-                        setJiraConfig({
-                          ...jiraConfig,
-                          max_results: parseInt(e.target.value) || 1000,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400"
-                    />
                   </div>
                 </>
               )}
@@ -376,36 +371,36 @@ export function AddSourceModal({
                   <div>
                     <label className="block text-[10px] font-heading text-gray-500 mb-1">
                       SPACES (comma-separated, leave empty for all)
+                      <input
+                        type="text"
+                        value={confluenceConfig.spaces}
+                        onChange={(e) =>
+                          setConfluenceConfig({
+                            ...confluenceConfig,
+                            spaces: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                        placeholder="ENG, DOCS, WIKI"
+                      />
                     </label>
-                    <input
-                      type="text"
-                      value={confluenceConfig.spaces}
-                      onChange={(e) =>
-                        setConfluenceConfig({
-                          ...confluenceConfig,
-                          spaces: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400"
-                      placeholder="ENG, DOCS, WIKI"
-                    />
                   </div>
                   <div>
                     <label className="block text-[10px] font-heading text-gray-500 mb-1">
                       CONTENT_TYPES (comma-separated)
+                      <input
+                        type="text"
+                        value={confluenceConfig.content_types}
+                        onChange={(e) =>
+                          setConfluenceConfig({
+                            ...confluenceConfig,
+                            content_types: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                        placeholder="page, blogpost"
+                      />
                     </label>
-                    <input
-                      type="text"
-                      value={confluenceConfig.content_types}
-                      onChange={(e) =>
-                        setConfluenceConfig({
-                          ...confluenceConfig,
-                          content_types: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400"
-                      placeholder="page, blogpost"
-                    />
                   </div>
                 </>
               )}

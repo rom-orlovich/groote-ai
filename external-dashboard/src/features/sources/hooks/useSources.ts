@@ -72,10 +72,7 @@ async function fetchSources(orgId: string): Promise<DataSource[]> {
   return response.json();
 }
 
-async function fetchSource(
-  orgId: string,
-  sourceId: string
-): Promise<DataSource> {
+async function fetchSource(orgId: string, sourceId: string): Promise<DataSource> {
   const response = await fetch(`${API_BASE}/api/sources/${orgId}/${sourceId}`);
   if (!response.ok) {
     throw new Error("Failed to fetch data source");
@@ -83,10 +80,7 @@ async function fetchSource(
   return response.json();
 }
 
-async function createSource(
-  orgId: string,
-  request: CreateSourceRequest
-): Promise<DataSource> {
+async function createSource(orgId: string, request: CreateSourceRequest): Promise<DataSource> {
   const response = await fetch(`${API_BASE}/api/sources/${orgId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -101,7 +95,7 @@ async function createSource(
 async function updateSource(
   orgId: string,
   sourceId: string,
-  request: UpdateSourceRequest
+  request: UpdateSourceRequest,
 ): Promise<DataSource> {
   const response = await fetch(`${API_BASE}/api/sources/${orgId}/${sourceId}`, {
     method: "PATCH",
@@ -126,7 +120,7 @@ async function deleteSource(orgId: string, sourceId: string): Promise<void> {
 async function triggerSync(
   orgId: string,
   sourceId?: string,
-  jobType: string = "incremental"
+  jobType: string = "incremental",
 ): Promise<IndexingJob> {
   const response = await fetch(`${API_BASE}/api/sources/${orgId}/sync`, {
     method: "POST",
@@ -170,13 +164,8 @@ export function useSources(orgId: string = DEFAULT_ORG_ID) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({
-      sourceId,
-      request,
-    }: {
-      sourceId: string;
-      request: UpdateSourceRequest;
-    }) => updateSource(orgId, sourceId, request),
+    mutationFn: ({ sourceId, request }: { sourceId: string; request: UpdateSourceRequest }) =>
+      updateSource(orgId, sourceId, request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sources", orgId] });
     },
@@ -190,13 +179,8 @@ export function useSources(orgId: string = DEFAULT_ORG_ID) {
   });
 
   const syncMutation = useMutation({
-    mutationFn: ({
-      sourceId,
-      jobType,
-    }: {
-      sourceId?: string;
-      jobType?: string;
-    }) => triggerSync(orgId, sourceId, jobType),
+    mutationFn: ({ sourceId, jobType }: { sourceId?: string; jobType?: string }) =>
+      triggerSync(orgId, sourceId, jobType),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["indexing-jobs", orgId] });
     },

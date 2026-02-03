@@ -2,16 +2,15 @@ from typing import Any
 from uuid import UUID
 
 import structlog
+from config.settings import Settings, get_settings
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from config.settings import Settings, get_settings
 from providers.github import GitHubOAuthProvider
 from providers.jira import JiraOAuthProvider
 from providers.slack import SlackOAuthProvider
 from services.installation_service import InstallationService
 from services.token_service import TokenService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .server import get_session
 
