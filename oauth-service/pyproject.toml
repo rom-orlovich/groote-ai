@@ -1,7 +1,7 @@
 [project]
 name = "oauth-service"
 version = "1.0.0"
-description = "Multi-tenant OAuth installation service for agent-bot"
+description = "Multi-tenant OAuth installation service for groote-ai"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.109.0,<1.0.0",

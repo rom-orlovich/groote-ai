@@ -3,6 +3,6 @@ set -e
 
 DC="docker-compose"
 
-echo "Stopping Agent Bot services..."
+echo "Stopping Groote AI services..."
 $DC down
 echo "✅ Services stopped"

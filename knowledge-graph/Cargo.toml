@@ -2,7 +2,7 @@
 name = "knowledge-graph"
 version = "0.1.0"
 edition = "2021"
-authors = ["Agent Bot Team"]
+authors = ["Groote AI Team"]
 description = "A high-performance knowledge graph service for code understanding"
 
 [dependencies]

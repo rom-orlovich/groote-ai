@@ -1,6 +1,6 @@
 # Dashboard API
 
-Backend API for agent-bot dashboard (port 5000). Provides REST endpoints, WebSocket hub for real-time updates, analytics, and conversation management.
+Backend API for groote-ai dashboard (port 5000). Provides REST endpoints, WebSocket hub for real-time updates, analytics, and conversation management.
 
 ## API Endpoints
 
@@ -38,11 +38,11 @@ dashboard-api/
 Tests are co-located with the service for portability.
 
 ```bash
-# From agent-bot root
+# From groote-ai root
 make test-dashboard
 
 # Or directly
-cd agent-bot
+cd groote-ai
 PYTHONPATH=dashboard-api:$PYTHONPATH uv run pytest dashboard-api/tests/ -v
 ```
 

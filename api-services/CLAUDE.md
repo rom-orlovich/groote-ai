@@ -35,7 +35,7 @@ api-services/{service}-api/
 Tests are co-located and self-contained within each service.
 
 ```bash
-# From agent-bot root - run all api-services tests
+# From groote-ai root - run all api-services tests
 make test-services
 
 # Or run individually

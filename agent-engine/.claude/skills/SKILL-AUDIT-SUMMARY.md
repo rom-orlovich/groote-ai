@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-All 9 skills in `agent-bot/agent-engine/.claude/skills/` have been audited and improved according to official skill-creator best practices. All skills now comply with length limits, progressive disclosure principles, and ruthless minimalism.
+All 9 skills in `groote-ai/agent-engine/.claude/skills/` have been audited and improved according to official skill-creator best practices. All skills now comply with length limits, progressive disclosure principles, and ruthless minimalism.
 
 ## Compliance Results
 
