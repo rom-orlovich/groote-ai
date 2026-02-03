@@ -3,7 +3,7 @@ set -e
 
 DC="docker-compose"
 
-echo "Starting Agent Bot services..."
+echo "Starting Groote AI services..."
 
 test -f .env || cp .env.example .env
 
@@ -16,7 +16,7 @@ echo "Checking services..."
 ./scripts/services/health.sh
 
 echo ""
-echo "✅ Agent Bot ready"
+echo "✅ Groote AI ready"
 echo "   API Gateway: http://localhost:8000"
 echo "   Dashboard:   http://localhost:3005"
 echo "   Dashboard API: http://localhost:5000"

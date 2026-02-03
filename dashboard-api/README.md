@@ -1,10 +1,10 @@
 # Dashboard API Service
 
-> Backend API for agent-bot dashboard with real-time task streaming, analytics, and conversation management.
+> Backend API for groote-ai dashboard with real-time task streaming, analytics, and conversation management.
 
 ## Purpose
 
-The Dashboard API provides REST endpoints and WebSocket connections for the agent-bot dashboard. It handles task management, analytics, conversations, webhook status monitoring, and real-time updates.
+The Dashboard API provides REST endpoints and WebSocket connections for the groote-ai dashboard. It handles task management, analytics, conversations, webhook status monitoring, and real-time updates.
 
 ## Architecture
 
@@ -68,11 +68,11 @@ dashboard-api/
 Tests are co-located with the service for portability.
 
 ```bash
-# From agent-bot root
+# From groote-ai root
 make test-dashboard
 
 # Or directly
-cd agent-bot
+cd groote-ai
 PYTHONPATH=dashboard-api:$PYTHONPATH uv run pytest dashboard-api/tests/ -v
 ```
 

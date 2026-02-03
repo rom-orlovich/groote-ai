@@ -1,10 +1,10 @@
 # External Dashboard (React)
 
-> Modern React-based dashboard for monitoring and managing agent-bot tasks, analytics, and conversations.
+> Modern React-based dashboard for monitoring and managing groote-ai tasks, analytics, and conversations.
 
 ## Purpose
 
-The External Dashboard is a React + TypeScript frontend that provides a modern UI for monitoring agent-bot operations. It consumes the Dashboard API and displays real-time task updates, analytics, conversations, webhook status, and system metrics.
+The External Dashboard is a React + TypeScript frontend that provides a modern UI for monitoring groote-ai operations. It consumes the Dashboard API and displays real-time task updates, analytics, conversations, webhook status, and system metrics.
 
 ## Architecture
 

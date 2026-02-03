@@ -38,11 +38,11 @@ api-gateway/
 Tests are co-located with the service for portability.
 
 ```bash
-# From agent-bot root
+# From groote-ai root
 make test-api-gateway
 
 # Or directly
-cd agent-bot
+cd groote-ai
 PYTHONPATH=api-gateway:$PYTHONPATH uv run pytest api-gateway/tests/ -v
 ```
 

@@ -1,10 +1,10 @@
-# Agent Bot
+# Groote AI
 
 A fully containerized, scalable multi-agent system that processes webhooks from GitHub, Jira, Slack, and Sentry to autonomously handle development tasks. The system uses specialized AI agents orchestrated through CLI providers (Claude Code CLI or Cursor CLI) to execute tasks using Test-Driven Development (TDD) methodology.
 
 ## Overview
 
-Agent Bot is a microservices-based platform that:
+Groote AI is a microservices-based platform that:
 
 - **Receives webhooks** from external services (GitHub, Jira, Slack, Sentry)
 - **Processes tasks** using specialized AI agents with TDD workflows
@@ -101,7 +101,7 @@ See [docs/SYSTEM-ARCHITECTURE.md](docs/SYSTEM-ARCHITECTURE.md) for complete know
 
    ```bash
    git clone <repository-url>
-   cd agent-bot
+   cd groote-ai
    ```
 
 2. **Configure environment**:
@@ -229,7 +229,7 @@ See `.env.example` for the complete configuration template. For detailed environ
 ## Project Structure
 
 ```
-agent-bot/
+groote-ai/
 ├── agent-engine/          # CLI task execution engine
 ├── api-gateway/           # Webhook reception
 ├── api-services/          # REST API wrappers

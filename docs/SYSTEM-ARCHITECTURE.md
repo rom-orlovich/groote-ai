@@ -1,4 +1,4 @@
-# Agent Bot System Architecture
+# Groote AI System Architecture
 
 A comprehensive guide to the full system architecture, explaining each component and how they work together.
 
@@ -19,7 +19,7 @@ A comprehensive guide to the full system architecture, explaining each component
 
 ## System Overview
 
-Agent Bot is a microservices-based AI agent system that:
+Groote AI is a microservices-based AI agent system that:
 
 - **Receives webhooks** from GitHub, Jira, Slack, and Sentry
 - **Executes AI tasks** using Claude or Cursor CLI
@@ -394,7 +394,7 @@ Service needs token → Token Client → OAuth Service → PostgreSQL
 
 ## OAuth & Authentication
 
-### How OAuth Works in Agent Bot
+### How OAuth Works in Groote AI
 
 1. **User connects service** via Integrations page
 2. **OAuth flow** redirects to provider (GitHub, Jira, etc.)

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cat << 'EOF'
-Agent Bot Commands
+Groote AI Commands
 ==================
 
 CLI:

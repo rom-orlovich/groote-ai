@@ -47,11 +47,11 @@ agent-engine/
 Tests are co-located with the service for portability.
 
 ```bash
-# From agent-bot root
+# From groote-ai root
 make test-agent-engine
 
 # Or directly
-cd agent-bot
+cd groote-ai
 PYTHONPATH=agent-engine:$PYTHONPATH uv run pytest agent-engine/tests/ -v
 ```
 
