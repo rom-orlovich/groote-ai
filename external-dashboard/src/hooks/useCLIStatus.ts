@@ -13,7 +13,6 @@ export function useCLIStatus() {
       if (!res.ok) throw new Error("Failed to fetch CLI status");
       return res.json();
     },
-    retry: 1,
   });
 
   return {
