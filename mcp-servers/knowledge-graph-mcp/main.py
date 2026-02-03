@@ -1,9 +1,8 @@
 from typing import Any, Literal
 
-from fastmcp import FastMCP
-
 from chroma_client import chroma_client
 from config import get_settings
+from fastmcp import FastMCP
 from kg_client import KnowledgeGraphClient
 
 mcp = FastMCP("Knowledge Graph MCP Server")

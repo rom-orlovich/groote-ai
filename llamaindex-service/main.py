@@ -1,9 +1,9 @@
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
-import structlog
 
-from factory import ServiceContainer, ServiceConfig
-from api.routes import create_query_router, create_health_router
+import structlog
+from api.routes import create_health_router, create_query_router
+from factory import ServiceConfig, ServiceContainer
+from fastapi import FastAPI
 
 logger = structlog.get_logger()
 
@@ -28,9 +28,7 @@ async def lifespan(app: FastAPI):
         vector_store=container.vector_store,
         graph_store_enabled=config.enable_gkg,
         cache_enabled=config.enable_cache,
-        check_graph_store=(
-            container.graph_store.health_check if container.graph_store else None
-        ),
+        check_graph_store=(container.graph_store.health_check if container.graph_store else None),
         check_cache=container.cache.health_check if container.cache else None,
     )
 

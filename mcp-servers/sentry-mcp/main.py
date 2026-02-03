@@ -1,8 +1,8 @@
 from typing import Any
-from fastmcp import FastMCP
 
-from sentry_mcp import SentryAPI
 from config import get_settings
+from fastmcp import FastMCP
+from sentry_mcp import SentryAPI
 
 mcp = FastMCP("Sentry MCP Server")
 sentry_api = SentryAPI()
@@ -54,9 +54,7 @@ async def get_sentry_issue(issue_id: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-async def get_sentry_issue_events(
-    issue_id: str, cursor: str | None = None
-) -> list[dict[str, Any]]:
+async def get_sentry_issue_events(issue_id: str, cursor: str | None = None) -> list[dict[str, Any]]:
     """
     Get events for a Sentry issue.
 

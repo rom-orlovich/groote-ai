@@ -1,10 +1,11 @@
 from typing import Protocol, runtime_checkable
+
 from core.models import (
-    DependencyResult,
-    UsageResult,
     CallGraphResult,
+    DependencyResult,
     HierarchyResult,
     RelatedEntitiesResult,
+    UsageResult,
 )
 
 

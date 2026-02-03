@@ -2,25 +2,23 @@
 
 import json
 import uuid
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel
 import structlog
-
 from core.database import get_session as get_db_session
 from core.database.models import ConversationDB, ConversationMessageDB, TaskDB
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from shared import APIResponse
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger()
 
 router = APIRouter()
 
 
-def safe_json_loads(json_str: Optional[str]) -> dict:
+def safe_json_loads(json_str: str | None) -> dict:
     """Safely parse JSON string, returning empty dict on error."""
     if not json_str:
         return {}
@@ -46,9 +44,9 @@ class ConversationCreate(BaseModel):
 class ConversationUpdate(BaseModel):
     """Request model for updating a conversation."""
 
-    title: Optional[str] = None
-    is_archived: Optional[bool] = None
-    metadata: Optional[dict] = None
+    title: str | None = None
+    is_archived: bool | None = None
+    metadata: dict | None = None
 
 
 class MessageCreate(BaseModel):
@@ -56,7 +54,7 @@ class MessageCreate(BaseModel):
 
     role: str  # user, assistant, system
     content: str
-    task_id: Optional[str] = None
+    task_id: str | None = None
     metadata: dict = {}
 
 
@@ -67,7 +65,7 @@ class MessageResponse(BaseModel):
     conversation_id: str
     role: str
     content: str
-    task_id: Optional[str]
+    task_id: str | None
     created_at: str
     metadata: dict
 
@@ -82,7 +80,7 @@ class MessageResponse(BaseModel):
             task_id=msg.task_id,
             created_at=msg.created_at.isoformat()
             if msg.created_at
-            else datetime.now(timezone.utc).isoformat(),
+            else datetime.now(UTC).isoformat(),
             metadata=safe_json_loads(msg.metadata_json),
         )
 
@@ -102,13 +100,11 @@ class ConversationResponse(BaseModel):
     total_cost_usd: float = 0.0
     total_tasks: int = 0
     total_duration_seconds: float = 0.0
-    started_at: Optional[str] = None
-    completed_at: Optional[str] = None
+    started_at: str | None = None
+    completed_at: str | None = None
 
     @classmethod
-    def from_db(
-        cls, conv: ConversationDB, message_count: int = 0
-    ) -> "ConversationResponse":
+    def from_db(cls, conv: ConversationDB, message_count: int = 0) -> "ConversationResponse":
         """Create from database model."""
         return cls(
             conversation_id=conv.conversation_id,
@@ -130,12 +126,10 @@ class ConversationResponse(BaseModel):
 class ConversationDetailResponse(ConversationResponse):
     """Detailed conversation response with messages."""
 
-    messages: List[MessageResponse]
+    messages: list[MessageResponse]
 
     @classmethod
-    def from_db_with_messages(
-        cls, conv: ConversationDB
-    ) -> "ConversationDetailResponse":
+    def from_db_with_messages(cls, conv: ConversationDB) -> "ConversationDetailResponse":
         """Create from database model with messages."""
         return cls(
             conversation_id=conv.conversation_id,
@@ -151,9 +145,7 @@ class ConversationDetailResponse(ConversationResponse):
 
 
 @router.post("/conversations", response_model=ConversationResponse)
-async def create_conversation(
-    data: ConversationCreate, db: AsyncSession = Depends(get_db_session)
-):
+async def create_conversation(data: ConversationCreate, db: AsyncSession = Depends(get_db_session)):
     """Create a new conversation."""
     conversation_id = f"conv-{uuid.uuid4().hex[:12]}"
 
@@ -168,17 +160,15 @@ async def create_conversation(
     await db.commit()
     await db.refresh(conversation)
 
-    logger.info(
-        "conversation_created", conversation_id=conversation_id, user_id=data.user_id
-    )
+    logger.info("conversation_created", conversation_id=conversation_id, user_id=data.user_id)
 
     return ConversationResponse.from_db(conversation, message_count=0)
 
 
-@router.get("/conversations", response_model=List[ConversationResponse])
+@router.get("/conversations", response_model=list[ConversationResponse])
 async def list_conversations(
     db: AsyncSession = Depends(get_db_session),
-    user_id: Optional[str] = Query(None),
+    user_id: str | None = Query(None),
     include_archived: bool = Query(False),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -205,14 +195,10 @@ async def list_conversations(
                 count_query = (
                     select(func.count())
                     .select_from(ConversationMessageDB)
-                    .where(
-                        ConversationMessageDB.conversation_id == conv.conversation_id
-                    )
+                    .where(ConversationMessageDB.conversation_id == conv.conversation_id)
                 )
                 count = (await db.execute(count_query)).scalar() or 0
-                response_list.append(
-                    ConversationResponse.from_db(conv, message_count=count)
-                )
+                response_list.append(ConversationResponse.from_db(conv, message_count=count))
             except Exception as e:
                 # Log error for individual conversation but continue processing others
                 logger.error(
@@ -223,9 +209,7 @@ async def list_conversations(
                 )
                 # Skip this conversation or add with empty metadata
                 try:
-                    response_list.append(
-                        ConversationResponse.from_db(conv, message_count=0)
-                    )
+                    response_list.append(ConversationResponse.from_db(conv, message_count=0))
                 except Exception:
                     # If even that fails, skip this conversation entirely
                     logger.warning(
@@ -239,9 +223,7 @@ async def list_conversations(
         raise HTTPException(status_code=500, detail="Failed to load conversations")
 
 
-@router.get(
-    "/conversations/{conversation_id}", response_model=ConversationDetailResponse
-)
+@router.get("/conversations/{conversation_id}", response_model=ConversationDetailResponse)
 async def get_conversation(
     conversation_id: str,
     db: AsyncSession = Depends(get_db_session),
@@ -272,19 +254,17 @@ async def get_conversation(
                 title=conversation.title,
                 created_at=conversation.created_at.isoformat()
                 if conversation.created_at
-                else datetime.now(timezone.utc).isoformat(),
+                else datetime.now(UTC).isoformat(),
                 updated_at=conversation.updated_at.isoformat()
                 if conversation.updated_at
-                else datetime.now(timezone.utc).isoformat(),
+                else datetime.now(UTC).isoformat(),
                 is_archived=conversation.is_archived,
                 metadata=safe_json_loads(conversation.metadata_json),
                 message_count=len(messages),
                 total_cost_usd=conversation.total_cost_usd or 0.0,
                 total_tasks=conversation.total_tasks or 0,
                 total_duration_seconds=conversation.total_duration_seconds or 0.0,
-                started_at=conversation.started_at.isoformat()
-                if conversation.started_at
-                else None,
+                started_at=conversation.started_at.isoformat() if conversation.started_at else None,
                 completed_at=conversation.completed_at.isoformat()
                 if conversation.completed_at
                 else None,
@@ -298,9 +278,7 @@ async def get_conversation(
             )
             count = (await db.execute(count_query)).scalar() or 0
             return ConversationDetailResponse(
-                **ConversationResponse.from_db(
-                    conversation, message_count=count
-                ).dict(),
+                **ConversationResponse.from_db(conversation, message_count=count).dict(),
                 messages=[],
             )
     except Exception as e:
@@ -310,9 +288,7 @@ async def get_conversation(
             error=str(e),
             exc_info=True,
         )
-        raise HTTPException(
-            status_code=500, detail=f"Failed to load conversation: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to load conversation: {e!s}")
 
 
 @router.put("/conversations/{conversation_id}", response_model=ConversationResponse)
@@ -339,7 +315,7 @@ async def update_conversation(
     if data.metadata is not None:
         conversation.metadata_json = json.dumps(data.metadata)
 
-    conversation.updated_at = datetime.now(timezone.utc)
+    conversation.updated_at = datetime.now(UTC)
 
     await db.commit()
     await db.refresh(conversation)
@@ -402,7 +378,7 @@ async def clear_conversation_history(
     for msg in messages:
         await db.delete(msg)
 
-    conversation.updated_at = datetime.now(timezone.utc)
+    conversation.updated_at = datetime.now(UTC)
     await db.commit()
 
     logger.info(
@@ -411,14 +387,10 @@ async def clear_conversation_history(
         messages_deleted=len(messages),
     )
 
-    return APIResponse(
-        success=True, message=f"Cleared {len(messages)} messages from conversation"
-    )
+    return APIResponse(success=True, message=f"Cleared {len(messages)} messages from conversation")
 
 
-@router.post(
-    "/conversations/{conversation_id}/messages", response_model=MessageResponse
-)
+@router.post("/conversations/{conversation_id}/messages", response_model=MessageResponse)
 async def add_message(
     conversation_id: str,
     data: MessageCreate,
@@ -445,7 +417,7 @@ async def add_message(
     )
 
     db.add(message)
-    conversation.updated_at = datetime.now(timezone.utc)
+    conversation.updated_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(message)
 
@@ -459,9 +431,7 @@ async def add_message(
     return MessageResponse.from_db(message)
 
 
-@router.get(
-    "/conversations/{conversation_id}/messages", response_model=List[MessageResponse]
-)
+@router.get("/conversations/{conversation_id}/messages", response_model=list[MessageResponse])
 async def get_messages(
     conversation_id: str,
     db: AsyncSession = Depends(get_db_session),
@@ -531,9 +501,7 @@ async def get_conversation_metrics(
         "total_cost_usd": conversation.total_cost_usd or 0.0,
         "total_tasks": conversation.total_tasks or 0,
         "total_duration_seconds": conversation.total_duration_seconds or 0.0,
-        "started_at": conversation.started_at.isoformat()
-        if conversation.started_at
-        else None,
+        "started_at": conversation.started_at.isoformat() if conversation.started_at else None,
         "completed_at": conversation.completed_at.isoformat()
         if conversation.completed_at
         else None,
@@ -568,9 +536,7 @@ async def get_conversation_context(
     )
 
     messages_result = await db.execute(query)
-    messages = list(
-        reversed(messages_result.scalars().all())
-    )  # Reverse to chronological order
+    messages = list(reversed(messages_result.scalars().all()))  # Reverse to chronological order
 
     # Format for Claude
     context = {

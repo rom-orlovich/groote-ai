@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -27,8 +27,8 @@ class TaskEvent(BaseModel):
     model_config = ConfigDict(strict=True)
 
     type: TaskEventType
-    task_id: Optional[str] = None
-    webhook_event_id: Optional[str] = None
+    task_id: str | None = None
+    webhook_event_id: str | None = None
     timestamp: datetime
     data: dict
 
@@ -38,7 +38,7 @@ class TaskMetadata(BaseModel):
 
     task_id: str
     source: Literal["dashboard", "webhook", "api"]
-    provider: Optional[str] = None
+    provider: str | None = None
     created_at: datetime
     assigned_agent: str
     model: str
@@ -58,8 +58,8 @@ class AgentOutput(BaseModel):
     timestamp: str
     type: str
     content: str
-    tool: Optional[str] = None
-    params: Optional[dict] = None
+    tool: str | None = None
+    params: dict | None = None
 
 
 class UserInput(BaseModel):
@@ -75,9 +75,9 @@ class FinalResult(BaseModel):
     model_config = ConfigDict(strict=True)
 
     success: bool
-    result: Optional[str] = None
-    error: Optional[str] = None
-    metrics: Optional[dict] = None
+    result: str | None = None
+    error: str | None = None
+    metrics: dict | None = None
     completed_at: str
 
 

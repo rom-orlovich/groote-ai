@@ -6,9 +6,9 @@ Tests the task state machine that governs all agent executions.
 import pytest
 
 from .factories.task_factory import (
-    TaskStatus,
-    InvalidTransitionError,
     VALID_TRANSITIONS,
+    InvalidTransitionError,
+    TaskStatus,
 )
 
 

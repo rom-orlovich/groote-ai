@@ -10,8 +10,7 @@ use uuid::Uuid;
 
 use crate::{
     models::{
-        CreateEdgeRequest, CreateNodeRequest, Direction, Edge, EdgeWithNodes,
-        GraphStats, NeighborsQuery, Node, NodeResponse, PathQuery, PathResult,
+        CreateEdgeRequest, CreateNodeRequest, Edge, EdgeWithNodes, NeighborsQuery, Node, NodeResponse, PathQuery,
         SearchQuery,
     },
     AppState,

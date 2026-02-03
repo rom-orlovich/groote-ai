@@ -1,6 +1,5 @@
 import httpx
 import structlog
-
 from config.settings import Settings
 
 from .base import InstallationInfo, OAuthProvider, OAuthTokens
@@ -96,7 +95,7 @@ class SlackOAuthProvider(OAuthProvider):
             external_org_name=team["name"],
             external_install_id=None,
             installed_by=None,
-            permissions={scope: "granted" for scope in tokens.scopes or []},
+            permissions=dict.fromkeys(tokens.scopes or [], "granted"),
             metadata={
                 "domain": team.get("domain"),
                 "icon": team.get("icon", {}).get("image_132"),

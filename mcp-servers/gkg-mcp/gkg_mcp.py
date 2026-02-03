@@ -1,8 +1,7 @@
-from mcp.server.fastmcp import FastMCP
 import httpx
 import structlog
-
 from config import settings
+from mcp.server.fastmcp import FastMCP
 
 logger = structlog.get_logger()
 
@@ -83,11 +82,7 @@ async def find_usages(
             f"- {usage.get('file', '?')}:{usage.get('line', '?')} ({usage.get('context', '')})"
         )
 
-    return (
-        "\n".join(formatted)
-        if len(formatted) > 1
-        else f"No usages found for `{symbol}`"
-    )
+    return "\n".join(formatted) if len(formatted) > 1 else f"No usages found for `{symbol}`"
 
 
 @mcp.tool()
@@ -208,7 +203,5 @@ async def get_related_entities(
                 )
 
     return (
-        "\n".join(formatted)
-        if len(formatted) > 1
-        else f"No related entities found for `{entity}`"
+        "\n".join(formatted) if len(formatted) > 1 else f"No related entities found for `{entity}`"
     )

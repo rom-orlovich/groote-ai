@@ -1,10 +1,11 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+
 import httpx
 import structlog
+from fastapi import FastAPI
+from middleware import AuthMiddleware, error_handler
 
 from .routes import router
-from middleware import AuthMiddleware, error_handler
 
 logger = structlog.get_logger(__name__)
 

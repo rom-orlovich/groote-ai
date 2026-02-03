@@ -1,17 +1,17 @@
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
-import uuid
+from datetime import UTC, datetime
 
 from core.interfaces import (
-    SourceIndexerProtocol,
-    VectorStoreProtocol,
-    GraphStoreProtocol,
     EmbeddingProtocol,
+    GraphStoreProtocol,
     JobQueueProtocol,
     SourceConfigFetcherProtocol,
+    SourceIndexerProtocol,
+    VectorStoreProtocol,
 )
-from core.models import JobStatus, SourceConfig, CodeChunk, DocumentChunk
+from core.models import CodeChunk, DocumentChunk, JobStatus, SourceConfig
 
 
 @dataclass
@@ -65,7 +65,7 @@ class IndexerOrchestrator:
             source_id=source_id,
             job_type=job_type,
             status="running",
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
         )
         await self._queue.update_status(status)
 
@@ -77,12 +77,12 @@ class IndexerOrchestrator:
                 await self._index_source(source, status)
 
             status.status = "completed"
-            status.completed_at = datetime.now(timezone.utc)
+            status.completed_at = datetime.now(UTC)
 
         except Exception as e:
             status.status = "failed"
             status.error_message = str(e)
-            status.completed_at = datetime.now(timezone.utc)
+            status.completed_at = datetime.now(UTC)
 
         await self._queue.update_status(status)
         await self._queue.publish_completion(status)
@@ -146,11 +146,7 @@ class IndexerOrchestrator:
                     embeddings=embeddings,
                 )
             else:
-                collection = (
-                    "jira_tickets"
-                    if source.source_type == "jira"
-                    else "confluence_docs"
-                )
+                collection = "jira_tickets" if source.source_type == "jira" else "confluence_docs"
                 await self._vector_store.upsert_document_chunks(
                     org_id=source.org_id,
                     chunks=batch,
@@ -176,7 +172,5 @@ class IndexerOrchestrator:
         return {
             "queue": await self._queue.health_check(),
             "vector_store": await self._vector_store.health_check(),
-            "graph_store": (
-                await self._graph_store.health_check() if self._graph_store else True
-            ),
+            "graph_store": (await self._graph_store.health_check() if self._graph_store else True),
         }

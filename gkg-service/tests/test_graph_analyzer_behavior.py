@@ -1,7 +1,7 @@
 import pytest
+from core.graph_analyzer import FeatureFlags, GraphAnalyzerService
 
-from core.graph_analyzer import GraphAnalyzerService, FeatureFlags
-from tests.conftest import MockGraphAnalyzer, MockCache
+from tests.conftest import MockCache, MockGraphAnalyzer
 
 
 class TestDependencyAnalysisBehavior:
@@ -117,9 +117,7 @@ class TestClassHierarchyBehavior:
     ):
         """Hierarchy query should return parent and child classes."""
         mock_analyzer._parents = [
-            pytest.importorskip("core.models").HierarchyNode(
-                name="BaseHandler", file="base.py"
-            )
+            pytest.importorskip("core.models").HierarchyNode(name="BaseHandler", file="base.py")
         ]
         mock_analyzer._children = [
             pytest.importorskip("core.models").HierarchyNode(

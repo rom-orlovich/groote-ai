@@ -1,10 +1,10 @@
 """Dashboard API test fixtures."""
 
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from .factories import TaskFactory, SessionFactory, ConversationFactory, WebhookFactory
+from .factories import ConversationFactory, SessionFactory, TaskFactory, WebhookFactory
 
 
 @pytest.fixture

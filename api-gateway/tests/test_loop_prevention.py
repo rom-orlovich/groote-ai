@@ -3,8 +3,9 @@
 Tests the mechanism that prevents agents from responding to their own messages.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 
 class LoopPrevention:
@@ -62,9 +63,7 @@ class TestCommentTracking:
         assert "posted_comments:comment-456" in call_args[0]
         assert call_args[0][1] == 3600
 
-    async def test_subsequent_webhook_for_own_comment_detected(
-        self, loop_prevention, mock_redis
-    ):
+    async def test_subsequent_webhook_for_own_comment_detected(self, loop_prevention, mock_redis):
         """Business requirement: Own comments detected."""
         mock_redis.get.return_value = b"1"
 
@@ -118,9 +117,7 @@ class TestLoopPreventionFlow:
         is_own = await loop_prevention.is_own_comment("comment-123")
         assert is_own is False
 
-    async def test_parallel_comments_tracked_independently(
-        self, loop_prevention, mock_redis
-    ):
+    async def test_parallel_comments_tracked_independently(self, loop_prevention, mock_redis):
         """Multiple comments can be tracked independently."""
         await loop_prevention.track_posted_comment("comment-1")
         await loop_prevention.track_posted_comment("comment-2")

@@ -1,9 +1,9 @@
 from typing import Annotated, Literal
-from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, ConfigDict
 
 from client import SentryClient
-from config import get_settings, Settings
+from config import Settings, get_settings
+from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, ConfigDict
 
 router = APIRouter(prefix="/api/v1", tags=["sentry"])
 

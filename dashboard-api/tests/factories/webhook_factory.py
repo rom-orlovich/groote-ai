@@ -1,10 +1,9 @@
 """Webhook configuration factory for testing."""
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any
 import re
-
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from typing import Any
 
 ENDPOINT_PATTERN = re.compile(r"^/webhooks/[a-z0-9-]+$")
 
@@ -40,7 +39,7 @@ class WebhookConfig:
     secret: str | None = None
     enabled: bool = True
     is_builtin: bool = False
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     created_by: str = "system"
     default_command: str | None = None
 
@@ -65,9 +64,7 @@ class WebhookConfig:
 
         for cmd in self.commands:
             if not cmd.template:
-                raise WebhookValidationError(
-                    f"Command '{cmd.name}' must have a template"
-                )
+                raise WebhookValidationError(f"Command '{cmd.name}' must have a template")
 
     def is_mutable(self) -> bool:
         """Check if webhook can be modified."""

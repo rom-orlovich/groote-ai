@@ -1,15 +1,15 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import structlog
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from agent_engine.models import Installation, InstallationStatus, Platform
 from config.settings import get_settings
 from providers.github import GitHubOAuthProvider
 from providers.jira import JiraOAuthProvider
 from providers.slack import SlackOAuthProvider
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from agent_engine.models import Installation, InstallationStatus, Platform
 
 logger = structlog.get_logger(__name__)
 
@@ -51,9 +51,7 @@ class TokenService:
         await self._update_last_used(installation)
         return installation.access_token
 
-    async def get_github_installation_token(
-        self, external_install_id: str
-    ) -> str | None:
+    async def get_github_installation_token(self, external_install_id: str) -> str | None:
         query = select(Installation).where(
             Installation.platform == Platform.GITHUB.value,
             Installation.external_install_id == external_install_id,
@@ -94,13 +92,13 @@ class TokenService:
     def _is_token_expired(self, installation: Installation) -> bool:
         if not installation.token_expires_at:
             return False
-        return installation.token_expires_at < datetime.now(timezone.utc)
+        return installation.token_expires_at < datetime.now(UTC)
 
     def _is_github_token_expired(self, installation: Installation) -> bool:
         if not installation.token_expires_at:
             return True
         buffer = timedelta(minutes=5)
-        return installation.token_expires_at < datetime.now(timezone.utc) + buffer
+        return installation.token_expires_at < datetime.now(UTC) + buffer
 
     async def _refresh_token(self, installation: Installation) -> str | None:
         if not installation.refresh_token:
@@ -132,5 +130,5 @@ class TokenService:
         return tokens.access_token
 
     async def _update_last_used(self, installation: Installation) -> None:
-        installation.last_used_at = datetime.now(timezone.utc)
+        installation.last_used_at = datetime.now(UTC)
         await self.session.commit()

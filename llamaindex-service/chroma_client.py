@@ -1,9 +1,8 @@
 import chromadb
-from chromadb.config import Settings as ChromaSettings
 import structlog
-from tenacity import retry, stop_after_attempt, wait_exponential
-
+from chromadb.config import Settings as ChromaSettings
 from models import CollectionInfo
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 logger = structlog.get_logger()
 
@@ -52,9 +51,7 @@ class ChromaClientManager:
                     error=str(e),
                 )
 
-        logger.info(
-            "chromadb_client_initialized", collections=list(self.collections.keys())
-        )
+        logger.info("chromadb_client_initialized", collections=list(self.collections.keys()))
 
     def get_collection(self, name: str) -> chromadb.Collection:
         if name not in self.collections:

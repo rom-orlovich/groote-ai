@@ -1,9 +1,9 @@
 import hashlib
+
 import structlog
 from atlassian import Jira
-
 from config import settings
-from models import JiraSourceConfig, DocumentChunk
+from models import DocumentChunk, JiraSourceConfig
 
 logger = structlog.get_logger()
 
@@ -95,9 +95,7 @@ class JiraIndexer:
 
         summary = fields.get("summary", "")
         description = fields.get("description", "") or ""
-        rendered_description = (
-            ticket.get("renderedFields", {}).get("description", "") or ""
-        )
+        rendered_description = ticket.get("renderedFields", {}).get("description", "") or ""
 
         content_parts = [
             f"# {key}: {summary}",

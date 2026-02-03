@@ -1,9 +1,9 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, ConfigDict
 
 from client import GitHubClient
-from config import get_settings, Settings
+from config import Settings, get_settings
+from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, ConfigDict
 
 router = APIRouter(prefix="/api/v1", tags=["github"])
 
@@ -64,9 +64,7 @@ async def create_issue(
     request: CreateIssueRequest,
     client: Annotated[GitHubClient, Depends(get_github_client)],
 ):
-    return await client.create_issue(
-        owner, repo, request.title, request.body, request.labels
-    )
+    return await client.create_issue(owner, repo, request.title, request.body, request.labels)
 
 
 @router.post("/repos/{owner}/{repo}/issues/{issue_number}/comments")

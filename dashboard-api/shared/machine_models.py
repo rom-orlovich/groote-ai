@@ -3,12 +3,12 @@ ALL domain models with Pydantic validation.
 Business rules are ENFORCED here, not in service layer.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Optional, List, Dict, Any, Literal
-from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
+from typing import Any, Literal
 
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # =============================================================================
 # ENUMS (String-based for JSON serialization)
@@ -94,13 +94,13 @@ class Session(BaseModel):
     session_id: str = Field(..., description="Unique session identifier")
     user_id: str = Field(..., description="User account ID from Claude auth")
     machine_id: str = Field(..., description="Machine this session connects to")
-    connected_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    disconnected_at: Optional[datetime] = None
+    connected_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    disconnected_at: datetime | None = None
 
     # Metrics (auto-updated)
     total_cost_usd: float = Field(default=0.0, ge=0.0)
     total_tasks: int = Field(default=0, ge=0)
-    active_task_ids: List[str] = Field(default_factory=list)
+    active_task_ids: list[str] = Field(default_factory=list)
 
     @field_validator("session_id", "user_id", "machine_id")
     @classmethod
@@ -138,20 +138,20 @@ class Task(BaseModel):
     user_id: str = Field(..., description="User who owns this task")
 
     # Assignment
-    assigned_agent: Optional[str] = Field(None, description="Sub-agent handling this")
+    assigned_agent: str | None = Field(None, description="Sub-agent handling this")
     agent_type: AgentType = Field(default=AgentType.PLANNING)
 
     # Status
     status: TaskStatus = Field(default=TaskStatus.QUEUED)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
     # Input/Output
     input_message: str = Field(..., min_length=1)
     output_stream: str = Field(default="", description="Accumulated output")
-    result: Optional[str] = None
-    error: Optional[str] = None
+    result: str | None = None
+    error: str | None = None
 
     # Metrics
     cost_usd: float = Field(default=0.0, ge=0.0)
@@ -160,22 +160,22 @@ class Task(BaseModel):
     duration_seconds: float = Field(default=0.0, ge=0.0)
 
     # Relationships
-    parent_task_id: Optional[str] = None
+    parent_task_id: str | None = None
     source: Literal["dashboard", "webhook", "api"] = "dashboard"
-    source_metadata: Dict[str, Any] = Field(default_factory=dict)
+    source_metadata: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def validate_status_transitions(self) -> "Task":
         """Ensure valid status transitions."""
         if self.status == TaskStatus.RUNNING and self.started_at is None:
-            object.__setattr__(self, "started_at", datetime.now(timezone.utc))
+            object.__setattr__(self, "started_at", datetime.now(UTC))
         if self.status in (
             TaskStatus.COMPLETED,
             TaskStatus.FAILED,
             TaskStatus.CANCELLED,
         ):
             if self.completed_at is None:
-                object.__setattr__(self, "completed_at", datetime.now(timezone.utc))
+                object.__setattr__(self, "completed_at", datetime.now(UTC))
             if self.started_at and self.completed_at:
                 object.__setattr__(
                     self,
@@ -230,7 +230,7 @@ class SubAgentConfig(BaseModel):
 
     # Built-in vs dynamic
     is_builtin: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @field_validator("name")
     @classmethod
@@ -239,9 +239,7 @@ class SubAgentConfig(BaseModel):
         import re
 
         if not re.match(r"^[a-z0-9_-]+$", v):
-            raise ValueError(
-                "name must be lowercase alphanumeric with hyphens/underscores"
-            )
+            raise ValueError("name must be lowercase alphanumeric with hyphens/underscores")
         return v
 
 
@@ -254,13 +252,13 @@ class WebhookCommand(BaseModel):
     """A command that can be triggered via webhook."""
 
     name: str = Field(..., description="Command name, e.g. 'approve', 'improve'")
-    aliases: List[str] = Field(default_factory=list, description="Alternative names")
+    aliases: list[str] = Field(default_factory=list, description="Alternative names")
     description: str = Field(default="")
     target_agent: str = Field(..., description="Which agent handles this command")
-    prompt_template: Optional[str] = Field(
+    prompt_template: str | None = Field(
         None, description="Inline prompt template with {placeholders}"
     )
-    template_file: Optional[str] = Field(
+    template_file: str | None = Field(
         None, description="Template file name (without .md extension)"
     )
     requires_approval: bool = Field(default=False)
@@ -271,9 +269,7 @@ class WebhookCommand(BaseModel):
         import re
 
         if not re.match(r"^[a-z0-9_-]+$", v):
-            raise ValueError(
-                "name must be lowercase alphanumeric with hyphens/underscores"
-            )
+            raise ValueError("name must be lowercase alphanumeric with hyphens/underscores")
         return v
 
     @model_validator(mode="after")
@@ -295,26 +291,26 @@ class WebhookConfig(BaseModel):
     description: str = Field(default="")
 
     # Commands this webhook supports
-    commands: List[WebhookCommand] = Field(default_factory=list)
+    commands: list[WebhookCommand] = Field(default_factory=list)
 
     # Default command when no specific command is detected
-    default_command: Optional[str] = None
+    default_command: str | None = None
 
     # Command prefix for detection (e.g., "@agent" or "/claude")
     command_prefix: str = Field(default="@agent")
 
     # Handler
-    handler_path: Optional[Path] = None
+    handler_path: Path | None = None
     target_agent: str = Field(..., description="Agent to route tasks to")
 
     # Security
     requires_signature: bool = Field(default=True)
-    signature_header: Optional[str] = Field(default=None)
-    secret_env_var: Optional[str] = Field(default=None)
+    signature_header: str | None = Field(default=None)
+    secret_env_var: str | None = Field(default=None)
 
     # Metadata
     is_builtin: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @field_validator("name")
     @classmethod
@@ -336,22 +332,16 @@ class CommandYamlConfig(BaseModel):
     """YAML-friendly command configuration."""
 
     name: str = Field(..., description="Command name, e.g. 'approve', 'review'")
-    aliases: List[str] = Field(
-        default_factory=list, description="Alternative trigger names"
-    )
+    aliases: list[str] = Field(default_factory=list, description="Alternative trigger names")
     description: str = Field(default="", description="Human-readable description")
-    target_agent: str = Field(
-        default="planning", description="Which agent handles this command"
-    )
-    prompt_template: Optional[str] = Field(
+    target_agent: str = Field(default="planning", description="Which agent handles this command")
+    prompt_template: str | None = Field(
         None, description="Inline prompt template with {{placeholders}}"
     )
-    template_file: Optional[str] = Field(
+    template_file: str | None = Field(
         None, description="Template file name (without .md extension)"
     )
-    requires_approval: bool = Field(
-        default=False, description="Whether approval is needed"
-    )
+    requires_approval: bool = Field(default=False, description="Whether approval is needed")
 
     @model_validator(mode="after")
     def validate_template_source(self) -> "CommandYamlConfig":
@@ -376,15 +366,13 @@ class CommandYamlConfig(BaseModel):
 class AgentTriggerConfig(BaseModel):
     """Configuration for how to trigger the agent."""
 
-    prefix: str = Field(
-        default="@agent", description="Command prefix (e.g. '@agent', '@claude')"
-    )
-    aliases: List[str] = Field(
+    prefix: str = Field(default="@agent", description="Command prefix (e.g. '@agent', '@claude')")
+    aliases: list[str] = Field(
         default_factory=list,
         description="Alternative prefixes/names (e.g. ['@claude', '@bot'])",
     )
     # For Jira: the assignee name that triggers the agent
-    assignee_trigger: Optional[str] = Field(
+    assignee_trigger: str | None = Field(
         default=None, description="For Jira: assignee name that triggers the agent"
     )
 
@@ -392,14 +380,12 @@ class AgentTriggerConfig(BaseModel):
 class SecurityConfig(BaseModel):
     """Webhook security configuration."""
 
-    requires_signature: bool = Field(
-        default=True, description="Require signature verification"
-    )
-    signature_header: Optional[str] = Field(
+    requires_signature: bool = Field(default=True, description="Require signature verification")
+    signature_header: str | None = Field(
         default=None,
         description="Header name for signature (e.g. 'X-Hub-Signature-256')",
     )
-    secret_env_var: Optional[str] = Field(
+    secret_env_var: str | None = Field(
         default=None, description="Environment variable name for webhook secret"
     )
 
@@ -426,15 +412,13 @@ class WebhookYamlConfig(BaseModel):
     )
 
     # Target agent for routing
-    target_agent: str = Field(
-        default="brain", description="Default agent for routing tasks"
-    )
+    target_agent: str = Field(default="brain", description="Default agent for routing tasks")
 
     # Commands
-    commands: List[CommandYamlConfig] = Field(
+    commands: list[CommandYamlConfig] = Field(
         default_factory=list, description="List of commands this webhook supports"
     )
-    default_command: Optional[str] = Field(
+    default_command: str | None = Field(
         default=None, description="Default command when no specific command matched"
     )
 
@@ -442,25 +426,17 @@ class WebhookYamlConfig(BaseModel):
     def validate_commands_not_empty(self) -> "WebhookYamlConfig":
         """Commands list must not be empty."""
         if not self.commands:
-            raise ValueError(
-                "commands list cannot be empty - at least one command is required"
-            )
+            raise ValueError("commands list cannot be empty - at least one command is required")
 
         # Check for duplicate command names
         command_names = [cmd.name for cmd in self.commands]
         if len(command_names) != len(set(command_names)):
-            duplicates = [
-                name for name in command_names if command_names.count(name) > 1
-            ]
-            raise ValueError(
-                f"Duplicate command names found: {', '.join(set(duplicates))}"
-            )
+            duplicates = [name for name in command_names if command_names.count(name) > 1]
+            raise ValueError(f"Duplicate command names found: {', '.join(set(duplicates))}")
 
         # Check that default_command exists in commands
         if self.default_command and self.default_command not in command_names:
-            raise ValueError(
-                f"default_command '{self.default_command}' not found in commands list"
-            )
+            raise ValueError(f"default_command '{self.default_command}' not found in commands list")
 
         return self
 
@@ -491,7 +467,7 @@ class WebhookYamlConfig(BaseModel):
         """Load configuration from a YAML file."""
         import yaml
 
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             data = yaml.safe_load(f)
         return cls(**data)
 
@@ -511,7 +487,7 @@ class SkillConfig(BaseModel):
     description: str = Field(default="")
     skill_path: Path = Field(...)
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @field_validator("target")
     @classmethod
@@ -536,10 +512,10 @@ class ClaudeCredentials(BaseModel):
     refresh_token: str = Field(..., min_length=10)
     expires_at: int = Field(..., description="Expiry timestamp in milliseconds")
     token_type: str = Field(default="Bearer")
-    account_id: Optional[str] = None
+    account_id: str | None = None
 
     @classmethod
-    def normalize_credentials_data(cls, creds_data: Dict[str, Any]) -> Dict[str, Any]:
+    def normalize_credentials_data(cls, creds_data: dict[str, Any]) -> dict[str, Any]:
         """
         Normalize credentials data from either format:
         1. Direct format: {"access_token": "...", "refresh_token": "...", ...}
@@ -552,47 +528,41 @@ class ClaudeCredentials(BaseModel):
             oauth_data = creds_data["claudeAiOauth"]
             # Convert camelCase to snake_case for ClaudeCredentials model
             return {
-                "access_token": oauth_data.get("accessToken")
-                or oauth_data.get("access_token"),
-                "refresh_token": oauth_data.get("refreshToken")
-                or oauth_data.get("refresh_token"),
-                "expires_at": oauth_data.get("expiresAt")
-                or oauth_data.get("expires_at"),
+                "access_token": oauth_data.get("accessToken") or oauth_data.get("access_token"),
+                "refresh_token": oauth_data.get("refreshToken") or oauth_data.get("refresh_token"),
+                "expires_at": oauth_data.get("expiresAt") or oauth_data.get("expires_at"),
                 "token_type": oauth_data.get("tokenType", "Bearer"),
-                "account_id": oauth_data.get("accountId")
-                or oauth_data.get("account_id"),
+                "account_id": oauth_data.get("accountId") or oauth_data.get("account_id"),
             }
 
         # Already in direct format, return as-is
         return creds_data
 
     @classmethod
-    def from_dict(cls, creds_data: Dict[str, Any]) -> "ClaudeCredentials":
+    def from_dict(cls, creds_data: dict[str, Any]) -> "ClaudeCredentials":
         """Create ClaudeCredentials from dict, handling both formats."""
         normalized = cls.normalize_credentials_data(creds_data)
         return cls(**normalized)
 
     @property
-    def user_id(self) -> Optional[str]:
+    def user_id(self) -> str | None:
         """Alias for account_id to maintain backward compatibility."""
         return self.account_id
 
     @property
     def expires_at_datetime(self) -> datetime:
         """Convert to datetime."""
-        return datetime.fromtimestamp(self.expires_at / 1000, tz=timezone.utc)
+        return datetime.fromtimestamp(self.expires_at / 1000, tz=UTC)
 
     @property
     def is_expired(self) -> bool:
         """Check if token is expired."""
-        return datetime.now(timezone.utc) >= self.expires_at_datetime
+        return datetime.now(UTC) >= self.expires_at_datetime
 
     @property
     def needs_refresh(self) -> bool:
         """Check if token needs refresh (< 30 min left)."""
-        remaining = (
-            self.expires_at_datetime - datetime.now(timezone.utc)
-        ).total_seconds()
+        remaining = (self.expires_at_datetime - datetime.now(UTC)).total_seconds()
         return remaining < 1800  # 30 minutes
 
     def get_status(self) -> AuthStatus:
@@ -613,7 +583,7 @@ class WebSocketMessage(BaseModel):
     """Base WebSocket message."""
 
     type: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class TaskCreatedMessage(WebSocketMessage):
@@ -686,7 +656,7 @@ class CLIStatusUpdateMessage(WebSocketMessage):
     """CLI status update event."""
 
     type: Literal["cli_status_update"] = "cli_status_update"
-    session_id: Optional[str] = None  # None means broadcast to all
+    session_id: str | None = None  # None means broadcast to all
     active: bool
 
 
@@ -713,9 +683,9 @@ class CreateWebhookRequest(BaseModel):
     """Request to create a webhook."""
 
     method: Literal["describe", "upload", "form"]
-    description: Optional[str] = None  # For method="describe"
-    file_content: Optional[str] = None  # For method="upload"
-    form_data: Optional[Dict[str, Any]] = None  # For method="form"
+    description: str | None = None  # For method="describe"
+    file_content: str | None = None  # For method="upload"
+    form_data: dict[str, Any] | None = None  # For method="form"
 
     @model_validator(mode="after")
     def validate_method_data(self) -> "CreateWebhookRequest":
@@ -733,9 +703,9 @@ class CreateAgentRequest(BaseModel):
     """Request to create a sub-agent."""
 
     method: Literal["describe", "upload", "form"]
-    description: Optional[str] = None
-    folder_content: Optional[Dict[str, str]] = None  # filename -> content
-    form_data: Optional[Dict[str, Any]] = None
+    description: str | None = None
+    folder_content: dict[str, str] | None = None  # filename -> content
+    form_data: dict[str, Any] | None = None
 
     @model_validator(mode="after")
     def validate_method_data(self) -> "CreateAgentRequest":
@@ -760,5 +730,5 @@ class APIResponse(BaseModel):
 
     success: bool
     message: str
-    data: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    data: dict[str, Any] | None = None
+    error: str | None = None

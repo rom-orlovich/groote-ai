@@ -1,4 +1,5 @@
 from typing import Any
+
 import httpx
 import structlog
 
@@ -78,9 +79,7 @@ class SlackClient:
         response.raise_for_status()
         return self._check_response(response.json())
 
-    async def add_reaction(
-        self, channel: str, timestamp: str, emoji: str
-    ) -> dict[str, Any]:
+    async def add_reaction(self, channel: str, timestamp: str, emoji: str) -> dict[str, Any]:
         client = await self._get_client()
         payload = {"channel": channel, "timestamp": timestamp, "name": emoji}
         response = await client.post("/reactions.add", json=payload)
@@ -93,9 +92,7 @@ class SlackClient:
         response.raise_for_status()
         return self._check_response(response.json())
 
-    async def list_channels(
-        self, limit: int = 100, cursor: str | None = None
-    ) -> dict[str, Any]:
+    async def list_channels(self, limit: int = 100, cursor: str | None = None) -> dict[str, Any]:
         client = await self._get_client()
         params: dict[str, Any] = {
             "limit": limit,
