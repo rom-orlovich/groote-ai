@@ -72,7 +72,7 @@ coverage.xml
 .settings/
 *.sublime-project
 *.sublime-workspace
-.cursor/
+
 
 # ===========================================
 # OS Files
