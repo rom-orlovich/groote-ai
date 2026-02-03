@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { MOCK_METRICS, MOCK_TASKS } from "./fixtures";
 import { OverviewFeature } from "./OverviewFeature";
 
