@@ -1,11 +1,11 @@
 """WebSocket endpoint for real-time updates."""
 
-import json
 import asyncio
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-import structlog
+import json
 
+import structlog
 from core.database.redis_client import redis_client
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 logger = structlog.get_logger()
 
@@ -37,9 +37,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                 elif msg_type == "task.stop":
                     # Handle task stop
                     task_id = message.get("task_id")
-                    logger.info(
-                        "Stop task requested", task_id=task_id, session_id=session_id
-                    )
+                    logger.info("Stop task requested", task_id=task_id, session_id=session_id)
                     # This would be handled by the dashboard API endpoint
                     pass
 

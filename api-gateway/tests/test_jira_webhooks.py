@@ -4,11 +4,10 @@ Tests processing of Jira webhook events with AI-Fix label filtering.
 """
 
 from .fixtures import (
+    jira_comment_created_payload,
     jira_issue_created_payload,
     jira_issue_updated_payload,
-    jira_comment_created_payload,
 )
-
 
 AI_FIX_LABEL = "AI-Fix"
 
@@ -175,18 +174,12 @@ class TestAIFixLabelRequirement:
         payload_different = jira_issue_created_payload(labels=["AIFix"])
 
         assert should_process_jira_event("jira:issue_created", payload_correct) is True
-        assert (
-            should_process_jira_event("jira:issue_created", payload_wrong_case) is False
-        )
-        assert (
-            should_process_jira_event("jira:issue_created", payload_different) is False
-        )
+        assert should_process_jira_event("jira:issue_created", payload_wrong_case) is False
+        assert should_process_jira_event("jira:issue_created", payload_different) is False
 
     def test_ai_fix_with_other_labels(self):
         """AI-Fix can coexist with other labels."""
-        payload = jira_issue_created_payload(
-            labels=["bug", "AI-Fix", "urgent", "backend"]
-        )
+        payload = jira_issue_created_payload(labels=["bug", "AI-Fix", "urgent", "backend"])
 
         assert should_process_jira_event("jira:issue_created", payload) is True
         assert has_ai_fix_label(payload) is True

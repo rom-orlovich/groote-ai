@@ -1,14 +1,15 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from sqlalchemy import (
-    Column,
-    String,
-    Integer,
     Boolean,
+    Column,
     DateTime,
-    Text,
     ForeignKey,
-    UniqueConstraint,
     Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 
@@ -16,7 +17,7 @@ from .models import Base
 
 
 def utc_now():
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class OrganizationDB(Base):
@@ -57,9 +58,7 @@ class DataSourceDB(Base):
     created_by = Column(String(255), nullable=False)
 
     __table_args__ = (
-        UniqueConstraint(
-            "org_id", "source_type", "name", name="uq_data_source_org_type_name"
-        ),
+        UniqueConstraint("org_id", "source_type", "name", name="uq_data_source_org_type_name"),
         Index("idx_data_sources_org", "org_id"),
         Index("idx_data_sources_type", "source_type"),
     )

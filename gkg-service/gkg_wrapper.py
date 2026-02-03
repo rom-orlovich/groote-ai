@@ -1,8 +1,9 @@
 import asyncio
+import contextlib
 import json
 from pathlib import Path
-import structlog
 
+import structlog
 from config import settings
 
 logger = structlog.get_logger()
@@ -22,7 +23,7 @@ class GKGWrapper:
     async def _run_gkg_command(
         self, args: list[str], cwd: str | None = None
     ) -> tuple[str, str, int]:
-        cmd = [self.gkg_binary] + args
+        cmd = [self.gkg_binary, *args]
         logger.debug("gkg_command", cmd=" ".join(cmd), cwd=cwd)
 
         process = await asyncio.create_subprocess_exec(
@@ -39,7 +40,7 @@ class GKGWrapper:
 
     async def is_available(self) -> bool:
         try:
-            stdout, _, code = await self._run_gkg_command(["--version"])
+            _stdout, _, code = await self._run_gkg_command(["--version"])
             return code == 0
         except FileNotFoundError:
             return False
@@ -160,10 +161,8 @@ class GKGWrapper:
                 ["query", "--db", str(db_path), "--format", "json", query],
             )
             if code == 0 and stdout.strip():
-                try:
+                with contextlib.suppress(json.JSONDecodeError):
                     callers = json.loads(stdout)
-                except json.JSONDecodeError:
-                    pass
 
         if direction in ("callees", "both"):
             query = f"""
@@ -174,10 +173,8 @@ class GKGWrapper:
                 ["query", "--db", str(db_path), "--format", "json", query],
             )
             if code == 0 and stdout.strip():
-                try:
+                with contextlib.suppress(json.JSONDecodeError):
                     callees = json.loads(stdout)
-                except json.JSONDecodeError:
-                    pass
 
         formatted_lines = [f"Call Graph for {function_name}:"]
         if callers:
@@ -225,10 +222,8 @@ class GKGWrapper:
             ["query", "--db", str(db_path), "--format", "json", parent_query],
         )
         if code == 0 and stdout.strip():
-            try:
+            with contextlib.suppress(json.JSONDecodeError):
                 parents = json.loads(stdout)
-            except json.JSONDecodeError:
-                pass
 
         child_query = f"""
         MATCH (child)-[:EXTENDS|IMPLEMENTS*1..5]->(c:Class {{name: '{class_name}'}})
@@ -238,25 +233,19 @@ class GKGWrapper:
             ["query", "--db", str(db_path), "--format", "json", child_query],
         )
         if code == 0 and stdout.strip():
-            try:
+            with contextlib.suppress(json.JSONDecodeError):
                 children = json.loads(stdout)
-            except json.JSONDecodeError:
-                pass
 
         formatted_lines = [f"Class Hierarchy for {class_name}:"]
         if parents:
             formatted_lines.append("\nParents (extends/implements):")
             for p in parents:
-                formatted_lines.append(
-                    f"  ^ {p.get('name', '?')} ({p.get('file', '?')})"
-                )
+                formatted_lines.append(f"  ^ {p.get('name', '?')} ({p.get('file', '?')})")
         formatted_lines.append(f"\n  [{class_name}]")
         if children:
             formatted_lines.append("\nChildren (extended by):")
             for c in children:
-                formatted_lines.append(
-                    f"  v {c.get('name', '?')} ({c.get('file', '?')})"
-                )
+                formatted_lines.append(f"  v {c.get('name', '?')} ({c.get('file', '?')})")
 
         return {
             "parents": parents,

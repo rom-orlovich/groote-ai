@@ -1,4 +1,5 @@
 from typing import Any, Literal
+
 import httpx
 import structlog
 
@@ -8,9 +9,7 @@ IssueStatus = Literal["resolved", "unresolved", "ignored"]
 
 
 class SentryClient:
-    def __init__(
-        self, auth_token: str, org_slug: str, base_url: str, timeout: int = 30
-    ):
+    def __init__(self, auth_token: str, org_slug: str, base_url: str, timeout: int = 30):
         self._auth_token = auth_token
         self._org_slug = org_slug
         self._base_url = base_url.rstrip("/")
@@ -80,9 +79,7 @@ class SentryClient:
         response.raise_for_status()
         return response.json()
 
-    async def update_issue_status(
-        self, issue_id: str, status: IssueStatus
-    ) -> dict[str, Any]:
+    async def update_issue_status(self, issue_id: str, status: IssueStatus) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.put(
             f"/issues/{issue_id}/",
@@ -112,9 +109,7 @@ class SentryClient:
         response.raise_for_status()
         return response.json()
 
-    async def assign_issue(
-        self, issue_id: str, assignee_id: str | None
-    ) -> dict[str, Any]:
+    async def assign_issue(self, issue_id: str, assignee_id: str | None) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.put(
             f"/issues/{issue_id}/",

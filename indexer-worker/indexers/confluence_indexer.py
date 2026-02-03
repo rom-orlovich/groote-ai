@@ -1,8 +1,8 @@
 import hashlib
 import re
+
 import structlog
 from atlassian import Confluence
-
 from config import settings
 from models import ConfluenceSourceConfig, DocumentChunk
 
@@ -59,9 +59,7 @@ class ConfluenceIndexer:
                 start += limit
 
             except Exception as e:
-                logger.error(
-                    "confluence_page_fetch_failed", space=space_key, error=str(e)
-                )
+                logger.error("confluence_page_fetch_failed", space=space_key, error=str(e))
                 break
 
         return pages

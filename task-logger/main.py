@@ -1,13 +1,13 @@
 import asyncio
+import contextlib
 import json
 import logging
 
 import redis.asyncio as redis
 import uvicorn
+from config import settings
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
-
-from config import settings
 from worker import run as worker_run
 
 logging.basicConfig(
@@ -34,10 +34,8 @@ async def shutdown():
     global worker_task
     if worker_task:
         worker_task.cancel()
-        try:
+        with contextlib.suppress(asyncio.CancelledError):
             await worker_task
-        except asyncio.CancelledError:
-            pass
     logger.info("task_logger_stopped")
 
 

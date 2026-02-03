@@ -1,11 +1,11 @@
-export { SourcesFeature } from "./SourcesFeature";
-export { SourceCard } from "./SourceCard";
 export { AddSourceModal } from "./AddSourceModal";
-export { useSources, useSource, useSourceTypes } from "./hooks/useSources";
 export type {
+  CreateSourceRequest,
   DataSource,
   IndexingJob,
-  CreateSourceRequest,
-  UpdateSourceRequest,
   SourceTypeInfo,
+  UpdateSourceRequest,
 } from "./hooks/useSources";
+export { useSource, useSources, useSourceTypes } from "./hooks/useSources";
+export { SourceCard } from "./SourceCard";
+export { SourcesFeature } from "./SourcesFeature";

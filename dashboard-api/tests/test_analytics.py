@@ -3,11 +3,11 @@
 Tests analytics calculations and aggregations.
 """
 
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
 
 from .factories.task_factory import TaskStatus
-
 
 CLAUDE_PRICING = {
     "claude-opus-4": {"input": 15.0, "output": 75.0},
@@ -97,15 +97,15 @@ class TestDailyAggregation:
         tasks = []
 
         task1 = task_factory.create_completed(cost_usd=0.10)
-        task1.completed_at = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+        task1.completed_at = datetime(2026, 1, 1, 10, 0, 0, tzinfo=UTC)
         tasks.append(task1)
 
         task2 = task_factory.create_completed(cost_usd=0.20)
-        task2.completed_at = datetime(2026, 1, 1, 14, 0, 0, tzinfo=timezone.utc)
+        task2.completed_at = datetime(2026, 1, 1, 14, 0, 0, tzinfo=UTC)
         tasks.append(task2)
 
         task3 = task_factory.create_completed(cost_usd=0.15)
-        task3.completed_at = datetime(2026, 1, 2, 9, 0, 0, tzinfo=timezone.utc)
+        task3.completed_at = datetime(2026, 1, 2, 9, 0, 0, tzinfo=UTC)
         tasks.append(task3)
 
         daily_costs = aggregate_daily_costs(tasks)
@@ -119,12 +119,10 @@ class TestDailyAggregation:
 
         for i in range(5):
             task = task_factory.create_completed()
-            task.completed_at = datetime(2026, 1, 1, 10 + i, 0, 0, tzinfo=timezone.utc)
+            task.completed_at = datetime(2026, 1, 1, 10 + i, 0, 0, tzinfo=UTC)
             tasks.append(task)
 
-        day_1_tasks = [
-            t for t in tasks if t.completed_at.strftime("%Y-%m-%d") == "2026-01-01"
-        ]
+        day_1_tasks = [t for t in tasks if t.completed_at.strftime("%Y-%m-%d") == "2026-01-01"]
         assert len(day_1_tasks) == 5
 
 

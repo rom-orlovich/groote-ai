@@ -1,6 +1,5 @@
 from fastapi import APIRouter
-
-from webhooks import github_router, jira_router, slack_router, sentry_router
+from webhooks import github_router, jira_router, sentry_router, slack_router
 
 router = APIRouter()
 

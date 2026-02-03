@@ -1,9 +1,7 @@
 """WebSocket connection hub for real-time updates."""
 
-from typing import Dict, Set
-from fastapi import WebSocket
 import structlog
-
+from fastapi import WebSocket
 from shared import WSMessage
 
 logger = structlog.get_logger()
@@ -13,7 +11,7 @@ class WebSocketHub:
     """Manages WebSocket connections and broadcasts."""
 
     def __init__(self):
-        self._connections: Dict[str, Set[WebSocket]] = {}  # session_id -> connections
+        self._connections: dict[str, set[WebSocket]] = {}  # session_id -> connections
 
     async def connect(self, websocket: WebSocket, session_id: str) -> None:
         """Register a WebSocket connection."""
@@ -40,9 +38,7 @@ class WebSocketHub:
             try:
                 await ws.send_json(message.model_dump(mode="json"))
             except Exception as e:
-                logger.warning(
-                    "Failed to send to WebSocket", session_id=session_id, error=str(e)
-                )
+                logger.warning("Failed to send to WebSocket", session_id=session_id, error=str(e))
                 dead_connections.add(ws)
 
         # Clean up dead connections

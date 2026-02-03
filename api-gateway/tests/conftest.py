@@ -48,9 +48,7 @@ def slack_signature_generator():
 
     def _generate(payload: bytes, secret: str, timestamp: str) -> tuple[str, str]:
         sig_basestring = f"v0:{timestamp}:{payload.decode()}"
-        signature = hmac.new(
-            secret.encode(), sig_basestring.encode(), hashlib.sha256
-        ).hexdigest()
+        signature = hmac.new(secret.encode(), sig_basestring.encode(), hashlib.sha256).hexdigest()
         return f"v0={signature}", timestamp
 
     return _generate

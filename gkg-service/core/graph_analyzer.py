@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 
-from core.interfaces import GraphAnalyzerProtocol, CacheProtocol
+from core.interfaces import CacheProtocol, GraphAnalyzerProtocol
 from core.models import (
-    DependencyResult,
     CallGraphResult,
+    DependencyResult,
     HierarchyResult,
     RelatedEntitiesResult,
-    UsageResult,
     RelatedEntity,
+    UsageResult,
 )
 
 
@@ -151,7 +151,7 @@ class GraphAnalyzerService:
                     entity_type=entity_type,
                     relationship="all",
                 )
-                results[name] = {k: v for k, v in related.relationships.items()}
+                results[name] = dict(related.relationships.items())
 
         return results
 

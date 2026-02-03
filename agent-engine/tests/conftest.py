@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from .factories import TaskFactory, SessionFactory
+from .factories import SessionFactory, TaskFactory
 
 
 @pytest.fixture

@@ -2,14 +2,13 @@ from contextlib import asynccontextmanager
 
 import structlog
 import uvicorn
-from fastapi import FastAPI
-
 from config import get_settings
+from fastapi import FastAPI
 from routes import webhooks_router
 from webhooks.github.validator import GitHubAuthMiddleware
 from webhooks.jira.validator import JiraAuthMiddleware
-from webhooks.slack.validator import SlackAuthMiddleware
 from webhooks.sentry.validator import SentryAuthMiddleware
+from webhooks.slack.validator import SlackAuthMiddleware
 
 logger = structlog.get_logger(__name__)
 

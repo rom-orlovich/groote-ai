@@ -18,18 +18,13 @@ pub struct NeighborsQuery {
     pub depth: Option<usize>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Direction {
     Incoming,
     Outgoing,
+    #[default]
     Both,
-}
-
-impl Default for Direction {
-    fn default() -> Self {
-        Self::Both
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

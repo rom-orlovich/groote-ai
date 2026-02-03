@@ -1,7 +1,7 @@
 """Task data factory for testing."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -50,7 +50,7 @@ class Task:
     source: str = "dashboard"
     source_metadata: dict[str, Any] = field(default_factory=dict)
 
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     started_at: datetime | None = None
     completed_at: datetime | None = None
 
@@ -65,15 +65,13 @@ class Task:
         """Validate state transition."""
         allowed = VALID_TRANSITIONS.get(self.status, set())
         if new_status not in allowed:
-            raise InvalidTransitionError(
-                f"Cannot transition from {self.status} to {new_status}"
-            )
+            raise InvalidTransitionError(f"Cannot transition from {self.status} to {new_status}")
 
     def start(self) -> None:
         """Transition task to RUNNING status."""
         self._validate_transition(TaskStatus.RUNNING)
         self.status = TaskStatus.RUNNING
-        self.started_at = datetime.now(timezone.utc)
+        self.started_at = datetime.now(UTC)
 
     def wait_for_input(self) -> None:
         """Transition task to WAITING_INPUT status."""
@@ -95,32 +93,28 @@ class Task:
         """Transition task to COMPLETED status."""
         self._validate_transition(TaskStatus.COMPLETED)
         self.status = TaskStatus.COMPLETED
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
         self.result = result
         self.cost_usd = cost_usd
         self.input_tokens = input_tokens
         self.output_tokens = output_tokens
         if self.started_at:
-            self.duration_seconds = (
-                self.completed_at - self.started_at
-            ).total_seconds()
+            self.duration_seconds = (self.completed_at - self.started_at).total_seconds()
 
     def fail(self, error: str) -> None:
         """Transition task to FAILED status."""
         self._validate_transition(TaskStatus.FAILED)
         self.status = TaskStatus.FAILED
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
         self.error = error
         if self.started_at:
-            self.duration_seconds = (
-                self.completed_at - self.started_at
-            ).total_seconds()
+            self.duration_seconds = (self.completed_at - self.started_at).total_seconds()
 
     def cancel(self) -> None:
         """Transition task to CANCELLED status."""
         self._validate_transition(TaskStatus.CANCELLED)
         self.status = TaskStatus.CANCELLED
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
 
 
 class TaskFactory:

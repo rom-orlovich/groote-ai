@@ -1,15 +1,14 @@
 import asyncio
 import signal
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import Any
 
+import redis.asyncio as redis
 import structlog
 import uvicorn
+from config import get_settings
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-import redis.asyncio as redis
-
-from config import get_settings
 from services.knowledge import KnowledgeService, NoopKnowledgeService
 
 logger = structlog.get_logger(__name__)
@@ -31,9 +30,7 @@ class TaskWorker:
     async def start(self) -> None:
         self._redis = redis.from_url(self._settings.redis_url)
         self._running = True
-        logger.info(
-            "task_worker_started", max_concurrent=self._settings.max_concurrent_tasks
-        )
+        logger.info("task_worker_started", max_concurrent=self._settings.max_concurrent_tasks)
 
         semaphore = asyncio.Semaphore(self._settings.max_concurrent_tasks)
 
@@ -69,6 +66,7 @@ class TaskWorker:
 
     async def _execute_task(self, task: dict[str, Any]) -> dict[str, Any]:
         from pathlib import Path
+
         from cli.factory import run_cli
 
         prompt = task.get("prompt", "")
@@ -94,7 +92,7 @@ class TaskWorker:
                 "stderr": result.stderr,
                 "return_code": result.return_code,
             }
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return {"error": "Task timed out", "return_code": -1}
 
     def _get_model_for_task(self, agent_type: str) -> str | None:
@@ -129,9 +127,7 @@ class TaskWorker:
             update = {"status": status}
             if result:
                 update["result"] = result
-            await self._redis.hset(
-                f"task:{task_id}", mapping={"data": json.dumps(update)}
-            )
+            await self._redis.hset(f"task:{task_id}", mapping={"data": json.dumps(update)})
             await self._redis.publish(f"task:{task_id}:status", json.dumps(update))
 
     async def stop(self) -> None:
@@ -180,17 +176,13 @@ async def lifespan(app: FastAPI):
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, lambda s=sig: handle_shutdown(s))
 
-    logger.info(
-        "agent_engine_started", port=settings.port, cli_provider=settings.cli_provider
-    )
+    logger.info("agent_engine_started", port=settings.port, cli_provider=settings.cli_provider)
     yield
 
     await worker.stop()
     worker_task.cancel()
-    try:
+    with suppress(asyncio.CancelledError):
         await worker_task
-    except asyncio.CancelledError:
-        pass
     logger.info("agent_engine_shutdown")
 
 
@@ -248,9 +240,7 @@ def create_app() -> FastAPI:
             "max_concurrent_tasks": settings.max_concurrent_tasks,
             "worker_running": worker._running if worker else False,
             "knowledge_services_enabled": settings.knowledge_services_enabled,
-            "knowledge_available": (
-                knowledge_service.is_available if knowledge_service else False
-            ),
+            "knowledge_available": (knowledge_service.is_available if knowledge_service else False),
         }
 
     @app.post("/knowledge/toggle")

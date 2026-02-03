@@ -1,15 +1,14 @@
 import pytest
-
 from core.models import (
-    DependencyResult,
-    DependencyItem,
-    UsageResult,
-    CallGraphResult,
     CallGraphNode,
-    HierarchyResult,
+    CallGraphResult,
+    DependencyItem,
+    DependencyResult,
     HierarchyNode,
+    HierarchyResult,
     RelatedEntitiesResult,
     RelatedEntity,
+    UsageResult,
 )
 
 

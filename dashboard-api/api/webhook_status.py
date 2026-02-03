@@ -1,20 +1,20 @@
 """Webhook status and monitoring API."""
 
-import os
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, timezone
-import structlog
-import uuid
 import json
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+import os
+import uuid
+from datetime import UTC, datetime
+from typing import Any
 
+import structlog
 from core.config import settings
 from core.database import get_session as get_db_session
-from core.database.models import WebhookConfigDB, WebhookEventDB, WebhookCommandDB
+from core.database.models import WebhookCommandDB, WebhookConfigDB, WebhookEventDB
 from core.webhook_configs import WEBHOOK_CONFIGS
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger()
 
@@ -45,8 +45,7 @@ async def get_webhooks_status(db: AsyncSession = Depends(get_db_session)):
         )
         events_by_provider_result = await db.execute(events_by_provider_query)
         events_by_provider = {
-            row[0]: {"count": row[1], "last_event": row[2]}
-            for row in events_by_provider_result
+            row[0]: {"count": row[1], "last_event": row[2]} for row in events_by_provider_result
         }
 
         # Add static webhooks first
@@ -73,16 +72,12 @@ async def get_webhooks_status(db: AsyncSession = Depends(get_db_session)):
             is_active = True
 
             # Get event stats for this provider
-            provider_stats = events_by_provider.get(
-                config.source, {"count": 0, "last_event": None}
-            )
+            provider_stats = events_by_provider.get(config.source, {"count": 0, "last_event": None})
 
             # Build public URL
             public_url = None
             if settings.webhook_public_domain:
-                public_url = (
-                    f"https://{settings.webhook_public_domain}{config.endpoint}"
-                )
+                public_url = f"https://{settings.webhook_public_domain}{config.endpoint}"
 
             webhook_statuses.append(
                 {
@@ -131,9 +126,7 @@ async def get_webhooks_status(db: AsyncSession = Depends(get_db_session)):
             # Build public URL
             public_url = None
             if settings.webhook_public_domain:
-                public_url = (
-                    f"https://{settings.webhook_public_domain}{webhook.endpoint}"
-                )
+                public_url = f"https://{settings.webhook_public_domain}{webhook.endpoint}"
 
             webhook_statuses.append(
                 {
@@ -170,32 +163,32 @@ class WebhookCreate(BaseModel):
     name: str
     provider: str
     enabled: bool = True
-    secret: Optional[str] = None
-    commands: List[Dict[str, Any]] = []
+    secret: str | None = None
+    commands: list[dict[str, Any]] = []
 
 
 class WebhookUpdate(BaseModel):
-    name: Optional[str] = None
-    enabled: Optional[bool] = None
-    secret: Optional[str] = None
+    name: str | None = None
+    enabled: bool | None = None
+    secret: str | None = None
 
 
 class CommandCreate(BaseModel):
     trigger: str
     action: str
-    agent: Optional[str] = None
+    agent: str | None = None
     template: str
-    conditions: Optional[Dict[str, Any]] = None
+    conditions: dict[str, Any] | None = None
     priority: int = 0
 
 
 class CommandUpdate(BaseModel):
-    trigger: Optional[str] = None
-    action: Optional[str] = None
-    agent: Optional[str] = None
-    template: Optional[str] = None
-    conditions: Optional[Dict[str, Any]] = None
-    priority: Optional[int] = None
+    trigger: str | None = None
+    action: str | None = None
+    agent: str | None = None
+    template: str | None = None
+    conditions: dict[str, Any] | None = None
+    priority: int | None = None
 
 
 @router.get("/webhooks")
@@ -211,9 +204,7 @@ async def list_webhooks(db: AsyncSession = Depends(get_db_session)):
         for webhook in webhooks:
             # Load commands
             commands_result = await db.execute(
-                select(WebhookCommandDB).where(
-                    WebhookCommandDB.webhook_id == webhook.webhook_id
-                )
+                select(WebhookCommandDB).where(WebhookCommandDB.webhook_id == webhook.webhook_id)
             )
             commands = commands_result.scalars().all()
 
@@ -278,9 +269,7 @@ async def get_webhook(webhook_id: str, db: AsyncSession = Depends(get_db_session
                     "action": cmd.action,
                     "agent": cmd.agent,
                     "template": cmd.template,
-                    "conditions": json.loads(cmd.conditions_json)
-                    if cmd.conditions_json
-                    else None,
+                    "conditions": json.loads(cmd.conditions_json) if cmd.conditions_json else None,
                     "priority": cmd.priority,
                 }
                 for cmd in commands
@@ -294,9 +283,7 @@ async def get_webhook(webhook_id: str, db: AsyncSession = Depends(get_db_session
 
 
 @router.post("/webhooks", status_code=status.HTTP_201_CREATED)
-async def create_webhook(
-    webhook: WebhookCreate, db: AsyncSession = Depends(get_db_session)
-):
+async def create_webhook(webhook: WebhookCreate, db: AsyncSession = Depends(get_db_session)):
     """Create a new dynamic webhook."""
     try:
         # Validate provider
@@ -312,9 +299,7 @@ async def create_webhook(
             select(WebhookConfigDB).where(WebhookConfigDB.name == webhook.name)
         )
         if existing.scalar_one_or_none():
-            raise HTTPException(
-                status_code=400, detail="Webhook with this name already exists"
-            )
+            raise HTTPException(status_code=400, detail="Webhook with this name already exists")
 
         # Create webhook
         webhook_id = f"wh-{uuid.uuid4().hex[:12]}"
@@ -329,7 +314,7 @@ async def create_webhook(
             secret=webhook.secret,
             config_json=json.dumps({}),  # Required field
             created_by="system",  # Required field
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         db.add(db_webhook)
         await db.flush()  # Flush to get webhook_id for commands
@@ -542,9 +527,7 @@ async def add_command_to_webhook(
             action=command.action,
             agent=command.agent,
             template=command.template,
-            conditions_json=json.dumps(command.conditions)
-            if command.conditions
-            else None,
+            conditions_json=json.dumps(command.conditions) if command.conditions else None,
             priority=command.priority,
         )
         db.add(db_command)
@@ -595,9 +578,7 @@ async def list_commands(webhook_id: str, db: AsyncSession = Depends(get_db_sessi
                 "action": cmd.action,
                 "agent": cmd.agent,
                 "template": cmd.template,
-                "conditions": json.loads(cmd.conditions_json)
-                if cmd.conditions_json
-                else None,
+                "conditions": json.loads(cmd.conditions_json) if cmd.conditions_json else None,
                 "priority": cmd.priority,
             }
             for cmd in commands
@@ -725,17 +706,13 @@ async def delete_command(
 
 
 @router.get("/webhooks/events/recent")
-async def get_recent_webhook_events(
-    limit: int = 100, db: AsyncSession = Depends(get_db_session)
-):
+async def get_recent_webhook_events(limit: int = 100, db: AsyncSession = Depends(get_db_session)):
     """
     Get recent webhook events across all webhooks.
     """
     try:
         result = await db.execute(
-            select(WebhookEventDB)
-            .order_by(WebhookEventDB.created_at.desc())
-            .limit(limit)
+            select(WebhookEventDB).order_by(WebhookEventDB.created_at.desc()).limit(limit)
         )
         events = result.scalars().all()
 

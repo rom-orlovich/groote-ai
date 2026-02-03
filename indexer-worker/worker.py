@@ -1,23 +1,23 @@
 import asyncio
 import json
 import uuid
-from datetime import datetime, timezone
-import structlog
-import redis.asyncio as redis
-import httpx
-from sentence_transformers import SentenceTransformer
+from datetime import UTC, datetime
 
+import httpx
+import redis.asyncio as redis
+import structlog
 from config import settings
+from indexers import ConfluenceIndexer, GitHubIndexer, JiraIndexer
 from models import (
-    IndexJobStatus,
-    DataSourceConfig,
-    GitHubSourceConfig,
-    JiraSourceConfig,
-    ConfluenceSourceConfig,
     CodeChunk,
+    ConfluenceSourceConfig,
+    DataSourceConfig,
     DocumentChunk,
+    GitHubSourceConfig,
+    IndexJobStatus,
+    JiraSourceConfig,
 )
-from indexers import GitHubIndexer, JiraIndexer, ConfluenceIndexer
+from sentence_transformers import SentenceTransformer
 
 logger = structlog.get_logger()
 
@@ -71,7 +71,7 @@ class IndexerWorker:
             source_id=source_id,
             job_type=job_type,
             status="running",
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
         )
         await self._update_status(status)
 
@@ -82,20 +82,18 @@ class IndexerWorker:
                 await self._index_source(source, status)
 
             status.status = "completed"
-            status.completed_at = datetime.now(timezone.utc)
+            status.completed_at = datetime.now(UTC)
 
         except Exception as e:
             logger.error("job_failed", job_id=job_id, error=str(e))
             status.status = "failed"
             status.error_message = str(e)
-            status.completed_at = datetime.now(timezone.utc)
+            status.completed_at = datetime.now(UTC)
 
         await self._update_status(status)
         await self._publish_completion(status)
 
-    async def _fetch_sources(
-        self, org_id: str, source_id: str | None
-    ) -> list[DataSourceConfig]:
+    async def _fetch_sources(self, org_id: str, source_id: str | None) -> list[DataSourceConfig]:
         async with httpx.AsyncClient() as client:
             url = f"http://dashboard-api:5000/api/sources/{org_id}"
             if source_id:
@@ -172,9 +170,7 @@ class IndexerWorker:
                 repo_url = repo.get("clone_url", repo.get("html_url", ""))
                 repo_name = repo.get("full_name", repo.get("name", ""))
 
-                repo_path = await indexer.clone_or_pull_repo(
-                    repo_url, repo_name.replace("/", "_")
-                )
+                repo_path = await indexer.clone_or_pull_repo(repo_url, repo_name.replace("/", "_"))
 
                 chunks = await indexer.index_repo(repo_path, repo_name)
                 all_chunks.extend(chunks)
@@ -182,15 +178,11 @@ class IndexerWorker:
                 await self._index_to_gkg(source.org_id, str(repo_path))
 
                 status.items_processed += 1
-                status.progress_percent = int(
-                    (status.items_processed / status.items_total) * 100
-                )
+                status.progress_percent = int((status.items_processed / status.items_total) * 100)
                 await self._update_status(status)
 
             except Exception as e:
-                logger.error(
-                    "repo_indexing_failed", repo=repo.get("name"), error=str(e)
-                )
+                logger.error("repo_indexing_failed", repo=repo.get("name"), error=str(e))
                 status.items_failed += 1
 
         await self._store_code_chunks(source.org_id, all_chunks)

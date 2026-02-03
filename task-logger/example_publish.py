@@ -1,6 +1,6 @@
 import asyncio
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import redis.asyncio as redis
 
@@ -18,7 +18,7 @@ async def publish_example_events():
         {
             "type": "webhook:received",
             "webhook_event_id": webhook_event_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "data": json.dumps({"provider": "github", "payload": {"action": "opened"}}),
         },
     )
@@ -30,7 +30,7 @@ async def publish_example_events():
         {
             "type": "webhook:validated",
             "webhook_event_id": webhook_event_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "data": json.dumps({"valid": True}),
         },
     )
@@ -42,7 +42,7 @@ async def publish_example_events():
         {
             "type": "webhook:matched",
             "webhook_event_id": webhook_event_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "data": json.dumps({"command": "approve", "matched": True}),
         },
     )
@@ -54,10 +54,8 @@ async def publish_example_events():
         {
             "type": "webhook:task_created",
             "webhook_event_id": webhook_event_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "data": json.dumps(
-                {"task_id": task_id, "command": "approve", "agent": "executor"}
-            ),
+            "timestamp": datetime.now(UTC).isoformat(),
+            "data": json.dumps({"task_id": task_id, "command": "approve", "agent": "executor"}),
         },
     )
 
@@ -68,7 +66,7 @@ async def publish_example_events():
         {
             "type": "task:created",
             "task_id": task_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "data": json.dumps(
                 {
                     "source": "webhook",
@@ -86,8 +84,8 @@ async def publish_example_events():
         {
             "type": "task:started",
             "task_id": task_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "data": json.dumps({"started_at": datetime.now(timezone.utc).isoformat()}),
+            "timestamp": datetime.now(UTC).isoformat(),
+            "data": json.dumps({"started_at": datetime.now(UTC).isoformat()}),
         },
     )
 
@@ -98,7 +96,7 @@ async def publish_example_events():
         {
             "type": "task:output",
             "task_id": task_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "data": json.dumps({"content": "I found the bug in login.py"}),
         },
     )
@@ -110,10 +108,8 @@ async def publish_example_events():
         {
             "type": "task:user_input",
             "task_id": task_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "data": json.dumps(
-                {"content": "Yes, please fix it", "question_type": "approval"}
-            ),
+            "timestamp": datetime.now(UTC).isoformat(),
+            "data": json.dumps({"content": "Yes, please fix it", "question_type": "approval"}),
         },
     )
 
@@ -124,7 +120,7 @@ async def publish_example_events():
         {
             "type": "task:completed",
             "task_id": task_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "data": json.dumps(
                 {
                     "result": "Fixed authentication bug. Created PR #456.",

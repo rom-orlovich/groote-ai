@@ -1,7 +1,7 @@
 """Conversation data factory for testing."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from .task_factory import Task
@@ -15,7 +15,7 @@ class ConversationMessage:
     role: str
     content: str
     task_id: str | None = None
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -26,8 +26,8 @@ class Conversation:
     conversation_id: str
     user_id: str
     title: str
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     is_archived: bool = False
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -55,7 +55,7 @@ class Conversation:
             task_id=task_id,
         )
         self.messages.append(message)
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
         return message
 
     def add_task(self, task: Task) -> None:
@@ -73,12 +73,12 @@ class Conversation:
             if self.completed_at is None or task.completed_at > self.completed_at:
                 self.completed_at = task.completed_at
 
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
 
     def archive(self) -> None:
         """Archive the conversation."""
         self.is_archived = True
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
 
     def get_messages_ordered(self) -> list[ConversationMessage]:
         """Get messages ordered chronologically."""

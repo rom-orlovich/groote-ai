@@ -2,10 +2,9 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import structlog
+from config.settings import get_settings
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-from config.settings import get_settings
 
 logger = structlog.get_logger(__name__)
 

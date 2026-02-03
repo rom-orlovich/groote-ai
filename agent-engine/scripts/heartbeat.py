@@ -11,9 +11,9 @@ import sys
 from datetime import datetime
 
 import structlog
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
 
 logger = structlog.get_logger()
 
@@ -56,9 +56,7 @@ async def update_heartbeat():
             return
 
         engine = create_async_engine(db_url, echo=False)
-        async_session = sessionmaker(
-            engine, class_=AsyncSession, expire_on_commit=False
-        )
+        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         hostname = os.environ.get("HOSTNAME", "unknown")
         provider = os.environ.get("CLI_PROVIDER", "claude")
@@ -104,9 +102,7 @@ async def mark_inactive():
             return
 
         engine = create_async_engine(db_url, echo=False)
-        async_session = sessionmaker(
-            engine, class_=AsyncSession, expire_on_commit=False
-        )
+        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
         hostname = os.environ.get("HOSTNAME", "unknown")
 

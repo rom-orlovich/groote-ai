@@ -1,18 +1,17 @@
-from fastapi import APIRouter
 import structlog
-
+from core.interfaces import VectorStoreProtocol
 from core.models import (
-    QueryRequest,
-    QueryResponse,
     CodeQueryRequest,
-    TicketQueryRequest,
     DocsQueryRequest,
     GraphRelatedRequest,
     GraphRelatedResponse,
     HealthStatus,
+    QueryRequest,
+    QueryResponse,
+    TicketQueryRequest,
 )
 from core.query_engine import HybridQueryEngine
-from core.interfaces import VectorStoreProtocol
+from fastapi import APIRouter
 
 logger = structlog.get_logger()
 

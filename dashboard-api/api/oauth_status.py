@@ -214,9 +214,7 @@ async def revoke_oauth(
                 params={"platform": platform},
             )
             if response.status_code != 200:
-                raise HTTPException(
-                    status_code=500, detail="Failed to fetch installations"
-                )
+                raise HTTPException(status_code=500, detail="Failed to fetch installations")
 
             data = response.json()
             installations = data.get("installations", [])
@@ -249,6 +247,4 @@ async def revoke_oauth(
 
     except httpx.RequestError as e:
         logger.error("oauth_revoke_error", platform=platform, error=str(e))
-        raise HTTPException(
-            status_code=503, detail=f"OAuth service unavailable: {str(e)}"
-        )
+        raise HTTPException(status_code=503, detail=f"OAuth service unavailable: {e!s}")

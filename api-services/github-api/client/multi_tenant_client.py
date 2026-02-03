@@ -85,9 +85,7 @@ class MultiTenantGitHubClient:
         response.raise_for_status()
         return response.json()
 
-    async def get_issue(
-        self, owner: str, repo: str, issue_number: int
-    ) -> dict[str, Any]:
+    async def get_issue(self, owner: str, repo: str, issue_number: int) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.get(f"/repos/{owner}/{repo}/issues/{issue_number}")
         response.raise_for_status()
@@ -122,9 +120,7 @@ class MultiTenantGitHubClient:
         response.raise_for_status()
         return response.json()
 
-    async def get_pull_request(
-        self, owner: str, repo: str, pr_number: int
-    ) -> dict[str, Any]:
+    async def get_pull_request(self, owner: str, repo: str, pr_number: int) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.get(f"/repos/{owner}/{repo}/pulls/{pr_number}")
         response.raise_for_status()
@@ -158,15 +154,11 @@ class MultiTenantGitHubClient:
     ) -> dict[str, Any]:
         client = await self._get_client()
         params = {"ref": ref} if ref else {}
-        response = await client.get(
-            f"/repos/{owner}/{repo}/contents/{path}", params=params
-        )
+        response = await client.get(f"/repos/{owner}/{repo}/contents/{path}", params=params)
         response.raise_for_status()
         return response.json()
 
-    async def search_code(
-        self, query: str, per_page: int = 30, page: int = 1
-    ) -> dict[str, Any]:
+    async def search_code(self, query: str, per_page: int = 30, page: int = 1) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.get(
             "/search/code", params={"q": query, "per_page": per_page, "page": page}

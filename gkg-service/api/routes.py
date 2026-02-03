@@ -1,22 +1,21 @@
-from fastapi import APIRouter, HTTPException
 import structlog
-
+from core.graph_analyzer import GraphAnalyzerService
 from core.models import (
-    DependencyRequest,
-    DependencyResult,
-    UsageRequest,
-    UsageResult,
+    BatchRelatedRequest,
     CallGraphRequest,
     CallGraphResult,
+    DependencyRequest,
+    DependencyResult,
+    HealthStatus,
     HierarchyRequest,
     HierarchyResult,
-    RelatedRequest,
-    RelatedEntitiesResult,
-    BatchRelatedRequest,
     IndexRequest,
-    HealthStatus,
+    RelatedEntitiesResult,
+    RelatedRequest,
+    UsageRequest,
+    UsageResult,
 )
-from core.graph_analyzer import GraphAnalyzerService
+from fastapi import APIRouter, HTTPException
 
 logger = structlog.get_logger()
 

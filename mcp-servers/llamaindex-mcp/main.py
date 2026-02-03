@@ -1,5 +1,4 @@
 import structlog
-
 from config import settings
 from llamaindex_mcp import mcp
 

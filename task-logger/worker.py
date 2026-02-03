@@ -2,10 +2,9 @@ import asyncio
 import json
 import logging
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import redis.asyncio as redis
-
 from config import settings
 from logger import TaskLogger
 from models import TaskEventType
@@ -27,7 +26,7 @@ async def process_webhook_event(event: dict):
     webhook_event_id = event.get("webhook_event_id")
     event_type = event.get("type")
     data = event.get("data", {})
-    timestamp = event.get("timestamp", datetime.now(timezone.utc).isoformat())
+    timestamp = event.get("timestamp", datetime.now(UTC).isoformat())
 
     if isinstance(data, str):
         data = json.loads(data)
@@ -62,7 +61,7 @@ async def process_task_event(event: dict):
 
     event_type = event.get("type")
     data = event.get("data", {})
-    timestamp = event.get("timestamp", datetime.now(timezone.utc).isoformat())
+    timestamp = event.get("timestamp", datetime.now(UTC).isoformat())
 
     if isinstance(data, str):
         data = json.loads(data)
@@ -115,7 +114,7 @@ async def process_knowledge_event(event: dict):
 
     event_type = event.get("type")
     data = event.get("data", {})
-    timestamp = event.get("timestamp", datetime.now(timezone.utc).isoformat())
+    timestamp = event.get("timestamp", datetime.now(UTC).isoformat())
 
     if isinstance(data, str):
         data = json.loads(data)
@@ -209,7 +208,7 @@ async def run():
                 block=5000,
             )
 
-            for stream_name, messages in events:
+            for _stream_name, messages in events:
                 for message_id, event_data in messages:
                     try:
                         await process_event(event_data)

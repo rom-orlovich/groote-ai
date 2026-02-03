@@ -4,8 +4,8 @@ Tests conversation tracking and metric aggregation.
 """
 
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tests"))
 
@@ -13,9 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tests"))
 class TestConversationMetricsAggregation:
     """Tests for conversation metrics aggregation."""
 
-    def test_conversation_aggregates_task_metrics(
-        self, conversation_factory, task_factory
-    ):
+    def test_conversation_aggregates_task_metrics(self, conversation_factory, task_factory):
         """Business requirement: Roll-up metrics."""
         conversation = conversation_factory.create(title="Fix auth bug")
 
@@ -31,14 +29,12 @@ class TestConversationMetricsAggregation:
         assert conversation.total_tasks == 2
         assert conversation.total_duration_seconds == 90
 
-    def test_conversation_started_at_is_earliest_task(
-        self, conversation_factory, task_factory
-    ):
+    def test_conversation_started_at_is_earliest_task(self, conversation_factory, task_factory):
         """Business requirement: Timeline accuracy."""
         conversation = conversation_factory.create()
 
-        early_time = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-        late_time = datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        early_time = datetime(2026, 1, 1, 10, 0, 0, tzinfo=UTC)
+        late_time = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
 
         task1 = task_factory.create()
         task1.started_at = late_time
@@ -52,22 +48,20 @@ class TestConversationMetricsAggregation:
 
         assert conversation.started_at == early_time
 
-    def test_conversation_completed_at_is_latest_task(
-        self, conversation_factory, task_factory
-    ):
+    def test_conversation_completed_at_is_latest_task(self, conversation_factory, task_factory):
         """Business requirement: Timeline accuracy."""
         conversation = conversation_factory.create()
 
-        early_completion = datetime(2026, 1, 1, 10, 30, 0, tzinfo=timezone.utc)
-        late_completion = datetime(2026, 1, 1, 12, 30, 0, tzinfo=timezone.utc)
+        early_completion = datetime(2026, 1, 1, 10, 30, 0, tzinfo=UTC)
+        late_completion = datetime(2026, 1, 1, 12, 30, 0, tzinfo=UTC)
 
         task1 = task_factory.create()
-        task1.started_at = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+        task1.started_at = datetime(2026, 1, 1, 10, 0, 0, tzinfo=UTC)
         task1.completed_at = early_completion
         conversation.add_task(task1)
 
         task2 = task_factory.create()
-        task2.started_at = datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        task2.started_at = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
         task2.completed_at = late_completion
         conversation.add_task(task2)
 
@@ -112,9 +106,7 @@ class TestConversationArchiving:
         conversation.archive()
         assert conversation.is_archived is True
 
-    def test_archived_conversation_preserves_data(
-        self, conversation_factory, task_factory
-    ):
+    def test_archived_conversation_preserves_data(self, conversation_factory, task_factory):
         """Archived conversations keep their data."""
         conversation = conversation_factory.create()
 
@@ -152,9 +144,7 @@ class TestConversationCreation:
 class TestTaskCompletionUpdatesConversation:
     """Tests for task completion updating conversation."""
 
-    def test_task_completion_updates_conversation(
-        self, conversation_factory, task_factory
-    ):
+    def test_task_completion_updates_conversation(self, conversation_factory, task_factory):
         """Business requirement: Real-time metrics."""
         conversation = conversation_factory.create()
 

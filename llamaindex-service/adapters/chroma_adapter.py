@@ -1,7 +1,6 @@
 import chromadb
-from chromadb.config import Settings as ChromaSettings
 import structlog
-
+from chromadb.config import Settings as ChromaSettings
 from core.models import SearchResult
 
 logger = structlog.get_logger()
@@ -57,7 +56,7 @@ class ChromaVectorStore:
         where_filter = None
         if filters:
             if len(filters) == 1:
-                key, value = list(filters.items())[0]
+                key, value = next(iter(filters.items()))
                 where_filter = {key: value}
             else:
                 where_filter = {"$and": [{k: v} for k, v in filters.items()]}

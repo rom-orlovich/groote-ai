@@ -119,9 +119,7 @@ class TestSessionStatus:
 class TestSessionCostAccumulation:
     """Complete cost accumulation flow tests."""
 
-    def test_session_cost_accumulation_multiple_tasks(
-        self, session_factory, task_factory
-    ):
+    def test_session_cost_accumulation_multiple_tasks(self, session_factory, task_factory):
         """Business requirement: Session tracks cumulative costs."""
         session = session_factory.create(user_id="user-1", machine_id="machine-1")
 

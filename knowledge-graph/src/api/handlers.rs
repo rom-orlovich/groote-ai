@@ -10,9 +10,8 @@ use uuid::Uuid;
 
 use crate::{
     models::{
-        CreateEdgeRequest, CreateNodeRequest, Direction, Edge, EdgeWithNodes,
-        GraphStats, NeighborsQuery, Node, NodeResponse, PathQuery, PathResult,
-        SearchQuery,
+        CreateEdgeRequest, CreateNodeRequest, Edge, EdgeWithNodes, NeighborsQuery, Node,
+        NodeResponse, PathQuery, SearchQuery,
     },
     AppState,
 };
@@ -24,9 +23,7 @@ pub async fn health_check() -> impl IntoResponse {
     }))
 }
 
-pub async fn list_nodes(
-    State(state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+pub async fn list_nodes(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let graph = state.graph.read().await;
     let nodes: Vec<&Node> = graph.list_nodes();
     Json(serde_json::json!({
@@ -97,9 +94,7 @@ pub async fn delete_node(
     }
 }
 
-pub async fn list_edges(
-    State(state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+pub async fn list_edges(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let graph = state.graph.read().await;
     let edges: Vec<EdgeWithNodes> = graph
         .list_edges()
@@ -199,9 +194,7 @@ pub async fn search_nodes(
     }))
 }
 
-pub async fn get_stats(
-    State(state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+pub async fn get_stats(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let graph = state.graph.read().await;
     let stats = graph.get_stats();
     Json(stats)
