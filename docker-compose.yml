@@ -1,0 +1,462 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - agent-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=agent_system
+      - POSTGRES_USER=agent
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-agent}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - agent-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent -d agent_system"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql+asyncpg://agent:${POSTGRES_PASSWORD:-agent}@postgres:5432/agent_system
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-}
+      - JIRA_WEBHOOK_SECRET=${JIRA_WEBHOOK_SECRET:-}
+      - SLACK_WEBHOOK_SECRET=${SLACK_WEBHOOK_SECRET:-}
+      - KNOWLEDGE_GRAPH_URL=http://knowledge-graph:4000
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  cli:
+    build: ./agent-engine
+    ports:
+      - "8080-8089:8080"
+    environment:
+      - CLI_PROVIDER=${CLI_PROVIDER:-claude}
+      - MAX_CONCURRENT_TASKS=${MAX_CONCURRENT_TASKS:-5}
+      - TASK_TIMEOUT_SECONDS=${TASK_TIMEOUT_SECONDS:-3600}
+      - CLAUDE_CODE_ENABLE_TASKS=${CLAUDE_CODE_ENABLE_TASKS:-true}
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql+asyncpg://agent:${POSTGRES_PASSWORD:-agent}@postgres:5432/agent_system
+      - KNOWLEDGE_GRAPH_URL=http://knowledge-graph:4000
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - CURSOR_API_KEY=${CURSOR_API_KEY:-}
+    volumes:
+      - agent_data:/data
+      - ~/.anthropic:/root/.anthropic:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  github-mcp:
+    image: ghcr.io/github/github-mcp-server:latest
+    environment:
+      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_TOKEN:-}
+      - GITHUB_TOOLSETS=${GITHUB_TOOLSETS:-repos,issues,pull_requests}
+      - GITHUB_HOST=${GITHUB_HOST:-}
+    stdin_open: true
+    tty: true
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  jira-mcp:
+    build: ./mcp-servers/jira-mcp
+    ports:
+      - "9002:9002"
+    environment:
+      - PORT=9002
+      - JIRA_API_URL=http://jira-api:3002
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  slack-mcp:
+    build: ./mcp-servers/slack-mcp
+    ports:
+      - "9003:9003"
+    environment:
+      - PORT=9003
+      - SLACK_API_URL=http://slack-api:3003
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  sentry-mcp:
+    build: ./mcp-servers/sentry-mcp
+    ports:
+      - "9004:9004"
+    environment:
+      - PORT=9004
+      - SENTRY_API_URL=http://sentry-api:3004
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  github-api:
+    build: ./api-services/github-api
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  jira-api:
+    build: ./api-services/jira-api
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - JIRA_URL=${JIRA_URL:-}
+      - JIRA_EMAIL=${JIRA_EMAIL:-}
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN:-}
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  slack-api:
+    build: ./api-services/slack-api
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  sentry-api:
+    build: ./api-services/sentry-api
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN:-}
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  dashboard-api:
+    build: ./dashboard-api
+    ports:
+      - "5000:5000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql+asyncpg://agent:${POSTGRES_PASSWORD:-agent}@postgres:5432/agent_system
+      - AGENT_ENGINE_URL=http://agent-engine:8080
+      - CORS_ORIGINS=http://localhost:3005,http://external-dashboard:80
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  external-dashboard:
+    build: ./external-dashboard
+    ports:
+      - "3005:80"
+    depends_on:
+      - dashboard-api
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  knowledge-graph:
+    build: ./knowledge-graph
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - GKG_DATA_DIR=/data/graphs
+      - REPOS_DIR=/data/repos
+      - REPOS_CONFIG=/app/config/repos.json
+      - REPO_URLS=${REPO_URLS:-}
+    volumes:
+      - knowledge_graph_data:/data
+      - ./knowledge-graph/config:/app/config:ro
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  knowledge-graph-mcp:
+    build: ./mcp-servers/knowledge-graph-mcp
+    ports:
+      - "9005:9005"
+    environment:
+      - KG_PORT=9005
+      - KG_KNOWLEDGE_GRAPH_URL=http://knowledge-graph:4000
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+      - CHROMA_COLLECTION=${CHROMA_COLLECTION:-agent_knowledge}
+    depends_on:
+      - knowledge-graph
+      - chromadb
+    networks:
+      - agent-network
+    restart: unless-stopped
+
+  chromadb:
+    image: chromadb/chroma:0.4.22
+    container_name: agent-chromadb
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    networks:
+      - agent-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  task-logger:
+    build: ./task-logger
+    ports:
+      - "8090:8090"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - LOGS_DIR=/data/logs/tasks
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - task_logs:/data/logs/tasks
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - agent-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  oauth-service:
+    build: ./oauth-service
+    ports:
+      - "8010:8010"
+    environment:
+      - PORT=8010
+      - BASE_URL=${OAUTH_BASE_URL:-http://localhost:8010}
+      - DATABASE_URL=postgresql+asyncpg://agent:${POSTGRES_PASSWORD:-agent}@postgres:5432/agent_system
+      - GITHUB_APP_ID=${GITHUB_APP_ID:-}
+      - GITHUB_APP_NAME=${GITHUB_APP_NAME:-}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - GITHUB_PRIVATE_KEY=${GITHUB_PRIVATE_KEY:-}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-}
+      - SLACK_CLIENT_ID=${SLACK_CLIENT_ID:-}
+      - SLACK_CLIENT_SECRET=${SLACK_CLIENT_SECRET:-}
+      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET:-}
+      - SLACK_STATE_SECRET=${SLACK_STATE_SECRET:-}
+      - JIRA_CLIENT_ID=${JIRA_CLIENT_ID:-}
+      - JIRA_CLIENT_SECRET=${JIRA_CLIENT_SECRET:-}
+      - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - agent-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # LLAMAINDEX SERVICE - Hybrid RAG Orchestration (Optional Advanced Feature)
+  # =============================================================================
+  llamaindex-service:
+    build:
+      context: ./llamaindex-service
+      dockerfile: Dockerfile
+    container_name: agent-llamaindex
+    ports:
+      - "8002:8002"
+    environment:
+      - CHROMADB_URL=http://chromadb:8000
+      - GKG_URL=http://gkg-service:8003
+      - REDIS_URL=redis://redis:6379/0
+      - POSTGRES_URL=postgresql+asyncpg://agent:${POSTGRES_PASSWORD:-agent}@postgres:5432/agent_system
+      - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    depends_on:
+      chromadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - llama_cache:/app/cache
+    networks:
+      - agent-network
+    restart: unless-stopped
+    profiles:
+      - knowledge
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  llamaindex-mcp:
+    build:
+      context: ./mcp-servers/llamaindex-mcp
+      dockerfile: Dockerfile
+    container_name: agent-llamaindex-mcp
+    ports:
+      - "9006:9006"
+    environment:
+      - LLAMAINDEX_URL=http://llamaindex-service:8002
+      - MCP_PORT=9006
+    depends_on:
+      - llamaindex-service
+    networks:
+      - agent-network
+    restart: unless-stopped
+    profiles:
+      - knowledge
+
+  # =============================================================================
+  # GKG SERVICE - GitLab Knowledge Graph (Optional Advanced Feature)
+  # =============================================================================
+  gkg-service:
+    build:
+      context: ./gkg-service
+      dockerfile: Dockerfile
+    container_name: agent-gkg
+    ports:
+      - "8003:8003"
+    environment:
+      - DATA_DIR=/data/gkg
+      - REPOS_DIR=/data/repos
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - gkg_data:/data/gkg
+      - repos_data:/data/repos
+    networks:
+      - agent-network
+    restart: unless-stopped
+    profiles:
+      - knowledge
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  gkg-mcp:
+    build:
+      context: ./mcp-servers/gkg-mcp
+      dockerfile: Dockerfile
+    container_name: agent-gkg-mcp
+    ports:
+      - "9007:9007"
+    environment:
+      - GKG_URL=http://gkg-service:8003
+      - MCP_PORT=9007
+    depends_on:
+      - gkg-service
+    networks:
+      - agent-network
+    restart: unless-stopped
+    profiles:
+      - knowledge
+
+  # =============================================================================
+  # INDEXER WORKER - Background Indexing Service (Optional Advanced Feature)
+  # =============================================================================
+  indexer-worker:
+    build:
+      context: ./indexer-worker
+      dockerfile: Dockerfile
+    container_name: agent-indexer
+    ports:
+      - "8004:8004"
+    environment:
+      - CHROMADB_URL=http://chromadb:8000
+      - GKG_URL=http://gkg-service:8003
+      - REDIS_URL=redis://redis:6379/0
+      - POSTGRES_URL=postgresql+asyncpg://agent:${POSTGRES_PASSWORD:-agent}@postgres:5432/agent_system
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - JIRA_URL=${JIRA_URL:-}
+      - JIRA_EMAIL=${JIRA_EMAIL:-}
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN:-}
+      - CONFLUENCE_URL=${CONFLUENCE_URL:-${JIRA_URL}}
+      - CONFLUENCE_EMAIL=${CONFLUENCE_EMAIL:-${JIRA_EMAIL}}
+      - CONFLUENCE_API_TOKEN=${CONFLUENCE_API_TOKEN:-${JIRA_API_TOKEN}}
+      - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+      - REPOS_DIR=/data/repos
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    depends_on:
+      chromadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - repos_data:/data/repos
+      - indexer_cache:/app/cache
+    networks:
+      - agent-network
+    restart: unless-stopped
+    profiles:
+      - knowledge
+
+networks:
+  agent-network:
+    name: agent-network
+    driver: bridge
+
+volumes:
+  postgres_data:
+  agent_data:
+  knowledge_graph_data:
+  task_logs:
+  chroma_data:
+  llama_cache:
+  gkg_data:
+  repos_data:
+  indexer_cache:

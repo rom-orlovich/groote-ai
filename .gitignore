@@ -1,0 +1,177 @@
+# ===========================================
+# Python
+# ===========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ===========================================
+# Virtual Environments
+# ===========================================
+.venv/
+venv/
+ENV/
+env/
+.uv/
+uv-venv/
+
+# ===========================================
+# Environment Variables
+# ===========================================
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ===========================================
+# Testing & Coverage
+# ===========================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+*.cover
+*.log
+.cache
+nosetests.xml
+coverage.xml
+*.pytest_cache/
+
+# ===========================================
+# IDEs & Editors
+# ===========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+.cursor/
+
+# ===========================================
+# OS Files
+# ===========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# ===========================================
+# Docker
+# ===========================================
+docker-compose.override.yml
+*.log
+
+# ===========================================
+# Node.js (for external-dashboard)
+# ===========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+.npm
+.eslintcache
+.node_repl_history
+*.tgz
+.yarn-integrity
+.next/
+out/
+.nuxt/
+dist/
+
+# ===========================================
+# Rust (for knowledge-graph)
+# ===========================================
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# ===========================================
+# Data & Volumes
+# ===========================================
+data/
+repos/
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# ===========================================
+# Logs
+# ===========================================
+logs/
+*.log
+log/
+
+# ===========================================
+# Temporary Files
+# ===========================================
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# ===========================================
+# Secrets & Keys
+# ===========================================
+*.pem
+*.key
+*.cert
+*.crt
+secrets/
+.secrets/
+
+# ===========================================
+# Package Manager Locks (keep uv.lock, ignore others)
+# ===========================================
+poetry.lock
+Pipfile.lock
+yarn.lock
+package-lock.json
+
+# ===========================================
+# Build Artifacts
+# ===========================================
+*.o
+*.a
+*.lib
+*.dll
+*.exe
+*.out
+*.app
