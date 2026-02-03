@@ -1,9 +1,8 @@
-import httpx
-import structlog
 from typing import Protocol, runtime_checkable
 
+import httpx
+import structlog
 from config import settings
-
 
 logger = structlog.get_logger()
 

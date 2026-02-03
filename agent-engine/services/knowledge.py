@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
+
 import httpx
 import structlog
 
@@ -187,9 +188,7 @@ class KnowledgeService:
 
     @property
     def is_available(self) -> bool:
-        return self._enabled and (
-            self._status.llamaindex_available or self._status.gkg_available
-        )
+        return self._enabled and (self._status.llamaindex_available or self._status.gkg_available)
 
     def enable(self) -> None:
         self._enabled = True

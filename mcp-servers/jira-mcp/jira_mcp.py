@@ -1,6 +1,6 @@
 from typing import Any
-import httpx
 
+import httpx
 from config import get_settings
 
 
@@ -50,9 +50,7 @@ class JiraAPI:
         response.raise_for_status()
         return response.json()
 
-    async def update_issue(
-        self, issue_key: str, fields: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def update_issue(self, issue_key: str, fields: dict[str, Any]) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.put(
             f"/api/v1/issues/{issue_key}",
@@ -87,9 +85,7 @@ class JiraAPI:
         response.raise_for_status()
         return response.json()
 
-    async def transition_issue(
-        self, issue_key: str, transition_id: str
-    ) -> dict[str, Any]:
+    async def transition_issue(self, issue_key: str, transition_id: str) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.post(
             f"/api/v1/issues/{issue_key}/transitions",

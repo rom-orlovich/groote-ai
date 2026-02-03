@@ -121,9 +121,7 @@ class TestSentryIssueOperations:
             {
                 "id": "12345",
                 "title": "Error",
-                "metadata": {
-                    "stacktrace": {"frames": [{"filename": "test.js", "lineno": 10}]}
-                },
+                "metadata": {"stacktrace": {"frames": [{"filename": "test.js", "lineno": 10}]}},
             },
         )
 

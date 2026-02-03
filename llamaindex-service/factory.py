@@ -1,15 +1,15 @@
 import os
-import structlog
 
-from core.interfaces import (
-    VectorStoreProtocol,
-    GraphStoreProtocol,
-    CacheProtocol,
-)
-from core.query_engine import HybridQueryEngine, FeatureFlags
+import structlog
 from adapters.chroma_adapter import ChromaVectorStore
 from adapters.gkg_adapter import GKGGraphStore
-from adapters.redis_cache_adapter import RedisCacheAdapter, InMemoryCacheAdapter
+from adapters.redis_cache_adapter import InMemoryCacheAdapter, RedisCacheAdapter
+from core.interfaces import (
+    CacheProtocol,
+    GraphStoreProtocol,
+    VectorStoreProtocol,
+)
+from core.query_engine import FeatureFlags, HybridQueryEngine
 
 logger = structlog.get_logger()
 
@@ -102,8 +102,7 @@ class ServiceContainer:
                 self._cache = InMemoryCacheAdapter()
 
         feature_flags = FeatureFlags(
-            enable_gkg_enrichment=self._config.enable_gkg
-            and self._graph_store is not None,
+            enable_gkg_enrichment=self._config.enable_gkg and self._graph_store is not None,
             enable_caching=self._config.enable_cache and self._cache is not None,
             enable_reranking=self._config.enable_reranking,
             cache_ttl_seconds=self._config.cache_ttl,

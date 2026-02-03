@@ -1,4 +1,5 @@
 from typing import Protocol, runtime_checkable
+
 from core.models import CodeChunk, DocumentChunk, JobStatus
 
 
@@ -10,9 +11,7 @@ class SourceIndexerProtocol(Protocol):
         """Fetch items from source."""
         ...
 
-    async def index_items(
-        self, items: list[dict]
-    ) -> list[CodeChunk] | list[DocumentChunk]:
+    async def index_items(self, items: list[dict]) -> list[CodeChunk] | list[DocumentChunk]:
         """Index items into chunks."""
         ...
 

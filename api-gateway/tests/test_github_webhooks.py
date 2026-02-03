@@ -7,8 +7,8 @@ import sys
 from pathlib import Path
 
 from .fixtures import (
-    github_issue_opened_payload,
     github_issue_comment_payload,
+    github_issue_opened_payload,
     github_pr_opened_payload,
     github_pr_review_comment_payload,
     github_push_payload,
@@ -16,7 +16,7 @@ from .fixtures import (
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from webhooks.github.events import should_process_event, extract_task_info
+from webhooks.github.events import extract_task_info, should_process_event
 
 
 class TestGitHubEventFiltering:

@@ -1,8 +1,9 @@
 """Redis client for task queue and caching."""
 
 import json
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
+
 import redis.asyncio as redis
 import structlog
 
@@ -48,32 +49,24 @@ class RedisKeys:
     SKILL_QUEUE = "skills:queue"  # List of pending skill executions
 
     # GitHub comment tracking (prevent infinite loops)
-    GITHUB_POSTED_COMMENT = (
-        "github:posted_comment:{id}"  # Track comment IDs posted by agent
-    )
+    GITHUB_POSTED_COMMENT = "github:posted_comment:{id}"  # Track comment IDs posted by agent
 
     # Slack message tracking (prevent infinite loops)
-    SLACK_POSTED_MESSAGE = (
-        "slack:posted_message:{ts}"  # Track message timestamps posted by agent
-    )
+    SLACK_POSTED_MESSAGE = "slack:posted_message:{ts}"  # Track message timestamps posted by agent
 
     # Jira comment tracking (prevent infinite loops)
-    JIRA_POSTED_COMMENT = (
-        "jira:posted_comment:{id}"  # Track comment IDs posted by agent
-    )
+    JIRA_POSTED_COMMENT = "jira:posted_comment:{id}"  # Track comment IDs posted by agent
 
 
 class RedisClient:
     """Async Redis client wrapper."""
 
     def __init__(self):
-        self._client: Optional[redis.Redis] = None
+        self._client: redis.Redis | None = None
 
     async def connect(self) -> None:
         """Connect to Redis."""
-        self._client = redis.from_url(
-            settings.redis_url, encoding="utf-8", decode_responses=True
-        )
+        self._client = redis.from_url(settings.redis_url, encoding="utf-8", decode_responses=True)
         logger.info("Connected to Redis", url=settings.redis_url)
 
     async def disconnect(self) -> None:
@@ -89,7 +82,7 @@ class RedisClient:
         await self._client.rpush("task_queue", task_id)
         logger.debug("Task pushed to queue", task_id=task_id)
 
-    async def pop_task(self, timeout: int = 30) -> Optional[str]:
+    async def pop_task(self, timeout: int = 30) -> str | None:
         """Pop task from queue (blocking)."""
         if not self._client:
             raise RuntimeError("Redis not connected")
@@ -106,7 +99,7 @@ class RedisClient:
             raise RuntimeError("Redis not connected")
         await self._client.set(f"task:{task_id}:status", status, ex=3600)
 
-    async def get_task_status(self, task_id: str) -> Optional[str]:
+    async def get_task_status(self, task_id: str) -> str | None:
         """Get task status."""
         if not self._client:
             raise RuntimeError("Redis not connected")
@@ -118,7 +111,7 @@ class RedisClient:
             raise RuntimeError("Redis not connected")
         await self._client.set(f"task:{task_id}:pid", str(pid), ex=3600)
 
-    async def get_task_pid(self, task_id: str) -> Optional[int]:
+    async def get_task_pid(self, task_id: str) -> int | None:
         """Get task process ID."""
         if not self._client:
             raise RuntimeError("Redis not connected")
@@ -132,7 +125,7 @@ class RedisClient:
         await self._client.append(f"task:{task_id}:output", chunk)
         await self._client.expire(f"task:{task_id}:output", 3600)
 
-    async def get_output(self, task_id: str) -> Optional[str]:
+    async def get_output(self, task_id: str) -> str | None:
         """Get accumulated output."""
         if not self._client:
             raise RuntimeError("Redis not connected")
@@ -145,19 +138,19 @@ class RedisClient:
         await self._client.sadd(f"session:{session_id}:tasks", task_id)
         await self._client.expire(f"session:{session_id}:tasks", 86400)
 
-    async def get_session_tasks(self, session_id: str) -> List[str]:
+    async def get_session_tasks(self, session_id: str) -> list[str]:
         """Get all tasks for session."""
         if not self._client:
             raise RuntimeError("Redis not connected")
         return list(await self._client.smembers(f"session:{session_id}:tasks"))
 
-    async def set_json(self, key: str, data: dict, ex: Optional[int] = None) -> None:
+    async def set_json(self, key: str, data: dict, ex: int | None = None) -> None:
         """Set JSON data."""
         if not self._client:
             raise RuntimeError("Redis not connected")
         await self._client.set(key, json.dumps(data), ex=ex)
 
-    async def get_json(self, key: str) -> Optional[dict]:
+    async def get_json(self, key: str) -> dict | None:
         """Get JSON data."""
         if not self._client:
             raise RuntimeError("Redis not connected")
@@ -178,9 +171,7 @@ class RedisClient:
 
     # ==================== Subagent Management ====================
 
-    async def add_active_subagent(
-        self, subagent_id: str, status_data: Dict[str, Any]
-    ) -> None:
+    async def add_active_subagent(self, subagent_id: str, status_data: dict[str, Any]) -> None:
         """Add subagent to active set and set its status."""
         if not self._client:
             raise RuntimeError("Redis not connected")
@@ -191,15 +182,11 @@ class RedisClient:
                 "status": status_data.get("status", "running"),
                 "mode": status_data.get("mode", "foreground"),
                 "agent_name": status_data.get("agent_name", ""),
-                "started_at": status_data.get(
-                    "started_at", datetime.now(timezone.utc).isoformat()
-                ),
+                "started_at": status_data.get("started_at", datetime.now(UTC).isoformat()),
                 "permission_mode": status_data.get("permission_mode", "default"),
             },
         )
-        await self._client.expire(
-            RedisKeys.SUBAGENT_STATUS.format(id=subagent_id), 86400
-        )
+        await self._client.expire(RedisKeys.SUBAGENT_STATUS.format(id=subagent_id), 86400)
         logger.debug("Subagent added to active set", subagent_id=subagent_id)
 
     async def remove_active_subagent(self, subagent_id: str) -> None:
@@ -211,7 +198,7 @@ class RedisClient:
         await self._client.delete(RedisKeys.SUBAGENT_OUTPUT.format(id=subagent_id))
         logger.debug("Subagent removed from active set", subagent_id=subagent_id)
 
-    async def get_active_subagents(self) -> List[str]:
+    async def get_active_subagents(self) -> list[str]:
         """Get all active subagent IDs."""
         if not self._client:
             raise RuntimeError("Redis not connected")
@@ -223,35 +210,27 @@ class RedisClient:
             raise RuntimeError("Redis not connected")
         return await self._client.scard(RedisKeys.ACTIVE_SUBAGENTS)
 
-    async def get_subagent_status(self, subagent_id: str) -> Optional[Dict[str, str]]:
+    async def get_subagent_status(self, subagent_id: str) -> dict[str, str] | None:
         """Get subagent status details."""
         if not self._client:
             raise RuntimeError("Redis not connected")
-        data = await self._client.hgetall(
-            RedisKeys.SUBAGENT_STATUS.format(id=subagent_id)
-        )
+        data = await self._client.hgetall(RedisKeys.SUBAGENT_STATUS.format(id=subagent_id))
         return data if data else None
 
     async def update_subagent_status(self, subagent_id: str, status: str) -> None:
         """Update subagent status."""
         if not self._client:
             raise RuntimeError("Redis not connected")
-        await self._client.hset(
-            RedisKeys.SUBAGENT_STATUS.format(id=subagent_id), "status", status
-        )
+        await self._client.hset(RedisKeys.SUBAGENT_STATUS.format(id=subagent_id), "status", status)
 
     async def append_subagent_output(self, subagent_id: str, chunk: str) -> None:
         """Append output chunk to subagent."""
         if not self._client:
             raise RuntimeError("Redis not connected")
-        await self._client.append(
-            RedisKeys.SUBAGENT_OUTPUT.format(id=subagent_id), chunk
-        )
-        await self._client.expire(
-            RedisKeys.SUBAGENT_OUTPUT.format(id=subagent_id), 3600
-        )
+        await self._client.append(RedisKeys.SUBAGENT_OUTPUT.format(id=subagent_id), chunk)
+        await self._client.expire(RedisKeys.SUBAGENT_OUTPUT.format(id=subagent_id), 3600)
 
-    async def get_subagent_output(self, subagent_id: str) -> Optional[str]:
+    async def get_subagent_output(self, subagent_id: str) -> str | None:
         """Get accumulated subagent output."""
         if not self._client:
             raise RuntimeError("Redis not connected")
@@ -259,15 +238,11 @@ class RedisClient:
 
     # ==================== Parallel Execution ====================
 
-    async def create_parallel_group(
-        self, group_id: str, subagent_ids: List[str]
-    ) -> None:
+    async def create_parallel_group(self, group_id: str, subagent_ids: list[str]) -> None:
         """Create a parallel execution group."""
         if not self._client:
             raise RuntimeError("Redis not connected")
-        await self._client.sadd(
-            RedisKeys.PARALLEL_GROUP.format(group_id=group_id), *subagent_ids
-        )
+        await self._client.sadd(RedisKeys.PARALLEL_GROUP.format(group_id=group_id), *subagent_ids)
         await self._client.hset(
             RedisKeys.PARALLEL_STATUS.format(group_id=group_id),
             mapping={
@@ -276,25 +251,17 @@ class RedisClient:
                 "completed": "0",
             },
         )
-        await self._client.expire(
-            RedisKeys.PARALLEL_GROUP.format(group_id=group_id), 86400
-        )
-        await self._client.expire(
-            RedisKeys.PARALLEL_STATUS.format(group_id=group_id), 86400
-        )
+        await self._client.expire(RedisKeys.PARALLEL_GROUP.format(group_id=group_id), 86400)
+        await self._client.expire(RedisKeys.PARALLEL_STATUS.format(group_id=group_id), 86400)
 
-    async def get_parallel_group_agents(self, group_id: str) -> List[str]:
+    async def get_parallel_group_agents(self, group_id: str) -> list[str]:
         """Get all subagent IDs in a parallel group."""
         if not self._client:
             raise RuntimeError("Redis not connected")
-        return list(
-            await self._client.smembers(
-                RedisKeys.PARALLEL_GROUP.format(group_id=group_id)
-            )
-        )
+        return list(await self._client.smembers(RedisKeys.PARALLEL_GROUP.format(group_id=group_id)))
 
     async def set_parallel_result(
-        self, group_id: str, subagent_id: str, result: Dict[str, Any]
+        self, group_id: str, subagent_id: str, result: dict[str, Any]
     ) -> None:
         """Set result for a subagent in parallel group."""
         if not self._client:
@@ -308,32 +275,24 @@ class RedisClient:
         await self._client.hincrby(
             RedisKeys.PARALLEL_STATUS.format(group_id=group_id), "completed", 1
         )
-        await self._client.expire(
-            RedisKeys.PARALLEL_RESULTS.format(group_id=group_id), 86400
-        )
+        await self._client.expire(RedisKeys.PARALLEL_RESULTS.format(group_id=group_id), 86400)
 
-    async def get_parallel_results(self, group_id: str) -> Dict[str, Any]:
+    async def get_parallel_results(self, group_id: str) -> dict[str, Any]:
         """Get all results from parallel group."""
         if not self._client:
             raise RuntimeError("Redis not connected")
-        raw = await self._client.hgetall(
-            RedisKeys.PARALLEL_RESULTS.format(group_id=group_id)
-        )
+        raw = await self._client.hgetall(RedisKeys.PARALLEL_RESULTS.format(group_id=group_id))
         return {k: json.loads(v) for k, v in raw.items()}
 
-    async def get_parallel_status(self, group_id: str) -> Optional[Dict[str, str]]:
+    async def get_parallel_status(self, group_id: str) -> dict[str, str] | None:
         """Get parallel group status."""
         if not self._client:
             raise RuntimeError("Redis not connected")
-        return await self._client.hgetall(
-            RedisKeys.PARALLEL_STATUS.format(group_id=group_id)
-        )
+        return await self._client.hgetall(RedisKeys.PARALLEL_STATUS.format(group_id=group_id))
 
     # ==================== Machine Management ====================
 
-    async def register_machine(
-        self, machine_id: str, account_id: Optional[str] = None
-    ) -> None:
+    async def register_machine(self, machine_id: str, account_id: str | None = None) -> None:
         """Register a machine as active."""
         if not self._client:
             raise RuntimeError("Redis not connected")
@@ -342,13 +301,11 @@ class RedisClient:
             RedisKeys.MACHINE_STATUS.format(id=machine_id),
             mapping={
                 "status": "online",
-                "heartbeat": datetime.now(timezone.utc).isoformat(),
+                "heartbeat": datetime.now(UTC).isoformat(),
             },
         )
         if account_id:
-            await self._client.set(
-                RedisKeys.MACHINE_ACCOUNT.format(id=machine_id), account_id
-            )
+            await self._client.set(RedisKeys.MACHINE_ACCOUNT.format(id=machine_id), account_id)
         logger.debug("Machine registered", machine_id=machine_id)
 
     async def update_machine_heartbeat(self, machine_id: str) -> None:
@@ -358,26 +315,22 @@ class RedisClient:
         await self._client.hset(
             RedisKeys.MACHINE_STATUS.format(id=machine_id),
             "heartbeat",
-            datetime.now(timezone.utc).isoformat(),
+            datetime.now(UTC).isoformat(),
         )
 
     async def set_machine_status(self, machine_id: str, status: str) -> None:
         """Set machine status."""
         if not self._client:
             raise RuntimeError("Redis not connected")
-        await self._client.hset(
-            RedisKeys.MACHINE_STATUS.format(id=machine_id), "status", status
-        )
+        await self._client.hset(RedisKeys.MACHINE_STATUS.format(id=machine_id), "status", status)
 
-    async def get_machine_status(self, machine_id: str) -> Optional[Dict[str, str]]:
+    async def get_machine_status(self, machine_id: str) -> dict[str, str] | None:
         """Get machine status."""
         if not self._client:
             raise RuntimeError("Redis not connected")
-        return await self._client.hgetall(
-            RedisKeys.MACHINE_STATUS.format(id=machine_id)
-        )
+        return await self._client.hgetall(RedisKeys.MACHINE_STATUS.format(id=machine_id))
 
-    async def get_active_machines(self) -> List[str]:
+    async def get_active_machines(self) -> list[str]:
         """Get all active machine IDs."""
         if not self._client:
             raise RuntimeError("Redis not connected")
@@ -392,9 +345,7 @@ class RedisClient:
         await self._client.delete(RedisKeys.MACHINE_METRICS.format(id=machine_id))
         await self._client.delete(RedisKeys.MACHINE_ACCOUNT.format(id=machine_id))
 
-    async def set_machine_metrics(
-        self, machine_id: str, metrics: Dict[str, Any]
-    ) -> None:
+    async def set_machine_metrics(self, machine_id: str, metrics: dict[str, Any]) -> None:
         """Set machine resource metrics."""
         if not self._client:
             raise RuntimeError("Redis not connected")
@@ -402,21 +353,17 @@ class RedisClient:
             RedisKeys.MACHINE_METRICS.format(id=machine_id),
             mapping={k: str(v) for k, v in metrics.items()},
         )
-        await self._client.expire(
-            RedisKeys.MACHINE_METRICS.format(id=machine_id), 300
-        )  # 5 min TTL
+        await self._client.expire(RedisKeys.MACHINE_METRICS.format(id=machine_id), 300)  # 5 min TTL
 
-    async def get_machine_metrics(self, machine_id: str) -> Optional[Dict[str, str]]:
+    async def get_machine_metrics(self, machine_id: str) -> dict[str, str] | None:
         """Get machine resource metrics."""
         if not self._client:
             raise RuntimeError("Redis not connected")
-        return await self._client.hgetall(
-            RedisKeys.MACHINE_METRICS.format(id=machine_id)
-        )
+        return await self._client.hgetall(RedisKeys.MACHINE_METRICS.format(id=machine_id))
 
     # ==================== Container Management ====================
 
-    async def set_container_resources(self, resources: Dict[str, Any]) -> None:
+    async def set_container_resources(self, resources: dict[str, Any]) -> None:
         """Set container resource usage."""
         if not self._client:
             raise RuntimeError("Redis not connected")
@@ -426,7 +373,7 @@ class RedisClient:
         )
         await self._client.expire(RedisKeys.CONTAINER_RESOURCES, 60)  # 1 min TTL
 
-    async def get_container_resources(self) -> Optional[Dict[str, str]]:
+    async def get_container_resources(self) -> dict[str, str] | None:
         """Get container resource usage."""
         if not self._client:
             raise RuntimeError("Redis not connected")
@@ -443,15 +390,15 @@ class RedisClient:
     async def publish_task_event(
         self,
         event_type: str,
-        data: Dict[str, Any],
-        task_id: Optional[str] = None,
-        webhook_event_id: Optional[str] = None,
+        data: dict[str, Any],
+        task_id: str | None = None,
+        webhook_event_id: str | None = None,
     ) -> None:
         if not self._client:
             raise RuntimeError("Redis not connected")
         event = {
             "type": event_type,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "data": json.dumps(data),
         }
         if task_id:

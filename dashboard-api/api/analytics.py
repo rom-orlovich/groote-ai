@@ -1,16 +1,14 @@
 """Analytics API endpoints."""
 
-from datetime import datetime, timedelta, timezone
-from typing import List
+from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select, func, case
-from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel
-
-from core.database import get_session as get_db_session
-from core.database.models import TaskDB, ConversationDB
 import structlog
+from core.database import get_session as get_db_session
+from core.database.models import ConversationDB, TaskDB
+from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
+from sqlalchemy import case, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger()
 
@@ -29,20 +27,20 @@ class AnalyticsSummary(BaseModel):
 class DailyCostsResponse(BaseModel):
     """Daily costs response for Chart.js."""
 
-    dates: List[str]
-    costs: List[float]
-    task_counts: List[int]
-    tokens: List[int]
-    avg_latency: List[float]
-    error_counts: List[int]
+    dates: list[str]
+    costs: list[float]
+    task_counts: list[int]
+    tokens: list[int]
+    avg_latency: list[float]
+    error_counts: list[int]
 
 
 class SubagentCostsResponse(BaseModel):
     """Subagent costs response for Chart.js."""
 
-    subagents: List[str]
-    costs: List[float]
-    task_counts: List[int]
+    subagents: list[str]
+    costs: list[float]
+    task_counts: list[int]
 
 
 @router.get("/summary")
@@ -51,7 +49,7 @@ async def get_analytics_summary(
 ) -> AnalyticsSummary:
     """Get overall analytics summary."""
     # Use datetime range for SQLite compatibility instead of func.date()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
     # Today's stats
@@ -79,14 +77,12 @@ async def get_costs_histogram(
     db: AsyncSession = Depends(get_db_session),
 ) -> DailyCostsResponse:
     """Get cost aggregation with variable granularity."""
-    start_date = datetime.now(timezone.utc) - timedelta(days=days)
+    start_date = datetime.now(UTC) - timedelta(days=days)
 
     # Detect database dialect
     try:
         bind = (
-            db.get_bind()
-            if hasattr(db, "get_bind")
-            else (db.bind if hasattr(db, "bind") else None)
+            db.get_bind() if hasattr(db, "get_bind") else (db.bind if hasattr(db, "bind") else None)
         )
         dialect_name = bind.dialect.name if bind else None
     except Exception:
@@ -100,13 +96,12 @@ async def get_costs_histogram(
         else:
             # PostgreSQL
             time_group = func.to_char(TaskDB.created_at, "YYYY-MM-DD HH24:00:00")
+    # Daily granularity
+    elif is_sqlite:
+        time_group = func.strftime("%Y-%m-%d", TaskDB.created_at)
     else:
-        # Daily granularity
-        if is_sqlite:
-            time_group = func.strftime("%Y-%m-%d", TaskDB.created_at)
-        else:
-            # PostgreSQL
-            time_group = func.to_char(TaskDB.created_at, "YYYY-MM-DD")
+        # PostgreSQL
+        time_group = func.to_char(TaskDB.created_at, "YYYY-MM-DD")
 
     # We use case to count non-null errors
     error_case = func.sum(case((TaskDB.error.isnot(None), 1), else_=0))
@@ -143,7 +138,7 @@ async def get_costs_by_subagent(
     days: int = Query(30, ge=1, le=365), db: AsyncSession = Depends(get_db_session)
 ) -> SubagentCostsResponse:
     """Get cost breakdown by subagent."""
-    start_date = datetime.now(timezone.utc) - timedelta(days=days)
+    start_date = datetime.now(UTC) - timedelta(days=days)
 
     query = (
         select(
@@ -206,9 +201,7 @@ async def get_conversations_analytics(
     total_conversations = len(conversations)
     total_cost_usd = sum(conv.total_cost_usd or 0.0 for conv in conversations)
     total_tasks = sum(conv.total_tasks or 0 for conv in conversations)
-    total_duration_seconds = sum(
-        conv.total_duration_seconds or 0.0 for conv in conversations
-    )
+    total_duration_seconds = sum(conv.total_duration_seconds or 0.0 for conv in conversations)
 
     # Calculate averages
     avg_cost_per_conversation = (
@@ -233,9 +226,7 @@ async def get_conversations_analytics(
                 "total_tasks": conv.total_tasks or 0,
                 "total_duration_seconds": conv.total_duration_seconds or 0.0,
                 "started_at": conv.started_at.isoformat() if conv.started_at else None,
-                "completed_at": conv.completed_at.isoformat()
-                if conv.completed_at
-                else None,
+                "completed_at": conv.completed_at.isoformat() if conv.completed_at else None,
             }
             for conv in conversations
         ],

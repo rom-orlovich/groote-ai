@@ -1,8 +1,8 @@
 from typing import Any
-from fastmcp import FastMCP
 
-from slack_mcp import SlackAPI
 from config import get_settings
+from fastmcp import FastMCP
+from slack_mcp import SlackAPI
 
 mcp = FastMCP("Slack MCP Server")
 slack_api = SlackAPI()
@@ -51,9 +51,7 @@ async def get_slack_channel_history(
 
 
 @mcp.tool()
-async def get_slack_thread(
-    channel: str, thread_ts: str, limit: int = 100
-) -> dict[str, Any]:
+async def get_slack_thread(channel: str, thread_ts: str, limit: int = 100) -> dict[str, Any]:
     """
     Get replies in a Slack thread.
 
@@ -69,9 +67,7 @@ async def get_slack_thread(
 
 
 @mcp.tool()
-async def add_slack_reaction(
-    channel: str, timestamp: str, emoji: str
-) -> dict[str, Any]:
+async def add_slack_reaction(channel: str, timestamp: str, emoji: str) -> dict[str, Any]:
     """
     Add an emoji reaction to a Slack message.
 
@@ -101,9 +97,7 @@ async def get_slack_channel_info(channel: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-async def list_slack_channels(
-    limit: int = 100, cursor: str | None = None
-) -> dict[str, Any]:
+async def list_slack_channels(limit: int = 100, cursor: str | None = None) -> dict[str, Any]:
     """
     List all Slack channels in the workspace.
 

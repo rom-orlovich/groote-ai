@@ -1,9 +1,8 @@
 import httpx
 import structlog
-from sentence_transformers import SentenceTransformer
-
 from chroma_client import ChromaClientManager
 from models import SearchResult
+from sentence_transformers import SentenceTransformer
 
 logger = structlog.get_logger()
 
@@ -91,12 +90,8 @@ class HybridQueryEngine:
         results = []
         if query_result and query_result.get("documents"):
             documents = query_result["documents"][0]
-            metadatas = (
-                query_result["metadatas"][0] if query_result.get("metadatas") else []
-            )
-            distances = (
-                query_result["distances"][0] if query_result.get("distances") else []
-            )
+            metadatas = query_result["metadatas"][0] if query_result.get("metadatas") else []
+            distances = query_result["distances"][0] if query_result.get("distances") else []
 
             for i, doc in enumerate(documents):
                 metadata = metadatas[i] if i < len(metadatas) else {}
@@ -196,12 +191,8 @@ class HybridQueryEngine:
         results = []
         if query_result and query_result.get("documents"):
             documents = query_result["documents"][0]
-            metadatas = (
-                query_result["metadatas"][0] if query_result.get("metadatas") else []
-            )
-            distances = (
-                query_result["distances"][0] if query_result.get("distances") else []
-            )
+            metadatas = query_result["metadatas"][0] if query_result.get("metadatas") else []
+            distances = query_result["distances"][0] if query_result.get("distances") else []
 
             for i, doc in enumerate(documents):
                 metadata = metadatas[i] if i < len(metadatas) else {}
@@ -244,12 +235,8 @@ class HybridQueryEngine:
         results = []
         if query_result and query_result.get("documents"):
             documents = query_result["documents"][0]
-            metadatas = (
-                query_result["metadatas"][0] if query_result.get("metadatas") else []
-            )
-            distances = (
-                query_result["distances"][0] if query_result.get("distances") else []
-            )
+            metadatas = query_result["metadatas"][0] if query_result.get("metadatas") else []
+            distances = query_result["distances"][0] if query_result.get("distances") else []
 
             for i, doc in enumerate(documents):
                 metadata = metadatas[i] if i < len(metadatas) else {}
@@ -276,9 +263,8 @@ class HybridQueryEngine:
     ) -> list[SearchResult]:
         where_filter: dict = {"org_id": org_id}
 
-        if filters:
-            if filters.get("space") and filters["space"] != "*":
-                where_filter["space"] = filters["space"]
+        if filters and filters.get("space") and filters["space"] != "*":
+            where_filter["space"] = filters["space"]
 
         query_result = await self.chroma_manager.query_collection(
             collection_name="confluence_docs",
@@ -290,12 +276,8 @@ class HybridQueryEngine:
         results = []
         if query_result and query_result.get("documents"):
             documents = query_result["documents"][0]
-            metadatas = (
-                query_result["metadatas"][0] if query_result.get("metadatas") else []
-            )
-            distances = (
-                query_result["distances"][0] if query_result.get("distances") else []
-            )
+            metadatas = query_result["metadatas"][0] if query_result.get("metadatas") else []
+            distances = query_result["distances"][0] if query_result.get("distances") else []
 
             for i, doc in enumerate(documents):
                 metadata = metadatas[i] if i < len(metadatas) else {}

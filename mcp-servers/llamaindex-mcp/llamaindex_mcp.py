@@ -1,11 +1,10 @@
 import time
 
-from mcp.server.fastmcp import FastMCP
 import httpx
 import structlog
-
 from config import settings
 from event_publisher import publish_query_event, publish_result_event
+from mcp.server.fastmcp import FastMCP
 
 logger = structlog.get_logger()
 

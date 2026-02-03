@@ -3,20 +3,17 @@ import hmac
 import json
 import time
 
+import structlog
+from config import get_settings
+from middleware.error_handler import WebhookValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
-import structlog
-
-from config import get_settings
-from middleware.error_handler import WebhookValidationError
 
 logger = structlog.get_logger(__name__)
 
 
-def validate_slack_signature(
-    payload: bytes, signature: str | None, timestamp: str | None
-) -> None:
+def validate_slack_signature(payload: bytes, signature: str | None, timestamp: str | None) -> None:
     settings = get_settings()
 
     if not settings.slack_signing_secret:

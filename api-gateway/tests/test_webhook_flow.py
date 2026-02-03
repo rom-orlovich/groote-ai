@@ -6,20 +6,21 @@ Tests the complete flow from webhook receipt to task creation.
 import hashlib
 import hmac
 import json
-import pytest
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Any
-from datetime import datetime, timezone
+
+import pytest
 
 from .fixtures import (
-    github_issue_opened_payload,
     github_issue_comment_payload,
+    github_issue_opened_payload,
     github_pr_opened_payload,
     jira_issue_created_payload,
-    slack_app_mention_payload,
-    slack_message_payload,
     sentry_issue_created_payload,
     sentry_issue_regression_payload,
+    slack_app_mention_payload,
+    slack_message_payload,
 )
 
 
@@ -34,7 +35,7 @@ class Task:
     status: str = "queued"
     priority: str = "normal"
     agent_type: str = "default"
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass
@@ -177,7 +178,9 @@ class WebhookHandler:
         if issue:
             input_message = f"GitHub issue #{issue.get('number')}: {issue.get('title')}\n\n{issue.get('body', '')}"
         elif pr:
-            input_message = f"GitHub PR #{pr.get('number')}: {pr.get('title')}\n\n{pr.get('body', '')}"
+            input_message = (
+                f"GitHub PR #{pr.get('number')}: {pr.get('title')}\n\n{pr.get('body', '')}"
+            )
         else:
             input_message = f"GitHub {event_type} event on {repo}"
 
@@ -402,9 +405,7 @@ class TestGitHubWebhookFlow:
         )
         signature = generate_github_signature(payload)
 
-        response = await webhook_handler.handle_github(
-            payload, signature, event_type="issues"
-        )
+        response = await webhook_handler.handle_github(payload, signature, event_type="issues")
 
         assert response.status_code == 202
         assert response.task_id is not None
@@ -477,9 +478,7 @@ class TestGitHubWebhookFlow:
         payload = {"action": "deleted", "repository": {"full_name": "myorg/myrepo"}}
         signature = generate_github_signature(payload)
 
-        response = await webhook_handler.handle_github(
-            payload, signature, event_type="issues"
-        )
+        response = await webhook_handler.handle_github(payload, signature, event_type="issues")
 
         assert response.status_code == 200
         assert response.body["action"] == "ignored"
@@ -684,9 +683,7 @@ class TestLoopPreventionFlow:
     """End-to-end tests for loop prevention."""
 
     @pytest.mark.asyncio
-    async def test_agent_posted_comment_ignored(
-        self, webhook_handler, task_queue, loop_prevention
-    ):
+    async def test_agent_posted_comment_ignored(self, webhook_handler, task_queue, loop_prevention):
         """Business requirement: Agent doesn't respond to its own comments."""
         await loop_prevention.mark_as_posted("456")
 
@@ -708,9 +705,7 @@ class TestLoopPreventionFlow:
         assert len(task_queue.tasks) == 0
 
     @pytest.mark.asyncio
-    async def test_different_comment_processed(
-        self, webhook_handler, task_queue, loop_prevention
-    ):
+    async def test_different_comment_processed(self, webhook_handler, task_queue, loop_prevention):
         """Business requirement: Only exact comment match blocked."""
         await loop_prevention.mark_as_posted("comment-456")
 
@@ -735,9 +730,7 @@ class TestWebhookToTaskRouting:
     """Tests for webhook to agent routing."""
 
     @pytest.mark.asyncio
-    async def test_github_issue_routes_to_issue_handler(
-        self, webhook_handler, task_queue
-    ):
+    async def test_github_issue_routes_to_issue_handler(self, webhook_handler, task_queue):
         """Business requirement: GitHub issues route to issue handler."""
         payload = github_issue_opened_payload(repo="myorg/myrepo")
         signature = generate_github_signature(payload)
@@ -753,9 +746,7 @@ class TestWebhookToTaskRouting:
         payload = github_pr_opened_payload(repo="myorg/myrepo")
         signature = generate_github_signature(payload)
 
-        await webhook_handler.handle_github(
-            payload, signature, event_type="pull_request"
-        )
+        await webhook_handler.handle_github(payload, signature, event_type="pull_request")
 
         task = task_queue.tasks[0]
         assert task.agent_type == "github-pr-review"

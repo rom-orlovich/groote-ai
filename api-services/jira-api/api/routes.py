@@ -1,9 +1,9 @@
 from typing import Annotated, Any
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel, ConfigDict
 
 from client import JiraClient
-from config import get_settings, Settings
+from config import Settings, get_settings
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel, ConfigDict
 
 router = APIRouter(prefix="/api/v1", tags=["jira"])
 
@@ -91,9 +91,7 @@ async def search_issues(
     request: SearchIssuesRequest,
     client: Annotated[JiraClient, Depends(get_jira_client)],
 ):
-    return await client.search_issues(
-        request.jql, request.max_results, request.start_at
-    )
+    return await client.search_issues(request.jql, request.max_results, request.start_at)
 
 
 @router.get("/issues/{issue_key}/transitions")

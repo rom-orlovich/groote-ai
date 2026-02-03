@@ -58,8 +58,4 @@ def contains_sensitive_data(content: str) -> bool:
         r"Authorization:\s*(Bearer|Basic)",
     ]
 
-    for pattern in sensitive_indicators:
-        if re.search(pattern, content, re.IGNORECASE):
-            return True
-
-    return False
+    return any(re.search(pattern, content, re.IGNORECASE) for pattern in sensitive_indicators)

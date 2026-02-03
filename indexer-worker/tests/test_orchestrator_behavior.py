@@ -1,14 +1,14 @@
 import pytest
-
-from core.orchestrator import IndexerOrchestrator, FeatureFlags
 from core.models import CodeChunk, DocumentChunk
+from core.orchestrator import FeatureFlags, IndexerOrchestrator
+
 from tests.conftest import (
-    MockVectorStore,
-    MockGraphStore,
     MockEmbeddingProvider,
+    MockGraphStore,
     MockJobQueue,
     MockSourceFetcher,
     MockSourceIndexer,
+    MockVectorStore,
 )
 
 
@@ -141,9 +141,7 @@ class TestChunkStorageBehavior:
         job = {"job_id": "job-1", "org_id": "test-org"}
         await orchestrator.process_job(job)
 
-        upsert_calls = [
-            c for c in mock_vector_store.calls if c["method"] == "upsert_code_chunks"
-        ]
+        upsert_calls = [c for c in mock_vector_store.calls if c["method"] == "upsert_code_chunks"]
         assert len(upsert_calls) > 0
 
     @pytest.mark.asyncio
@@ -181,9 +179,7 @@ class TestChunkStorageBehavior:
         await orchestrator.process_job(job)
 
         upsert_calls = [
-            c
-            for c in mock_vector_store.calls
-            if c["method"] == "upsert_document_chunks"
+            c for c in mock_vector_store.calls if c["method"] == "upsert_document_chunks"
         ]
         assert len(upsert_calls) > 0
         assert upsert_calls[0]["collection"] == "jira_tickets"

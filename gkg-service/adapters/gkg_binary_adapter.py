@@ -1,18 +1,18 @@
 import asyncio
 import json
 from pathlib import Path
-import structlog
 
+import structlog
 from core.models import (
-    DependencyResult,
-    DependencyItem,
-    UsageResult,
-    CallGraphResult,
     CallGraphNode,
-    HierarchyResult,
+    CallGraphResult,
+    DependencyItem,
+    DependencyResult,
     HierarchyNode,
+    HierarchyResult,
     RelatedEntitiesResult,
     RelatedEntity,
+    UsageResult,
 )
 
 logger = structlog.get_logger()
@@ -41,7 +41,7 @@ class GKGBinaryAdapter:
         args: list[str],
         cwd: str | None = None,
     ) -> tuple[str, str, int]:
-        cmd = [self._binary] + args
+        cmd = [self._binary, *args]
         logger.debug("gkg_command", cmd=" ".join(cmd), cwd=cwd)
 
         process = await asyncio.create_subprocess_exec(
@@ -301,10 +301,7 @@ class GKGBinaryAdapter:
             return []
 
         raw_results = self._parse_json(stdout)
-        return [
-            HierarchyNode(name=r.get("name", ""), file=r.get("file", ""))
-            for r in raw_results
-        ]
+        return [HierarchyNode(name=r.get("name", ""), file=r.get("file", "")) for r in raw_results]
 
     async def _query_children(
         self,
@@ -322,10 +319,7 @@ class GKGBinaryAdapter:
             return []
 
         raw_results = self._parse_json(stdout)
-        return [
-            HierarchyNode(name=r.get("name", ""), file=r.get("file", ""))
-            for r in raw_results
-        ]
+        return [HierarchyNode(name=r.get("name", ""), file=r.get("file", "")) for r in raw_results]
 
     def _format_hierarchy(
         self,

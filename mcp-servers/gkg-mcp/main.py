@@ -1,5 +1,4 @@
 import structlog
-
 from config import settings
 from gkg_mcp import mcp
 

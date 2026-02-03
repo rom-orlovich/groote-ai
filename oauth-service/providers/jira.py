@@ -1,11 +1,10 @@
 import base64
 import hashlib
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
 import structlog
-
 from config.settings import Settings
 
 from .base import InstallationInfo, OAuthProvider, OAuthTokens
@@ -78,7 +77,7 @@ class JiraOAuthProvider(OAuthProvider):
             response.raise_for_status()
             data = response.json()
 
-        expires_at = datetime.now(timezone.utc) + timedelta(seconds=data["expires_in"])
+        expires_at = datetime.now(UTC) + timedelta(seconds=data["expires_in"])
 
         return OAuthTokens(
             access_token=data["access_token"],
@@ -101,7 +100,7 @@ class JiraOAuthProvider(OAuthProvider):
             response.raise_for_status()
             data = response.json()
 
-        expires_at = datetime.now(timezone.utc) + timedelta(seconds=data["expires_in"])
+        expires_at = datetime.now(UTC) + timedelta(seconds=data["expires_in"])
 
         return OAuthTokens(
             access_token=data["access_token"],
@@ -127,7 +126,7 @@ class JiraOAuthProvider(OAuthProvider):
             external_org_name=site["name"],
             external_install_id=None,
             installed_by=None,
-            permissions={scope: "granted" for scope in tokens.scopes or []},
+            permissions=dict.fromkeys(tokens.scopes or [], "granted"),
             metadata={
                 "url": site["url"],
                 "scopes": site.get("scopes", []),

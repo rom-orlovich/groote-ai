@@ -1,6 +1,6 @@
 from typing import Any, Literal
-import httpx
 
+import httpx
 from config import get_settings
 
 IssueStatus = Literal["resolved", "unresolved", "ignored"]
@@ -44,9 +44,7 @@ class SentryAPI:
             params["query"] = query
         if cursor:
             params["cursor"] = cursor
-        response = await client.get(
-            f"/api/v1/projects/{project_slug}/issues", params=params
-        )
+        response = await client.get(f"/api/v1/projects/{project_slug}/issues", params=params)
         response.raise_for_status()
         return response.json()
 
@@ -71,9 +69,7 @@ class SentryAPI:
         response.raise_for_status()
         return response.json()
 
-    async def update_issue_status(
-        self, issue_id: str, status: IssueStatus
-    ) -> dict[str, Any]:
+    async def update_issue_status(self, issue_id: str, status: IssueStatus) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.put(
             f"/api/v1/issues/{issue_id}/status",

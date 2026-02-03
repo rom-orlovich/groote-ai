@@ -1,5 +1,6 @@
 import base64
 from typing import Any
+
 import httpx
 import structlog
 
@@ -72,9 +73,7 @@ class JiraClient:
         response.raise_for_status()
         return response.json()
 
-    async def update_issue(
-        self, issue_key: str, fields: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def update_issue(self, issue_key: str, fields: dict[str, Any]) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.put(f"/issue/{issue_key}", json={"fields": fields})
         response.raise_for_status()
@@ -113,9 +112,7 @@ class JiraClient:
         response.raise_for_status()
         return response.json()
 
-    async def transition_issue(
-        self, issue_key: str, transition_id: str
-    ) -> dict[str, Any]:
+    async def transition_issue(self, issue_key: str, transition_id: str) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.post(
             f"/issue/{issue_key}/transitions",

@@ -3,12 +3,12 @@ import time
 from dataclasses import dataclass
 
 from core.interfaces import (
-    VectorStoreProtocol,
-    GraphStoreProtocol,
     CacheProtocol,
+    GraphStoreProtocol,
     RerankerProtocol,
+    VectorStoreProtocol,
 )
-from core.models import SearchResult, QueryResponse
+from core.models import QueryResponse, SearchResult
 
 
 @dataclass
@@ -71,11 +71,7 @@ class HybridQueryEngine:
 
         results = await self._execute_vector_search(query, org_id, source_types, top_k)
 
-        if (
-            self._flags.enable_gkg_enrichment
-            and self._graph_store
-            and "code" in source_types
-        ):
+        if self._flags.enable_gkg_enrichment and self._graph_store and "code" in source_types:
             results = await self._enrich_with_graph(query, results, org_id)
 
         if self._flags.enable_reranking and self._reranker and len(results) > top_k:
@@ -309,6 +305,4 @@ class HybridQueryEngine:
         if not self._cache:
             return
         response.cached = True
-        await self._cache.set(
-            key, response.model_dump_json(), self._flags.cache_ttl_seconds
-        )
+        await self._cache.set(key, response.model_dump_json(), self._flags.cache_ttl_seconds)

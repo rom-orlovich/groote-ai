@@ -1,13 +1,13 @@
 import json
 import uuid
 
-from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
 import redis.asyncio as redis
 import structlog
-
 from config import get_settings
-from .events import should_process_event, extract_task_info
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
+
+from .events import extract_task_info, should_process_event
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/webhooks/slack", tags=["slack-webhook"])

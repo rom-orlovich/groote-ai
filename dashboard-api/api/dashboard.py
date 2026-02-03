@@ -1,27 +1,25 @@
 """Dashboard API endpoints."""
 
-from datetime import datetime, timezone
-from typing import List, Optional
-import uuid
+import json
 import math
+import uuid
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, HTTPException, Depends, Request, Query
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel
-
+import structlog
+from core.config import settings
 from core.database import get_session as get_db_session
-from core.database.models import TaskDB, SessionDB, WebhookEventDB, WebhookConfigDB
+from core.database.models import SessionDB, TaskDB, WebhookConfigDB, WebhookEventDB
 from core.database.redis_client import redis_client
 from core.webhook_configs import WEBHOOK_CONFIGS
-from core.config import settings
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel
 from shared import (
-    TaskStatus,
     AgentType,
     APIResponse,
+    TaskStatus,
 )
-import structlog
-import json
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger()
 
@@ -40,12 +38,12 @@ class TaskTableRow(BaseModel):
     task_id: str
     session_id: str
     status: str
-    assigned_agent: Optional[str]
+    assigned_agent: str | None
     agent_type: str
     created_at: str
-    completed_at: Optional[str]
+    completed_at: str | None
     cost_usd: float
-    duration_seconds: Optional[float]
+    duration_seconds: float | None
     input_message: str
 
     @classmethod
@@ -68,7 +66,7 @@ class TaskTableRow(BaseModel):
 class TaskTableResponse(BaseModel):
     """Task table response with pagination."""
 
-    tasks: List[TaskTableRow]
+    tasks: list[TaskTableRow]
     total: int
     page: int
     page_size: int
@@ -231,9 +229,7 @@ async def stop_task(task_id: str, db: AsyncSession = Depends(get_db_session)):
         raise HTTPException(status_code=404, detail="Task not found")
 
     if task.status not in [TaskStatus.QUEUED, TaskStatus.RUNNING]:
-        return APIResponse(
-            success=False, message=f"Cannot stop task in status: {task.status}"
-        )
+        return APIResponse(success=False, message=f"Cannot stop task in status: {task.status}")
 
     # Update status
     task.status = TaskStatus.CANCELLED
@@ -251,16 +247,15 @@ async def stop_task(task_id: str, db: AsyncSession = Depends(get_db_session)):
 async def chat_with_brain(
     request: ChatRequest,
     session_id: str = Query(...),
-    conversation_id: Optional[str] = Query(None),
+    conversation_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db_session),
 ):
     """Send chat message to Brain with conversation context support. Creates new conversation if conversation_id is not provided."""
-    from core.database.models import ConversationDB, ConversationMessageDB
     import json
 
-    result = await db.execute(
-        select(SessionDB).where(SessionDB.session_id == session_id)
-    )
+    from core.database.models import ConversationDB, ConversationMessageDB
+
+    result = await db.execute(select(SessionDB).where(SessionDB.session_id == session_id))
     session_db = result.scalar_one_or_none()
 
     if not session_db:
@@ -268,9 +263,11 @@ async def chat_with_brain(
         active = True
 
         try:
-            from core.config import settings
-            from api.credentials import ClaudeCredentials
             import json
+
+            from core.config import settings
+
+            from api.credentials import ClaudeCredentials
 
             creds_path = settings.credentials_path
             if creds_path.exists():
@@ -281,9 +278,7 @@ async def chat_with_brain(
                 if not user_id:
                     import hashlib
 
-                    token_hash = hashlib.sha256(
-                        creds.access_token.encode()
-                    ).hexdigest()[:16]
+                    token_hash = hashlib.sha256(creds.access_token.encode()).hexdigest()[:16]
                     user_id = f"user-{token_hash}"
 
                 existing_sessions_result = await db.execute(
@@ -302,7 +297,7 @@ async def chat_with_brain(
             session_id=session_id,
             user_id=user_id,
             machine_id="claude-agent-001",
-            connected_at=datetime.now(timezone.utc),
+            connected_at=datetime.now(UTC),
             active=active,
         )
         db.add(session_db)
@@ -314,9 +309,7 @@ async def chat_with_brain(
 
     if conversation_id:
         conv_result = await db.execute(
-            select(ConversationDB).where(
-                ConversationDB.conversation_id == conversation_id
-            )
+            select(ConversationDB).where(ConversationDB.conversation_id == conversation_id)
         )
         conversation = conv_result.scalar_one_or_none()
 
@@ -337,19 +330,13 @@ async def chat_with_brain(
                     content_preview = msg.content[:10000]
                     if len(msg.content) > 10000:
                         content_preview += "... (truncated)"
-                    conversation_context += (
-                        f"**{msg.role.capitalize()}**: {content_preview}\n"
-                    )
+                    conversation_context += f"**{msg.role.capitalize()}**: {content_preview}\n"
                 conversation_context += "\n## Current Message:\n"
 
             # Get last 10 tasks for this conversation
             tasks_result = await db.execute(
                 select(TaskDB)
-                .where(
-                    TaskDB.source_metadata.like(
-                        f'%"conversation_id": "{conversation_id}"%'
-                    )
-                )
+                .where(TaskDB.source_metadata.like(f'%"conversation_id": "{conversation_id}"%'))
                 .order_by(TaskDB.created_at.desc())
                 .limit(10)
             )
@@ -386,18 +373,14 @@ async def chat_with_brain(
     else:
         conversation_id = f"conv-{uuid.uuid4().hex[:12]}"
         conversation_title = (
-            request.message[:50] + "..."
-            if len(request.message) > 50
-            else request.message
+            request.message[:50] + "..." if len(request.message) > 50 else request.message
         )
 
         conversation = ConversationDB(
             conversation_id=conversation_id,
             user_id=session_db.user_id,
             title=conversation_title,
-            metadata_json=json.dumps(
-                {"source": "dashboard", "created_from": "execute_chat"}
-            ),
+            metadata_json=json.dumps({"source": "dashboard", "created_from": "execute_chat"}),
         )
         db.add(conversation)
         await db.commit()
@@ -447,7 +430,7 @@ async def chat_with_brain(
         task_id=task_id,
     )
     db.add(user_message)
-    conversation.updated_at = datetime.now(timezone.utc)
+    conversation.updated_at = datetime.now(UTC)
     await db.commit()
 
     await redis_client.push_task(task_id)
@@ -516,9 +499,7 @@ async def list_webhook_events(
     limit: int = Query(50, ge=1, le=200),
 ):
     """List recent webhook events."""
-    query = (
-        select(WebhookEventDB).order_by(WebhookEventDB.created_at.desc()).limit(limit)
-    )
+    query = select(WebhookEventDB).order_by(WebhookEventDB.created_at.desc()).limit(limit)
 
     if webhook_id:
         query = query.where(WebhookEventDB.webhook_id == webhook_id)
@@ -544,9 +525,7 @@ async def list_webhook_events(
 @router.get("/webhooks/events/{event_id}")
 async def get_webhook_event(event_id: str, db: AsyncSession = Depends(get_db_session)):
     """Get detailed webhook event logs including payload."""
-    result = await db.execute(
-        select(WebhookEventDB).where(WebhookEventDB.event_id == event_id)
-    )
+    result = await db.execute(select(WebhookEventDB).where(WebhookEventDB.event_id == event_id))
     event = result.scalar_one_or_none()
 
     if not event:
@@ -576,9 +555,7 @@ async def get_webhook_stats(db: AsyncSession = Depends(get_db_session)):
 
     # Count active webhooks from database
     active_query = (
-        select(func.count())
-        .select_from(WebhookConfigDB)
-        .where(WebhookConfigDB.enabled.is_(True))
+        select(func.count()).select_from(WebhookConfigDB).where(WebhookConfigDB.enabled.is_(True))
     )
     db_active = (await db.execute(active_query)).scalar() or 0
 
@@ -637,7 +614,7 @@ async def get_task_log_metadata(task_id: str):
         if not metadata_file.exists():
             raise HTTPException(status_code=404, detail="Task logs not found")
 
-        with open(metadata_file, "r") as f:
+        with open(metadata_file) as f:
             return json.load(f)
 
     except FileNotFoundError:
@@ -659,7 +636,7 @@ async def get_task_log_input(task_id: str):
         if not input_file.exists():
             raise HTTPException(status_code=404, detail="Task input log not found")
 
-        with open(input_file, "r") as f:
+        with open(input_file) as f:
             return json.load(f)
 
     except FileNotFoundError:
@@ -682,7 +659,7 @@ async def get_task_log_user_inputs(task_id: str):
             return []
 
         inputs = []
-        with open(user_inputs_file, "r") as f:
+        with open(user_inputs_file) as f:
             for line in f:
                 line = line.strip()
                 if line:
@@ -711,7 +688,7 @@ async def get_task_log_webhook_flow(task_id: str):
             raise HTTPException(status_code=404, detail="Webhook flow log not found")
 
         events = []
-        with open(webhook_file, "r") as f:
+        with open(webhook_file) as f:
             for line in f:
                 line = line.strip()
                 if line:
@@ -740,7 +717,7 @@ async def get_task_log_agent_output(task_id: str):
             raise HTTPException(status_code=404, detail="Agent output log not found")
 
         outputs = []
-        with open(output_file, "r") as f:
+        with open(output_file) as f:
             for line in f:
                 line = line.strip()
                 if line:
@@ -768,7 +745,7 @@ async def get_task_log_final_result(task_id: str):
         if not result_file.exists():
             raise HTTPException(status_code=404, detail="Final result log not found")
 
-        with open(result_file, "r") as f:
+        with open(result_file) as f:
             return json.load(f)
 
     except FileNotFoundError:
@@ -794,20 +771,20 @@ async def get_task_logs_full(task_id: str):
         # Read metadata (required)
         metadata_file = log_dir / "metadata.json"
         if metadata_file.exists():
-            with open(metadata_file, "r") as f:
+            with open(metadata_file) as f:
                 result["metadata"] = json.load(f)
 
         # Read input (optional)
         input_file = log_dir / "01-input.json"
         if input_file.exists():
-            with open(input_file, "r") as f:
+            with open(input_file) as f:
                 result["input"] = json.load(f)
 
         # Read user inputs (optional)
         user_inputs_file = log_dir / "02-user-inputs.jsonl"
         if user_inputs_file.exists():
             inputs = []
-            with open(user_inputs_file, "r") as f:
+            with open(user_inputs_file) as f:
                 for line in f:
                     line = line.strip()
                     if line:
@@ -818,7 +795,7 @@ async def get_task_logs_full(task_id: str):
         webhook_file = log_dir / "03-webhook-flow.jsonl"
         if webhook_file.exists():
             events = []
-            with open(webhook_file, "r") as f:
+            with open(webhook_file) as f:
                 for line in f:
                     line = line.strip()
                     if line:
@@ -829,7 +806,7 @@ async def get_task_logs_full(task_id: str):
         output_file = log_dir / "04-agent-output.jsonl"
         if output_file.exists():
             outputs = []
-            with open(output_file, "r") as f:
+            with open(output_file) as f:
                 for line in f:
                     line = line.strip()
                     if line:
@@ -840,7 +817,7 @@ async def get_task_logs_full(task_id: str):
         knowledge_file = log_dir / "05-knowledge-interactions.jsonl"
         if knowledge_file.exists():
             interactions = []
-            with open(knowledge_file, "r") as f:
+            with open(knowledge_file) as f:
                 for line in f:
                     line = line.strip()
                     if line:
@@ -850,7 +827,7 @@ async def get_task_logs_full(task_id: str):
         # Read final result (optional)
         result_file = log_dir / "06-final-result.json"
         if result_file.exists():
-            with open(result_file, "r") as f:
+            with open(result_file) as f:
                 result["final_result"] = json.load(f)
 
         return result
@@ -876,7 +853,7 @@ async def get_task_log_knowledge_interactions(task_id: str):
             return []
 
         interactions = []
-        with open(knowledge_file, "r") as f:
+        with open(knowledge_file) as f:
             for line in f:
                 line = line.strip()
                 if line:
@@ -914,7 +891,7 @@ async def get_task_knowledge_summary(task_id: str):
             }
 
         interactions = []
-        with open(knowledge_file, "r") as f:
+        with open(knowledge_file) as f:
             for line in f:
                 line = line.strip()
                 if line:
@@ -923,7 +900,7 @@ async def get_task_knowledge_summary(task_id: str):
         queries = [i for i in interactions if i.get("type") == "query"]
         results = [i for i in interactions if i.get("type") == "result"]
 
-        tools_used = list(set(i.get("tool_name") for i in interactions))
+        tools_used = list({i.get("tool_name") for i in interactions})
         source_types = []
         for q in queries:
             source_types.extend(q.get("source_types", []))

@@ -1,6 +1,6 @@
 from typing import Any
-import httpx
 
+import httpx
 from config import get_settings
 
 

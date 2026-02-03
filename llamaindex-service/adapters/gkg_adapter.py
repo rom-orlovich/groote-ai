@@ -1,6 +1,5 @@
 import httpx
 import structlog
-
 from core.models import GraphEntity
 
 logger = structlog.get_logger()
@@ -84,9 +83,7 @@ class GKGGraphStore:
                 ]
 
         except Exception as e:
-            logger.error(
-                "gkg_get_dependencies_error", file_path=file_path, error=str(e)
-            )
+            logger.error("gkg_get_dependencies_error", file_path=file_path, error=str(e))
             return []
 
     async def batch_related(

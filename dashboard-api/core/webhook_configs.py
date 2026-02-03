@@ -15,15 +15,14 @@ Configuration files support:
 To modify webhook behavior, edit the config.yaml file in the webhook's folder.
 """
 
-from typing import List, Optional
 import structlog
-
 from shared.machine_models import WebhookConfig
+
 from core.webhook_config_loader import (
+    get_agent_trigger_info,
     load_all_webhook_configs,
     load_webhook_config,
     validate_all_configs,
-    get_agent_trigger_info,
 )
 
 logger = structlog.get_logger()
@@ -33,21 +32,17 @@ logger = structlog.get_logger()
 # =============================================================================
 
 # Load all configs at module initialization
-_loaded_configs: List[WebhookConfig] = load_all_webhook_configs()
+_loaded_configs: list[WebhookConfig] = load_all_webhook_configs()
 
 # Create individual webhook references for backward compatibility
-GITHUB_WEBHOOK: Optional[WebhookConfig] = next(
+GITHUB_WEBHOOK: WebhookConfig | None = next(
     (c for c in _loaded_configs if c.name == "github"), None
 )
-JIRA_WEBHOOK: Optional[WebhookConfig] = next(
-    (c for c in _loaded_configs if c.name == "jira"), None
-)
-SLACK_WEBHOOK: Optional[WebhookConfig] = next(
-    (c for c in _loaded_configs if c.name == "slack"), None
-)
+JIRA_WEBHOOK: WebhookConfig | None = next((c for c in _loaded_configs if c.name == "jira"), None)
+SLACK_WEBHOOK: WebhookConfig | None = next((c for c in _loaded_configs if c.name == "slack"), None)
 
 # Collect all configs
-WEBHOOK_CONFIGS: List[WebhookConfig] = _loaded_configs
+WEBHOOK_CONFIGS: list[WebhookConfig] = _loaded_configs
 
 
 # =============================================================================
@@ -73,9 +68,7 @@ def validate_webhook_configs() -> None:
 
     # Validate existing configs
     if not validate_all_configs():
-        raise ValueError(
-            "Webhook configuration validation failed. Check logs for details."
-        )
+        raise ValueError("Webhook configuration validation failed. Check logs for details.")
     logger.info("webhook_configs_validated", count=len(WEBHOOK_CONFIGS))
 
 
@@ -87,7 +80,7 @@ def get_webhook_by_endpoint(endpoint: str) -> WebhookConfig:
     raise ValueError(f"Webhook not found for endpoint: {endpoint}")
 
 
-def get_webhook_by_name(name: str) -> Optional[WebhookConfig]:
+def get_webhook_by_name(name: str) -> WebhookConfig | None:
     """Get webhook config by name."""
     for config in WEBHOOK_CONFIGS:
         if config.name == name:
@@ -95,7 +88,7 @@ def get_webhook_by_name(name: str) -> Optional[WebhookConfig]:
     return None
 
 
-def reload_webhook(name: str) -> Optional[WebhookConfig]:
+def reload_webhook(name: str) -> WebhookConfig | None:
     """
     Reload a specific webhook configuration from its YAML file.
 
@@ -131,7 +124,7 @@ def reload_webhook(name: str) -> Optional[WebhookConfig]:
     return new_config
 
 
-def reload_all_webhooks() -> List[WebhookConfig]:
+def reload_all_webhooks() -> list[WebhookConfig]:
     """
     Reload all webhook configurations from YAML files.
 
@@ -153,7 +146,7 @@ def reload_all_webhooks() -> List[WebhookConfig]:
     return _loaded_configs
 
 
-def get_trigger_prefixes(webhook_name: str) -> List[str]:
+def get_trigger_prefixes(webhook_name: str) -> list[str]:
     """
     Get all valid trigger prefixes for a webhook (prefix + aliases).
 
@@ -172,7 +165,7 @@ def get_trigger_prefixes(webhook_name: str) -> List[str]:
     return prefixes
 
 
-def get_assignee_trigger(webhook_name: str) -> Optional[str]:
+def get_assignee_trigger(webhook_name: str) -> str | None:
     """
     Get the assignee trigger for a webhook (Jira-specific).
 

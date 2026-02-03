@@ -1,10 +1,9 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import redis.asyncio as redis
 import structlog
-
 from config import settings
 
 logger = structlog.get_logger()
@@ -36,13 +35,11 @@ async def publish_knowledge_event(
         event = {
             "type": event_type,
             "task_id": task_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "data": json.dumps(data),
         }
         await client.xadd("task_events", event)
-        logger.debug(
-            "knowledge_event_published", event_type=event_type, task_id=task_id
-        )
+        logger.debug("knowledge_event_published", event_type=event_type, task_id=task_id)
     except Exception as e:
         logger.warning("knowledge_event_publish_failed", error=str(e))
 
