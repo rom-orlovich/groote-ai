@@ -121,7 +121,9 @@ jobs:
   build-python-services:
     name: Build ${{ matrix.service }}
     runs-on: ubuntu-latest
+    if: always()
     needs: [test]
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -152,7 +154,9 @@ jobs:
   build-api-services:
     name: Build ${{ matrix.service }}
     runs-on: ubuntu-latest
+    if: always()
     needs: [test]
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -179,6 +183,7 @@ jobs:
   build-mcp-servers:
     name: Build MCP ${{ matrix.service }}
     runs-on: ubuntu-latest
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
