@@ -1,97 +1,105 @@
-# llamaindex-service - Features
-
-Auto-generated on 2026-02-03
+# LlamaIndex Service - Features
 
 ## Overview
 
 Hybrid RAG orchestration service combining vector search (ChromaDB) with graph traversal (GKG). Provides multi-source semantic search across code, Jira tickets, and Confluence docs.
 
-## Features
+## Core Features
 
-### Hybrid Query [TESTED]
+### Hybrid Query
 
-Query across multiple source types with combined results
+Query across multiple source types with combined results.
 
-**Related Tests:**
-- `test_hybrid_query_returns_results_from_multiple_sources`
-- `test_query_respects_top_k_limit`
-- `test_results_sorted_by_relevance`
+**Query Capabilities:**
+- Multi-source search (code, tickets, docs)
+- Configurable top_k limit
+- Relevance-based sorting
+- Source type filtering
 
-### Code-Specific Search [TESTED]
+**Request Parameters:**
+- `query` - Search query string
+- `source_types` - List of sources to search
+- `top_k` - Maximum results to return
+- `enable_graph` - Include graph enrichment
 
-Search code with repository filtering
+### Code-Specific Search
 
-**Related Tests:**
-- `test_code_query_only_searches_code_collection`
-- `test_code_query_applies_repository_filter`
+Search code with repository filtering.
 
-### Graph Enrichment [TESTED]
+**Code Search Features:**
+- Repository filtering
+- Language filtering
+- Function/class search
+- File path matching
 
-Enrich results with code relationship context from GKG
+### Graph Enrichment
 
-**Related Tests:**
-- `test_graph_enrichment_adds_context_to_code_results`
-- `test_graph_enrichment_disabled_skips_graph_lookup`
+Enrich results with code relationship context from GKG.
 
-### Query Caching [TESTED]
+**Enrichment Types:**
+- Callers (what calls this function)
+- Callees (what this function calls)
+- Dependencies (imports/exports)
+- Class relationships
 
-Cache query results with configurable TTL
+### Query Caching
 
-**Related Tests:**
-- `test_cached_results_returned_on_repeat_query`
-- `test_caching_disabled_always_queries_store`
+Cache query results with configurable TTL.
 
-### Related Entities [TESTED]
+**Cache Configuration:**
+- TTL: 300 seconds (configurable)
+- Key format: `query:{hash(params)}`
+- Invalidation on index update
 
-Find related code entities via graph
+### Related Entities
 
-**Related Tests:**
-- `test_get_related_entities_returns_relationships`
-- `test_get_related_entities_without_graph_store_returns_empty`
+Find related code entities via graph.
 
-### POST /query [TESTED]
+**Relationship Types:**
+- Function calls
+- Class inheritance
+- Module imports
+- Variable references
 
-Hybrid query across all sources
+### Multi-Source Search
 
-**Related Tests:**
-- `test_hybrid_query_returns_results_from_multiple_sources`
+Search across different content types.
 
-### POST /query/code [TESTED]
+**Source Types:**
+- `code` - Code files from GitHub repos
+- `tickets` - Jira issues and comments
+- `docs` - Confluence pages
 
-Code-specific search
+## API Endpoints
 
-**Related Tests:**
-- `test_code_query_only_searches_code_collection`
+### Query
 
-### POST /query/tickets [NEEDS TESTS]
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/query` | POST | Hybrid query across all sources |
+| `/query/code` | POST | Code-specific search |
+| `/query/tickets` | POST | Jira ticket search |
+| `/query/docs` | POST | Confluence document search |
 
-Jira ticket search
+### Graph
 
-### POST /query/docs [NEEDS TESTS]
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/graph/related` | POST | Find related entities via graph |
 
-Confluence search
+### Management
 
-### POST /graph/related [TESTED]
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/collections` | GET | List ChromaDB collections |
+| `/health` | GET | Health check endpoint |
 
-Find related entities via graph
+## Configuration
 
-**Related Tests:**
-- `test_get_related_entities_returns_relationships`
-
-### GET /collections [NEEDS TESTS]
-
-List ChromaDB collections
-
-### GET /health [NEEDS TESTS]
-
-Health check endpoint
-
-## Test Coverage Summary
-
-| Metric | Count |
-|--------|-------|
-| Total Features | 13 |
-| Fully Tested | 9 |
-| Partially Tested | 0 |
-| Missing Tests | 4 |
-| **Coverage** | **69.2%** |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| CHROMADB_URL | localhost:8000 | ChromaDB server URL |
+| GKG_SERVICE_URL | localhost:9000 | GKG service URL |
+| CACHE_TTL | 300 | Cache TTL in seconds |
+| DEFAULT_TOP_K | 10 | Default results limit |
+| ENABLE_GRAPH_ENRICHMENT | true | Enable graph enrichment |

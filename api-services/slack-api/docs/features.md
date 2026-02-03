@@ -1,105 +1,94 @@
-# api-services/slack-api - Features
-
-Auto-generated on 2026-02-03
+# Slack API Service - Features
 
 ## Overview
 
-REST API wrapper for Slack operations with message posting and channel management. Supports text messages, Block Kit formatting, and thread replies.
+REST API wrapper for Slack operations with message posting and channel management. Supports text messages, Block Kit formatting, thread replies, and workspace management.
 
-## Features
+## Core Features
 
-### Message Posting [TESTED]
+### Message Posting
 
-Post messages to channels with text and blocks
+Post messages to channels with text and optional Block Kit formatting.
 
-**Related Tests:**
-- `test_post_message_to_channel`
-- `test_post_message_with_blocks`
+**Capabilities:**
+- Plain text messages
+- Markdown formatting
+- Block Kit support
+- Attachments
+- Emoji support
 
-### Thread Replies [TESTED]
+### Thread Replies
 
-Reply to messages in threads for conversation continuity
+Reply to messages in threads to maintain conversation context.
 
-**Related Tests:**
-- `test_reply_in_thread`
+**Features:**
+- Reply in thread
+- Broadcast to channel option
+- Thread metadata retrieval
+- Parent message reference
 
-### Channel Operations [TESTED]
+### Channel Operations
 
-List channels, get channel info, retrieve history
+List and manage channels with history retrieval.
 
-**Related Tests:**
-- `test_get_channel_info`
-- `test_list_channels`
-- `test_get_channel_history`
+**Operations:**
+- List public channels
+- List private channels (bot member)
+- Get channel info
+- Get message history
+- Get thread replies
 
-### Rich Formatting [TESTED]
+### Rich Formatting (Block Kit)
 
-Support Block Kit for rich message formatting
+Build rich, interactive messages using Slack's Block Kit.
 
-**Related Tests:**
-- `test_post_message_with_blocks`
+**Block Types:**
+- Section blocks
+- Divider blocks
+- Context blocks
+- Actions blocks
+- Header blocks
 
-### Response Posting [TESTED]
+### User Lookup
 
-Post agent responses back to Slack threads
+Find and reference users in messages.
 
-**Related Tests:**
-- `test_post_message_to_channel`
-- `test_reply_in_thread`
+**Operations:**
+- List workspace users
+- Get user info by ID
+- Lookup user by email
 
-### POST /messages/{channel} [TESTED]
+### Rate Limit Handling
 
-Post message to channel
+Automatic retry with backoff for Slack API rate limits.
 
-**Related Tests:**
-- `test_post_message_to_channel`
-- `test_post_message_with_blocks`
+**Rate Tiers:**
+- Tier 1 (chat.postMessage): 1 per second
+- Tier 2 (conversations.list): 20 per minute
+- Tier 3 (users.list): 50 per minute
 
-### POST /messages/{channel}/{thread} [TESTED]
+## API Endpoints
 
-Reply in thread
+### Messages
 
-**Related Tests:**
-- `test_reply_in_thread`
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/messages/{channel}` | POST | Post message |
+| `/messages/{channel}/{thread_ts}` | POST | Reply in thread |
+| `/messages/{channel}/{ts}` | PUT | Update message |
+| `/messages/{channel}/{ts}` | DELETE | Delete message |
 
-### GET /channels [TESTED]
+### Channels
 
-List channels
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/channels` | GET | List channels |
+| `/channels/{channel}` | GET | Get channel info |
+| `/channels/{channel}/history` | GET | Get message history |
 
-**Related Tests:**
-- `test_list_channels`
+### Users
 
-### GET /channels/{channel} [TESTED]
-
-Get channel info
-
-**Related Tests:**
-- `test_get_channel_info`
-
-### GET /channels/{channel}/history [TESTED]
-
-Get message history
-
-**Related Tests:**
-- `test_get_channel_history`
-
-### GET /health [NEEDS TESTS]
-
-Health check endpoint
-
-### Error Handling [PARTIAL]
-
-Handle invalid channels and API errors
-
-**Related Tests:**
-- `test_invalid_channel_handling`
-
-## Test Coverage Summary
-
-| Metric | Count |
-|--------|-------|
-| Total Features | 12 |
-| Fully Tested | 10 |
-| Partially Tested | 1 |
-| Missing Tests | 1 |
-| **Coverage** | **87.5%** |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/users` | GET | List users |
+| `/users/{user_id}` | GET | Get user info |

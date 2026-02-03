@@ -1,71 +1,224 @@
-# dashboard-api - Flows
-
-Auto-generated on 2026-02-03
+# Dashboard API - Flows
 
 ## Process Flows
 
-### Analytics Calculation Flow [TESTED]
+### Real-Time Task Streaming Flow
 
-**Steps:**
-1. Query completed tasks from database
-2. Calculate cost using token counts and model pricing
-3. Aggregate costs by day/agent
-4. Calculate success rate (completed/total)
-5. Calculate average duration
-6. Return analytics summary
+```
+[Agent Engine] → PUBLISH task:{id}:output → [Redis Pub/Sub]
+                                                   ↓
+                                          [Redis Subscriber]
+                                                   ↓
+                                          [WebSocket Hub]
+                                                   ↓
+                                       [Subscribed Clients]
+```
 
-**Related Tests:**
-- `test_opus_cost_calculation`
-- `test_sonnet_cost_calculation`
-- `test_daily_cost_aggregation`
-- `test_success_rate_calculation`
-- `test_average_duration_calculation`
-- `test_cost_by_agent_breakdown`
-- `test_total_cost_matches_breakdown`
+**Streaming Steps:**
+1. Agent Engine publishes output to Redis Pub/Sub channel
+2. Dashboard API Redis subscriber receives message
+3. WebSocket Hub identifies subscribed clients for channel
+4. Message forwarded to all subscribed WebSocket connections
+5. Frontend receives and displays output in real-time
 
-### Conversation Flow [TESTED]
+### WebSocket Connection Flow
 
-**Steps:**
-1. Create conversation with machine_id
-2. Add messages to conversation
-3. Retrieve messages for display
-4. Track conversation state
+```
+[Client] → Connect /ws → [WebSocket Hub]
+                               ↓
+                      [Assign Client ID]
+                               ↓
+                      [Store Connection]
+                               ↓
+[Client] → Subscribe task:123 → [Add to Channel]
+                               ↓
+[Client] → Unsubscribe → [Remove from Channel]
+                               ↓
+[Client] → Disconnect → [Cleanup Connection]
+```
 
-**Related Tests:**
-- `test_conversation_created_with_defaults`
-- `test_conversation_requires_machine_id`
-- `test_message_creation`
-- `test_conversation_can_add_messages`
+**Connection Lifecycle:**
+1. Client connects to `/ws` endpoint
+2. Hub assigns unique client ID
+3. Connection stored in active connections map
+4. Client subscribes to channels (e.g., `task:123`)
+5. Client added to channel subscriber set
+6. On disconnect, cleanup all subscriptions
 
-### Webhook Monitoring Flow [TESTED]
+### WebSocket Message Protocol
 
-**Steps:**
-1. Load webhook configurations
-2. Validate webhook URL and provider
-3. Track webhook events
-4. Report webhook statistics
+**Subscribe:**
+```json
+Client → {"type": "subscribe", "channel": "task:123"}
+Server → {"type": "subscribed", "channel": "task:123"}
+```
 
-**Related Tests:**
-- `test_webhook_config_created_with_defaults`
-- `test_webhook_validation_requires_url`
-- `test_webhook_requires_valid_url`
-- `test_webhook_requires_valid_provider`
+**Task Output:**
+```json
+Server → {"type": "task_output", "task_id": "123", "output": "..."}
+```
 
-### WebSocket Subscription Flow [NEEDS TESTS]
+**Task Status:**
+```json
+Server → {"type": "task_status", "task_id": "123", "status": "completed"}
+```
 
-**Steps:**
-1. Client connects to /ws
-2. Client sends subscribe message with channel
-3. Server adds client to channel
-4. Server broadcasts task updates to subscribers
-5. Client receives real-time updates
+### Analytics Calculation Flow
 
-## Flow Coverage Summary
+```
+[Request /api/analytics/summary]
+           ↓
+   [Query PostgreSQL]
+           ↓
+    ┌──────┴──────┐
+    │             │
+    ▼             ▼
+[Tasks]     [Sessions]
+    │             │
+    ▼             ▼
+[Aggregate    [Aggregate
+ costs]        duration]
+    │             │
+    └──────┬──────┘
+           ↓
+   [Build Response]
+           ↓
+    [Return JSON]
+```
 
-| Metric | Count |
-|--------|-------|
-| Total Flows | 4 |
-| Fully Tested | 3 |
-| Partially Tested | 0 |
-| Missing Tests | 1 |
-| **Coverage** | **75.0%** |
+**Aggregation Queries:**
+- `SUM(cost_usd)` - Total cost
+- `AVG(cost_usd)` - Average cost per task
+- `SUM(input_tokens + output_tokens)` - Total tokens
+- `COUNT(*) WHERE status='completed' / COUNT(*)` - Success rate
+- `AVG(completed_at - created_at)` - Average duration
+
+### Cost Histogram Flow
+
+```
+[Request /api/analytics/costs/histogram?period=hour]
+           ↓
+   [Query Tasks with GROUP BY]
+           ↓
+   [date_trunc('hour', created_at)]
+           ↓
+   [Aggregate per bucket]
+           ↓
+   [Return time-series data]
+```
+
+**Histogram Response:**
+```json
+{
+  "period": "hour",
+  "data": [
+    {"timestamp": "2026-02-03T10:00:00Z", "cost": 0.05, "tasks": 3},
+    {"timestamp": "2026-02-03T11:00:00Z", "cost": 0.12, "tasks": 5}
+  ]
+}
+```
+
+### Conversation Flow
+
+```
+[User] → POST /api/conversations
+              ↓
+      [Create Conversation]
+              ↓
+      [Return conversation_id]
+              ↓
+[User] → Submit message via WebSocket
+              ↓
+      [Create Message record]
+              ↓
+      [Create Task for agent]
+              ↓
+      [Agent processes task]
+              ↓
+      [Response streamed to client]
+              ↓
+      [Save agent response as message]
+```
+
+**Conversation Lifecycle:**
+1. User creates new conversation
+2. Messages submitted via WebSocket or REST
+3. User messages create tasks for appropriate agent
+4. Agent response streamed back
+5. Both user and agent messages persisted
+
+### Task Retrieval Flow
+
+```
+[Request GET /api/tasks?status=running]
+              ↓
+      [Parse Query Parameters]
+              ↓
+      [Build SQLAlchemy Query]
+              ↓
+      [Apply Filters]
+              │
+    ┌─────────┼─────────┐
+    │         │         │
+    ▼         ▼         ▼
+[Status]  [Agent]   [Date]
+    │         │         │
+    └─────────┼─────────┘
+              ↓
+      [Apply Pagination]
+              ↓
+      [Execute Query]
+              ↓
+      [Serialize Results]
+              ↓
+      [Return Paginated Response]
+```
+
+**Pagination Response:**
+```json
+{
+  "items": [...],
+  "total": 100,
+  "page": 1,
+  "per_page": 20,
+  "pages": 5
+}
+```
+
+### Webhook Status Flow
+
+```
+[Request GET /api/webhooks]
+              ↓
+      [Load Webhook Configs]
+              ↓
+      [Query Recent Events]
+              ↓
+      [Calculate Stats per Source]
+              │
+    ┌─────────┼─────────┐
+    │         │         │
+    ▼         ▼         ▼
+[GitHub]  [Jira]   [Slack]
+    │         │         │
+    └─────────┼─────────┘
+              ↓
+      [Build Status Response]
+              ↓
+      [Return Configuration + Stats]
+```
+
+**Webhook Status Response:**
+```json
+{
+  "sources": [
+    {
+      "name": "github",
+      "configured": true,
+      "last_event": "2026-02-03T12:00:00Z",
+      "events_24h": 45,
+      "success_rate": 0.98
+    }
+  ]
+}
+```

@@ -1,67 +1,217 @@
-# api-services/jira-api - Flows
-
-Auto-generated on 2026-02-03
+# Jira API Service - Flows
 
 ## Process Flows
 
-### Request Processing Flow [TESTED]
+### Request Processing Flow
 
-**Steps:**
-1. Receive HTTP request
-2. Authenticate (internal token)
-3. Get Jira credentials (email + API token)
-4. Call Jira REST API
-5. Return standardized response
+```
+[Internal Service] → HTTP Request → [Jira API Service]
+                                            ↓
+                                   [Authenticate Request]
+                                            ↓
+                                   [Load Jira Credentials]
+                                            ↓
+                                   [JIRA_EMAIL + JIRA_API_TOKEN]
+                                            ↓
+                                   [Build Basic Auth Header]
+                                            ↓
+                                   [Call Jira REST API v3]
+                                            ↓
+                                   [Parse Response]
+                                            ↓
+                                   [Return Standardized JSON]
+```
 
-**Related Tests:**
-- `test_get_issue`
-- `test_create_issue`
-- `test_add_comment_to_issue`
+**Processing Steps:**
+1. Receive HTTP request from internal service
+2. Validate internal authentication
+3. Load Jira credentials from environment
+4. Build Basic Auth header (Base64 of email:api_token)
+5. Make authenticated request to Jira REST API
+6. Parse Jira response
+7. Return standardized JSON response
 
-### Issue Comment Flow [TESTED]
+### Authentication Flow
 
-**Steps:**
-1. Receive POST request with body
-2. Authenticate request
-3. Get Jira credentials
-4. Format comment for Jira ADF
-5. Call Jira API to create comment
-6. Return comment details
+```
+[Service Startup] → [Load JIRA_EMAIL, JIRA_API_TOKEN]
+                              ↓
+                    [Build credentials string]
+                              ↓
+                    [email:api_token]
+                              ↓
+                    [Base64 encode]
+                              ↓
+                    [Authorization: Basic {encoded}]
+```
 
-**Related Tests:**
-- `test_add_comment_to_issue`
+**Authentication Header:**
+```
+Authorization: Basic am9obkBjb21wYW55LmNvbTp4eHh4eHh4eA==
+```
 
-### Issue Transition Flow [TESTED]
+### Issue Comment Flow
 
-**Steps:**
-1. Receive transition request
-2. Get available transitions for issue
-3. Validate transition ID
-4. Execute transition
-5. Return updated issue status
+```
+[Agent Engine] → POST /issues/{key}/comments
+                         ↓
+                [Parse Comment Body]
+                         ↓
+                [Convert to ADF Format]
+                         ↓
+       [POST jira/rest/api/3/issue/{key}/comment]
+                         ↓
+                [Jira Response]
+                         ↓
+                [Return comment_id, url]
+```
 
-**Related Tests:**
-- `test_transition_issue`
-- `test_get_transitions`
+**ADF (Atlassian Document Format):**
+```json
+{
+  "body": {
+    "version": 1,
+    "type": "doc",
+    "content": [
+      {
+        "type": "paragraph",
+        "content": [
+          {"type": "text", "text": "Task completed"}
+        ]
+      }
+    ]
+  }
+}
+```
 
-### JQL Search Flow [TESTED]
+### JQL Search Flow
 
-**Steps:**
-1. Receive search request with JQL
-2. Authenticate request
-3. Execute JQL query via Jira API
-4. Parse and format results
-5. Return issue list
+```
+[Service] → GET /search?jql={query}&maxResults=50
+                         ↓
+                [URL Encode JQL]
+                         ↓
+       [POST jira/rest/api/3/search]
+                         ↓
+                [Parse Results]
+                         ↓
+                [Return issues + metadata]
+```
 
-**Related Tests:**
-- `test_search_issues_with_jql`
+**Search Response:**
+```json
+{
+  "issues": [...],
+  "total": 42,
+  "maxResults": 50,
+  "startAt": 0
+}
+```
 
-## Flow Coverage Summary
+### Issue Transition Flow
 
-| Metric | Count |
-|--------|-------|
-| Total Flows | 4 |
-| Fully Tested | 4 |
-| Partially Tested | 0 |
-| Missing Tests | 0 |
-| **Coverage** | **100.0%** |
+```
+[Agent Engine] → POST /issues/{key}/transitions
+                         ↓
+           [GET available transitions first]
+                         ↓
+              [Find transition by ID]
+                         ↓
+              [Validate transition allowed]
+                         ↓
+       [POST jira/rest/api/3/issue/{key}/transitions]
+                         ↓
+              [204 No Content = Success]
+                         ↓
+              [Return success status]
+```
+
+**Transition Request:**
+```json
+{
+  "transition": {"id": "21"},
+  "fields": {
+    "resolution": {"name": "Done"}
+  }
+}
+```
+
+### Workflow State Machine
+
+```
+        ┌──────────────────────────────────────┐
+        │                                      │
+        ▼                                      │
+     [Open] ────────────────────────────────────┤
+        │                                      │
+        │ Start Progress (11)                  │
+        ▼                                      │
+  [In Progress] ───────────────────────────────┤
+        │                                      │
+        │ Submit (21)                          │
+        ▼                                      │
+    [Review] ──────────────────────────────────┤
+     ↙     ↘                                   │
+    ↓       ↓                                  │
+[Reject]  [Approve]                       [CANCELLED]
+ (41)      (31)
+    │        │
+    ↓        ↓
+[In Progress] [Done]
+```
+
+### Error Handling Flow
+
+```
+[Jira API Response] → [Check Status Code]
+                            ↓
+            ┌───────────────┼───────────────┐
+            │               │               │
+            ▼               ▼               ▼
+       [2xx OK]        [4xx Error]     [5xx Error]
+            │               │               │
+            ▼               ▼               ▼
+     [Return Data]   [Parse Error]    [Retry/Return]
+                            ↓
+              [Extract errorMessages array]
+                            ↓
+              [Return Standardized Error]
+```
+
+**Error Response Format:**
+```json
+{
+  "error": "not_found",
+  "message": "Issue PROJ-999 not found",
+  "status_code": 404,
+  "details": {"issue_key": "PROJ-999"}
+}
+```
+
+### Project Listing Flow
+
+```
+[Service] → GET /projects
+                 ↓
+    [GET jira/rest/api/3/project]
+                 ↓
+         [Parse Projects]
+                 ↓
+         [Filter by access]
+                 ↓
+    [Return project list with metadata]
+```
+
+**Project Response:**
+```json
+{
+  "projects": [
+    {
+      "key": "PROJ",
+      "name": "Project Name",
+      "lead": "john.doe",
+      "projectTypeKey": "software"
+    }
+  ]
+}
+```

@@ -1,110 +1,101 @@
-# gkg-service - Features
-
-Auto-generated on 2026-02-03
+# GKG Service - Features
 
 ## Overview
 
 GitLab Knowledge Graph service for code entity relationship analysis. Provides graph-based queries for understanding code structure, dependencies, and usage patterns.
 
-## Features
+## Core Features
 
-### Dependency Analysis [TESTED]
+### Dependency Analysis
 
-Query file dependencies with configurable depth
+Query file dependencies with configurable depth for understanding code relationships.
 
-**Related Tests:**
-- `test_dependency_query_returns_file_dependencies`
-- `test_dependency_query_respects_depth_parameter`
+**Capabilities:**
+- Direct dependencies (imports, requires)
+- Transitive dependencies with depth control
+- Dependency direction (imports vs imported-by)
+- Cross-file relationship mapping
 
-### Call Graph Analysis [TESTED]
+### Call Graph Analysis
 
-Get function call graph with direction control (callers/callees/both)
+Build function/method call graphs for control flow understanding.
 
-**Related Tests:**
-- `test_call_graph_returns_callers_and_callees`
-- `test_call_graph_respects_direction_callers_only`
-- `test_call_graph_respects_direction_callees_only`
+**Analysis Types:**
+- Callers (who calls this function)
+- Callees (what does this function call)
+- Call depth traversal
+- Cross-module calls
 
-### Class Hierarchy [TESTED]
+### Symbol Usage Search
 
-Get class inheritance hierarchy (parents and children)
+Find all usages of symbols (classes, functions, variables) across codebase.
 
-**Related Tests:**
-- `test_hierarchy_returns_parents_and_children`
+**Search Capabilities:**
+- Definition location
+- All reference locations
+- Usage context (assignment, call, import)
+- Usage filtering by scope
 
-### Related Entities [TESTED]
+### Class Hierarchy
 
-Find related entities by relationship type
+Analyze inheritance and interface relationships.
 
-**Related Tests:**
-- `test_related_entities_returns_relationships`
+**Hierarchy Features:**
+- Parent classes
+- Child classes (implementations)
+- Interface implementations
+- Trait/mixin usage
 
-### Batch Operations [TESTED]
+### Related Entities
 
-Query multiple entities in a single request
+Find entities related by various relationship types.
 
-**Related Tests:**
-- `test_batch_related_returns_results_for_all_entities`
-- `test_batch_disabled_returns_empty`
+**Relationship Types:**
+- Imports/exports
+- Function calls
+- Type references
+- Variable assignments
 
-### Caching [TESTED]
+### Repository Indexing
 
-Cache query results for performance
+Index repositories to build the knowledge graph.
 
-**Related Tests:**
-- `test_cached_dependencies_returned_on_repeat_query`
+**Indexing Features:**
+- Full repository indexing
+- Incremental updates
+- Multi-language support
+- Git history awareness
 
-### Health Check [TESTED]
+### Result Caching
 
-Service health check based on analyzer availability
+Cache query results for performance.
 
-**Related Tests:**
-- `test_healthy_when_analyzer_available`
-- `test_unhealthy_when_analyzer_unavailable`
+**Cache Features:**
+- Query result caching
+- Configurable TTL
+- Cache invalidation on index update
 
-### POST /analyze/dependencies [TESTED]
+## API Endpoints
 
-Get file dependencies
+### Analysis
 
-**Related Tests:**
-- `test_dependency_query_returns_file_dependencies`
-- `test_dependency_query_respects_depth_parameter`
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/analyze/dependencies` | POST | Get file dependencies |
+| `/query/usages` | POST | Find symbol usages |
+| `/graph/calls` | POST | Get function call graph |
+| `/graph/hierarchy` | POST | Get class hierarchy |
+| `/graph/related` | POST | Find related entities |
 
-### POST /query/usages [NEEDS TESTS]
+### Indexing
 
-Find symbol usages
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/index` | POST | Index repository |
+| `/index/status` | GET | Indexing status |
 
-### POST /graph/calls [TESTED]
+### Health
 
-Get function call graph
-
-**Related Tests:**
-- `test_call_graph_returns_callers_and_callees`
-
-### POST /graph/hierarchy [TESTED]
-
-Get class hierarchy
-
-**Related Tests:**
-- `test_hierarchy_returns_parents_and_children`
-
-### POST /graph/related [TESTED]
-
-Find related entities
-
-**Related Tests:**
-- `test_related_entities_returns_relationships`
-
-### POST /index [NEEDS TESTS]
-
-Index a repository
-
-## Test Coverage Summary
-
-| Metric | Count |
-|--------|-------|
-| Total Features | 14 |
-| Fully Tested | 12 |
-| Partially Tested | 0 |
-| Missing Tests | 2 |
-| **Coverage** | **85.7%** |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |

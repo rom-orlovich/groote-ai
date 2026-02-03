@@ -1,88 +1,106 @@
-# indexer-worker - Features
-
-Auto-generated on 2026-02-03
+# Indexer Worker - Features
 
 ## Overview
 
 Background worker service for indexing data sources (GitHub, Jira, Confluence) into vector and graph stores for knowledge retrieval. Polls Redis queue and processes indexing jobs.
 
-## Features
+## Core Features
 
-### Job Processing [TESTED]
+### Job Processing
 
-Poll and process indexing jobs from Redis queue
+Poll and process indexing jobs from Redis queue.
 
-**Related Tests:**
-- `test_job_updates_status_to_running`
-- `test_successful_job_completes`
-- `test_job_completion_published`
+**Job Operations:**
+- Fetch jobs from queue
+- Update job status
+- Process source configurations
+- Report completion
 
-### Code Chunk Storage [TESTED]
+### GitHub Indexing
 
-Store code chunks to vector store with embeddings
+Index GitHub repositories into vector and graph stores.
 
-**Related Tests:**
-- `test_code_chunks_stored_to_vector_store`
+**Indexed Content:**
+- File contents
+- Function definitions
+- Class definitions
+- Import relationships
 
-### Document Chunk Storage [TESTED]
+**Processing:**
+- Clone/pull repositories
+- Chunk code files
+- Generate embeddings
+- Index to GKG for graph
 
-Store document chunks (Jira/Confluence) to appropriate collections
+### Jira Indexing
 
-**Related Tests:**
-- `test_document_chunks_stored_with_correct_collection`
+Index Jira tickets for semantic search.
 
-### Disabled Source Handling [TESTED]
+**Indexed Content:**
+- Ticket summaries
+- Descriptions
+- Comments
+- Custom fields
 
-Skip disabled sources during indexing
+**Processing:**
+- Fetch via Jira API
+- Parse rich text
+- Chunk large descriptions
+- Generate embeddings
 
-**Related Tests:**
-- `test_disabled_source_skipped`
+### Confluence Indexing
 
-### Graph Indexing [TESTED]
+Index Confluence pages for documentation search.
 
-Index code to GKG graph store
+**Indexed Content:**
+- Page content
+- Page titles
+- Space metadata
+- Attachments metadata
 
-**Related Tests:**
-- `test_graph_indexing_when_enabled`
-- `test_graph_indexing_skipped_when_disabled`
+**Processing:**
+- Fetch via Confluence API
+- Convert storage format to text
+- Chunk pages
+- Generate embeddings
 
-### Health Check [TESTED]
+### Embedding Generation
 
-Check health of all components
+Generate vector embeddings for content chunks.
 
-**Related Tests:**
-- `test_health_check_returns_all_components`
+**Configuration:**
+- Model: sentence-transformers/all-MiniLM-L6-v2
+- Dimension: 384
+- Batch processing
 
-### GitHub Source Indexer [NEEDS TESTS]
+### Chunking Strategy
 
-Clone/pull repos, chunk code, generate embeddings
+Split content into searchable chunks.
 
-### Jira Source Indexer [NEEDS TESTS]
+**Parameters:**
+- Chunk size: 1500 characters
+- Overlap: 200 characters
+- Separator-aware splitting
 
-Fetch tickets via API, chunk content
+### Parallel Processing
 
-### Confluence Source Indexer [NEEDS TESTS]
+Process multiple repositories concurrently.
 
-Fetch pages via API, chunk content
+**Configuration:**
+- Max parallel repos: 5 (configurable)
+- Async processing
+- Resource limiting
 
-### Parallel Processing [NEEDS TESTS]
+## Feature Flags
 
-Process multiple repos in parallel
+| Flag | Default | Description |
+|------|---------|-------------|
+| ENABLE_GKG_INDEXING | true | Index code to graph store |
+| ENABLE_PARALLEL | true | Process repos in parallel |
 
-### Feature Flags [PARTIAL]
+## API Endpoints
 
-Control indexing behavior via flags
-
-**Related Tests:**
-- `test_graph_indexing_when_enabled`
-- `test_graph_indexing_skipped_when_disabled`
-
-## Test Coverage Summary
-
-| Metric | Count |
-|--------|-------|
-| Total Features | 11 |
-| Fully Tested | 6 |
-| Partially Tested | 1 |
-| Missing Tests | 4 |
-| **Coverage** | **59.1%** |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/jobs/status` | GET | Current job status |

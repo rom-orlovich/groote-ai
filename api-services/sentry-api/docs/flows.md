@@ -1,76 +1,219 @@
-# api-services/sentry-api - Flows
-
-Auto-generated on 2026-02-03
+# Sentry API Service - Flows
 
 ## Process Flows
 
-### Issue Retrieval Flow [TESTED]
+### Issue Retrieval Flow
 
-**Steps:**
-1. Receive GET request for issue
-2. Authenticate request
-3. Get Sentry Auth Token
+```
+[Internal Service] → GET /issues/{issue_id}
+                            ↓
+                   [Authenticate Request]
+                            ↓
+                   [Load SENTRY_AUTH_TOKEN]
+                            ↓
+              [GET sentry/api/0/issues/{id}/]
+                            ↓
+                   [Parse Issue Data]
+                            ↓
+                   [Return Formatted Issue]
+```
+
+**Processing Steps:**
+1. Receive GET request with issue_id
+2. Authenticate internal request
+3. Load Sentry auth token from environment
 4. Call Sentry API for issue details
-5. Include stacktrace and metadata
+5. Parse response including metadata
 6. Return formatted issue data
 
-**Related Tests:**
-- `test_get_issue_details`
-- `test_get_issue_with_stacktrace`
+### Event Analysis Flow
 
-### Event Analysis Flow [TESTED]
+```
+[Service] → GET /issues/{id}/events
+                     ↓
+        [GET sentry/api/0/issues/{id}/events/]
+                     ↓
+              [Parse Events]
+                     ↓
+        [For each event with stacktrace:]
+                     ↓
+        [GET sentry/api/0/events/{event_id}/]
+                     ↓
+              [Extract Stacktrace]
+                     ↓
+              [Format Frames]
+                     ↓
+              [Return Events List]
+```
 
-**Steps:**
-1. Receive GET request for issue events
-2. Authenticate request
-3. Call Sentry API for events
-4. Parse exception entries and stacktraces
-5. Return event list with context
+**Event Response:**
+```json
+{
+  "events": [
+    {
+      "event_id": "abc123",
+      "timestamp": "2026-02-03T12:00:00Z",
+      "message": "TypeError: undefined is not a function",
+      "stacktrace": {...}
+    }
+  ]
+}
+```
 
-**Related Tests:**
-- `test_get_issue_events`
+### Stacktrace Processing Flow
 
-### Comment Posting Flow [TESTED]
+```
+[Event Data] → [Extract exception]
+                      ↓
+              [Get stacktrace values]
+                      ↓
+              [For each frame:]
+                      │
+         ┌────────────┼────────────┐
+         │            │            │
+         ▼            ▼            ▼
+    [filename]   [function]   [lineno]
+         │            │            │
+         └────────────┼────────────┘
+                      ↓
+              [Add context lines]
+                      ↓
+              [Mark in_app frames]
+                      ↓
+              [Return formatted stacktrace]
+```
 
-**Steps:**
-1. Receive POST request with comment text
-2. Authenticate request
-3. Call Sentry API to add note
-4. Return comment details
+**Stacktrace Format:**
+```json
+{
+  "frames": [
+    {
+      "filename": "src/main.py",
+      "function": "process_request",
+      "lineno": 42,
+      "in_app": true,
+      "context_line": "    result = await handler(request)",
+      "pre_context": ["    try:", "        validate(request)"],
+      "post_context": ["    except Exception as e:", "        log_error(e)"]
+    }
+  ]
+}
+```
 
-**Related Tests:**
-- `test_add_comment_to_issue`
+### Issue Status Update Flow
 
-### Status Update Flow [TESTED]
+```
+[Agent Engine] → PUT /issues/{id}/status
+                         ↓
+                [Parse Status Value]
+                         ↓
+               [Validate Status]
+                    ↓
+    ┌───────────────┼───────────────┐
+    │               │               │
+    ▼               ▼               ▼
+[resolved]     [ignored]     [unresolved]
+    │               │               │
+    └───────────────┼───────────────┘
+                    ↓
+        [PUT sentry/api/0/issues/{id}/]
+                    ↓
+               [Return Updated Issue]
+```
 
-**Steps:**
-1. Receive PUT request with new status
-2. Validate status (resolved/unresolved/ignored)
-3. Call Sentry API to update status
-4. Return updated issue
+**Status Request:**
+```json
+{"status": "resolved"}
+```
 
-**Related Tests:**
-- `test_update_issue_status_resolved`
-- `test_update_issue_status_ignored`
-- `test_invalid_status_rejected`
+### Comment Posting Flow
 
-### Impact Analysis Flow [TESTED]
+```
+[Agent Engine] → POST /issues/{id}/comments
+                          ↓
+                 [Parse Comment Body]
+                          ↓
+       [POST sentry/api/0/issues/{id}/comments/]
+                          ↓
+                 [Return Comment ID]
+```
 
-**Steps:**
-1. Receive GET request for affected users
-2. Get issue details from Sentry
-3. Extract userCount from issue
-4. Return impact metrics
+**Comment Request:**
+```json
+{"text": "Investigating this issue..."}
+```
 
-**Related Tests:**
-- `test_get_affected_users`
+### Issue Lifecycle Flow
 
-## Flow Coverage Summary
+```
+           [New Error Event]
+                  ↓
+           [UNRESOLVED]
+              ↙    ↘
+             ↓      ↓
+        [Ignore]  [Resolve]
+             ↓      ↓
+       [IGNORED] [RESOLVED]
+             ↓      ↓
+        [Unignore] [Regression]
+             ↓      ↓
+           [UNRESOLVED]
+```
 
-| Metric | Count |
-|--------|-------|
-| Total Flows | 5 |
-| Fully Tested | 5 |
-| Partially Tested | 0 |
-| Missing Tests | 0 |
-| **Coverage** | **100.0%** |
+**State Transitions:**
+- `UNRESOLVED → RESOLVED`: Issue fixed
+- `UNRESOLVED → IGNORED`: Suppress issue
+- `RESOLVED → UNRESOLVED`: Regression detected
+- `IGNORED → UNRESOLVED`: Un-ignore issue
+
+### Impact Analysis Flow
+
+```
+[Service] → GET /issues/{id}/affected-users
+                       ↓
+          [GET sentry/api/0/issues/{id}/]
+                       ↓
+              [Extract userCount]
+                       ↓
+          [GET sentry/api/0/issues/{id}/tags/user/]
+                       ↓
+              [Aggregate user list]
+                       ↓
+              [Return impact data]
+```
+
+**Impact Response:**
+```json
+{
+  "total_users": 150,
+  "total_events": 1234,
+  "first_seen": "2026-02-01T10:00:00Z",
+  "last_seen": "2026-02-03T12:00:00Z"
+}
+```
+
+### Error Handling Flow
+
+```
+[Sentry API Response] → [Check Status Code]
+                              ↓
+              ┌───────────────┼───────────────┐
+              │               │               │
+              ▼               ▼               ▼
+         [2xx OK]        [4xx Error]     [5xx Error]
+              │               │               │
+              ▼               ▼               ▼
+       [Return Data]   [Map to Error]   [Retry/Return]
+                              ↓
+                    [Return Standardized Error]
+```
+
+**Error Response Format:**
+```json
+{
+  "error": "not_found",
+  "message": "Issue 99999 not found",
+  "status_code": 404,
+  "details": {"issue_id": "99999"}
+}
+```

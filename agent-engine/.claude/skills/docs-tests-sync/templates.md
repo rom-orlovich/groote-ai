@@ -62,13 +62,6 @@ sequenceDiagram
 ## Protocol Interfaces
 
 {protocol_definitions}
-
-## Testing Strategy
-
-Tests focus on **behavior**, not implementation:
-
-- ✅ "Feature X returns expected result"
-- ❌ "Internal method called with specific args"
 ```
 
 ---
@@ -78,31 +71,37 @@ Tests focus on **behavior**, not implementation:
 ```markdown
 # {service_name} - Features
 
-Auto-generated on {date}
-
 ## Overview
 
 {overview_from_readme}
 
-## Features
+## Core Features
 
-### {feature_name} [{coverage_badge}]
+### {feature_name}
 
 {feature_description}
 
-**Related Tests:**
-- `{test_name}`
-- `{test_name}`
+**Capabilities:**
+- {capability_1}
+- {capability_2}
+- {capability_3}
 
-## Test Coverage Summary
+**Configuration:**
+- {config_option}: {description}
 
-| Metric | Count |
-|--------|-------|
-| Total Features | {total} |
-| Fully Tested | {full} |
-| Partially Tested | {partial} |
-| Missing Tests | {missing} |
-| **Coverage** | **{percentage}%** |
+## API Endpoints
+
+### {endpoint_category}
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `{path}` | {method} | {description} |
+
+## Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| {VAR_NAME} | {default} | {description} |
 ```
 
 ---
@@ -112,29 +111,27 @@ Auto-generated on {date}
 ```markdown
 # {service_name} - Flows
 
-Auto-generated on {date}
-
 ## Process Flows
 
-### {flow_name} [{coverage_badge}]
+### {flow_name}
 
-**Steps:**
-1. {step_1}
-2. {step_2}
-3. {step_3}
+```
+[Input] → [Step 1] → [Step 2]
+              ↓
+         [Decision]
+            ↓       ↓
+         [Yes]    [No]
+            ↓       ↓
+         [Action] [Action]
+```
 
-**Related Tests:**
-- `{test_name}`
+**Processing Steps:**
+1. {step_1_description}
+2. {step_2_description}
+3. {step_3_description}
 
-## Flow Coverage Summary
-
-| Metric | Count |
-|--------|-------|
-| Total Flows | {total} |
-| Fully Tested | {full} |
-| Partially Tested | {partial} |
-| Missing Tests | {missing} |
-| **Coverage** | **{percentage}%** |
+**Configuration:**
+- {config_param}: {description}
 ```
 
 ---
@@ -142,7 +139,7 @@ Auto-generated on {date}
 ## Sync Report Template
 
 ```markdown
-# Documentation-Tests Sync Report
+# Documentation Sync Report
 
 Generated: {datetime}
 
@@ -151,25 +148,19 @@ Generated: {datetime}
 | Metric | Value |
 |--------|-------|
 | Services | {service_count} |
-| Total Features | {feature_count} |
-| Total Flows | {flow_count} |
-| Total Tests | {test_count} |
-| Average Coverage | {avg_coverage}% |
+| Features Documented | {feature_count} |
+| Flows Documented | {flow_count} |
 
 ## Service Reports
 
-## {service_name}
+### {service_name}
 
 - **Features:** {count}
 - **Flows:** {count}
-- **Tests:** {count}
-- **Coverage:** {percentage}%
-
-**Missing Tests:**
-- Feature: {feature_name}
-- Flow: {flow_name}
+- **API Endpoints:** {count}
 
 **Generated Docs:**
+- {service}/docs/ARCHITECTURE.md
 - {service}/docs/features.md
 - {service}/docs/flows.md
 
@@ -178,47 +169,30 @@ Generated: {datetime}
 
 ---
 
-## Coverage Badge Formats
-
-| Coverage | Badge |
-|----------|-------|
-| Full (2+ tests) | `[TESTED]` |
-| Partial (1 test) | `[PARTIAL]` |
-| None (0 tests) | `[NEEDS TESTS]` |
-
----
-
-## Test Suggestion Template
-
-```
-Missing test for feature '{feature_name}':
-Consider adding test_{suggested_name}
-
-Suggested test cases:
-- Happy path: test_{name}_success
-- Error case: test_{name}_invalid_input
-- Edge case: test_{name}_empty_input
-```
-
----
-
-## Service Report Entry Template
+## Service Documentation Entry Template
 
 ```markdown
 ## {service_name}
 
-- **Features:** {feature_count}
-- **Flows:** {flow_count}
-- **Tests:** {test_count}
-- **Coverage:** {coverage}%
+### Overview
+{brief_description}
 
-**Missing Tests:**
-- Feature: {missing_feature_1}
-- Feature: {missing_feature_2}
-- Flow: {missing_flow_1}
-{if more than 5: "- ... and {remaining} more"}
+### Core Features
+- {feature_1}
+- {feature_2}
+- {feature_3}
+
+### API Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| {path} | {method} | {description} |
+
+### Process Flows
+- {flow_1}: {brief_description}
+- {flow_2}: {brief_description}
 
 **Generated Docs:**
+- {service}/docs/ARCHITECTURE.md
 - {service}/docs/features.md
 - {service}/docs/flows.md
 ```
@@ -231,39 +205,53 @@ Suggested test cases:
 Discovered {count} services
 
 Processing: {service_name}
-  - Extracted {feature_count} features, {flow_count} flows
-  - Found {test_count} tests
+  - Extracted {feature_count} features
+  - Identified {flow_count} flows
+  - Documented {endpoint_count} endpoints
+  - Generated: ARCHITECTURE.md
   - Generated: features.md
   - Generated: flows.md
-  - Test suggestions: {suggestion_count}
 
 ============================================================
 SYNC COMPLETE
 ============================================================
-  [{status}] {service_name}: {coverage}% coverage
-  [{status}] {service_name}: {coverage}% coverage
+  [OK] {service_name}: {feature_count} features, {flow_count} flows
+  [OK] {service_name}: {feature_count} features, {flow_count} flows
 
-Status: OK (>=50%) or LOW (<50%)
+Total: {service_count} services documented
 ```
 
 ---
 
-## Gap Analysis Template
+## ASCII Flow Diagram Conventions
 
-```markdown
-### Coverage Gaps for {service_name}
+Use these symbols for flow diagrams:
 
-**Untested Features:**
-1. {feature_name} - {description}
-   Suggested test: test_{suggested_name}
+```
+→ ← ↑ ↓       # Arrows for flow direction
+│ ─           # Lines for connections
+┌ ┐ └ ┘       # Corners
+├ ┤ ┬ ┴ ┼    # Junctions
+▼ ▲           # Direction indicators
 
-**Untested Flows:**
-1. {flow_name}
-   Steps not covered: {uncovered_steps}
-   Suggested test: test_{suggested_name}_flow
+[Box]         # Process step
+{Decision}    # Decision point (use ↓ branches)
+(Input)       # External input/output
+```
 
-**Recommendations:**
-- Add unit tests for {feature}
-- Add integration test for {flow}
-- Consider E2E test for complete workflow
+Example flow:
+```
+[Client] → POST /endpoint → [Parse Request]
+                                  ↓
+                          [Process Data]
+                                  ↓
+                          [Decision?]
+                             ↓       ↓
+                          [Yes]    [No]
+                             ↓       ↓
+                          [A]      [B]
+                             │       │
+                             └───────┘
+                                  ↓
+                          [Return Response]
 ```

@@ -1,97 +1,100 @@
-# api-services/jira-api - Features
-
-Auto-generated on 2026-02-03
+# Jira API Service - Features
 
 ## Overview
 
-REST API wrapper for Jira operations with issue and project management. Provides endpoints for issue management, comment posting, JQL search, and project operations.
+REST API wrapper for Jira operations with issue and project management. Provides endpoints for issue management, comment posting, JQL search, transition handling, and project operations.
 
-## Features
+## Core Features
 
-### Issue Management [TESTED]
+### Issue Management
 
-Create, read, update Jira issues
+Full issue lifecycle management including CRUD operations and status tracking.
 
-**Related Tests:**
-- `test_get_issue`
-- `test_create_issue`
-- `test_update_issue`
+**Operations:**
+- Get issue details with fields and changelog
+- Create new issues with custom fields
+- Update issue fields and properties
+- Delete issues (with permission)
+- Get issue transitions
 
-### Comment Posting [TESTED]
+### Comment Posting
 
-Post agent responses to Jira tickets
+Post formatted comments to Jira tickets with Atlassian Document Format (ADF) support.
 
-**Related Tests:**
-- `test_add_comment_to_issue`
+**Features:**
+- Markdown to ADF conversion
+- Code block formatting
+- Mentions and links
+- Inline images
 
-### JQL Search [TESTED]
+### JQL Search
 
-Execute JQL queries to find issues
+Execute JQL queries to find issues across projects.
 
-**Related Tests:**
-- `test_search_issues_with_jql`
+**Capabilities:**
+- Full JQL syntax support
+- Field selection
+- Pagination support
+- Max results configuration
 
-### Transition Management [TESTED]
+**Example Queries:**
+- `project = PROJ AND status = "In Progress"`
+- `assignee = currentUser() AND sprint in openSprints()`
+- `labels = "AI-Fix" AND created >= -7d`
 
-Move issues through workflow states
+### Transition Management
 
-**Related Tests:**
-- `test_transition_issue`
-- `test_get_transitions`
+Move issues through workflow states programmatically.
 
-### Project Operations [TESTED]
+**Operations:**
+- Get available transitions for issue
+- Execute transition by ID
+- Include transition fields
+- Add transition comment
 
-List projects and project metadata
+### Project Operations
 
-**Related Tests:**
-- `test_list_projects`
-- `test_get_project`
+Access project metadata and configuration.
 
-### Response Posting [TESTED]
+**Operations:**
+- List all projects
+- Get project details
+- List project issue types
+- Get project components
 
-Post agent responses back to Jira tickets
+### Response Posting
 
-**Related Tests:**
-- `test_add_comment_to_issue`
+Post agent results back to Jira tickets.
 
-### GET /issues/{issue_key} [TESTED]
+**Formats:**
+- Structured task results
+- Code diffs with syntax highlighting
+- Status updates
+- Error reports
 
-Get issue details
+## API Endpoints
 
-**Related Tests:**
-- `test_get_issue`
+### Issues
 
-### POST /issues/{issue_key}/comments [TESTED]
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/issues/{issue_key}` | GET | Get issue details |
+| `/issues/{issue_key}` | PUT | Update issue |
+| `/issues/{issue_key}/comments` | GET | List comments |
+| `/issues/{issue_key}/comments` | POST | Add comment |
+| `/issues/{issue_key}/transitions` | GET | Get transitions |
+| `/issues/{issue_key}/transitions` | POST | Execute transition |
 
-Post issue comment
+### Search
 
-**Related Tests:**
-- `test_add_comment_to_issue`
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/search` | GET | Execute JQL query |
+| `/search?jql={query}` | GET | Search with JQL |
 
-### POST /issues/{issue_key}/transitions [TESTED]
+### Projects
 
-Transition issue
-
-**Related Tests:**
-- `test_transition_issue`
-
-### GET /search [TESTED]
-
-Execute JQL query
-
-**Related Tests:**
-- `test_search_issues_with_jql`
-
-### GET /health [NEEDS TESTS]
-
-Health check endpoint
-
-## Test Coverage Summary
-
-| Metric | Count |
-|--------|-------|
-| Total Features | 11 |
-| Fully Tested | 10 |
-| Partially Tested | 0 |
-| Missing Tests | 1 |
-| **Coverage** | **90.9%** |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/projects` | GET | List all projects |
+| `/projects/{project_key}` | GET | Get project details |

@@ -1,118 +1,191 @@
-# agent-engine - Flows
-
-Auto-generated on 2026-02-03
+# Agent Engine - Flows
 
 ## Process Flows
 
-### Task Execution Flow [TESTED]
+### Task Execution Flow
 
-**Steps:**
-1. Pop task from Redis
-2. Update status: in_progress
-3. Select CLI provider
-4. Build agent prompt
-5. Execute CLI with prompt
-6. Stream output to Redis/WS
-7. Capture result (cost, tokens)
-8. Update status: completed
-9. Trigger response posting
+```
+[Redis Queue] → BRPOP agent:tasks → [Task Worker]
+                                         ↓
+                               [Update: in_progress]
+                                         ↓
+                               [Select CLI Provider]
+                                         ↓
+                               [Build Agent Prompt]
+                                         ↓
+                               [Execute CLI Process]
+                                         ↓
+                          [Stream Output to Pub/Sub]
+                                         ↓
+                           [Capture Result + Metrics]
+                                         ↓
+                               [Update: completed]
+                                         ↓
+                             [Trigger Response Post]
+```
 
-**Related Tests:**
-- `test_task_transitions_to_running_when_picked_up`
-- `test_running_task_can_complete`
-- `test_task_cost_accumulated_correctly`
-- `test_complete_task_flow_success`
+**Execution Steps:**
+1. Worker executes BRPOP on `agent:tasks` Redis list
+2. Task picked up, status updated to `in_progress` in PostgreSQL
+3. CLI provider selected based on `CLI_PROVIDER` env var
+4. Agent prompt built from task metadata and agent definition
+5. CLI process spawned with streaming output
+6. Output chunks published to Redis Pub/Sub channel
+7. Process completes, result captured with cost/tokens
+8. Task status updated to `completed`
+9. Response posting triggered via api-services
 
-### Task State Machine Flow [TESTED]
+### Task State Machine Flow
 
-**Steps:**
-1. QUEUED → RUNNING (on pickup)
-2. RUNNING → COMPLETED (on success)
-3. RUNNING → FAILED (on error)
-4. RUNNING → WAITING_INPUT (on user input needed)
-5. WAITING_INPUT → RUNNING (on input received)
-6. QUEUED/RUNNING → CANCELLED (on cancel)
+```
+              ┌─────────────────────────────────────┐
+              │                                     │
+              ▼                                     │
+         [QUEUED] ──────────────────────────────────┤
+              │                                     │
+              │ pickup                              │
+              ▼                                     │
+         [RUNNING] ─────────────────────────────────┤
+         ↙   │   ↘                                  │
+        ↓    │    ↓                                 │
+   [FAILED]  │  [COMPLETED]                    [CANCELLED]
+             │
+             │ needs input
+             ▼
+     [WAITING_INPUT]
+             │
+             │ input received
+             ▼
+         [RUNNING]
+```
 
-**Related Tests:**
-- `test_task_created_in_queued_status`
-- `test_task_transitions_to_running_when_picked_up`
-- `test_running_task_can_complete`
-- `test_running_task_can_fail`
-- `test_running_task_can_wait_for_input`
-- `test_waiting_task_can_resume`
-- `test_task_can_be_cancelled_from_queued`
-- `test_task_can_be_cancelled_from_running`
-- `test_task_cannot_transition_from_completed`
-- `test_task_cannot_transition_from_failed`
-- `test_task_cannot_transition_from_cancelled`
-- `test_all_valid_transitions_defined`
-- `test_terminal_states_have_no_transitions`
-- `test_non_terminal_states_have_transitions`
+**State Transitions:**
+- `QUEUED → RUNNING`: Worker picks up task
+- `RUNNING → COMPLETED`: Successful execution
+- `RUNNING → FAILED`: Execution error
+- `RUNNING → WAITING_INPUT`: Agent needs user response
+- `WAITING_INPUT → RUNNING`: User provides input
+- `QUEUED/RUNNING → CANCELLED`: User cancellation
 
-### Session Cost Tracking Flow [TESTED]
+### Session Cost Tracking Flow
 
-**Steps:**
-1. Create session with user_id and machine_id
-2. Task completes with cost_usd
-3. Session.add_completed_task() called
-4. Session aggregates total_cost_usd
-5. Session tracks total_tasks count
-6. Session preserves data on disconnect
+```
+[User Connects] → [Create Session]
+                        ↓
+               [Initialize Counters]
+                        ↓
+    ┌──────────────────┴──────────────────┐
+    │                                      │
+    ▼                                      ▼
+[Task Completes]                    [Task Fails]
+    │                                      │
+    │ add cost                             │ no cost added
+    ▼                                      ▼
+[Aggregate total_cost_usd]         [Continue Session]
+    │
+    │ increment count
+    ▼
+[Update total_tasks]
+    │
+    ▼
+[Check Rate Limits]
+    │
+    ├── exceeded → [Session Inactive]
+    │
+    └── ok → [Continue Session]
+```
 
-**Related Tests:**
-- `test_session_created_with_defaults`
-- `test_session_aggregates_task_costs`
-- `test_session_tracks_task_count`
-- `test_disconnected_session_preserves_data`
-- `test_session_cost_accumulation_multiple_tasks`
-- `test_failed_tasks_dont_add_cost`
+**Session Lifecycle:**
+1. Session created when user connects with `user_id` and `machine_id`
+2. Counters initialized: `total_cost_usd = 0`, `total_tasks = 0`
+3. On task completion: cost added, task count incremented
+4. Failed tasks don't add cost (no API usage)
+5. Rate limits checked against configured thresholds
+6. Session data preserved on disconnect for reconnection
 
-### Agent Routing Flow [TESTED]
+### Agent Routing Flow
 
-**Steps:**
-1. Receive task with source and event_type
-2. Lookup routing table for source
-3. Find agent for event_type
-4. Return agent type (or None if unknown)
-5. Route task to appropriate agent
+```
+[Incoming Task] → [Extract source + event_type]
+                            ↓
+                  [Lookup Routing Table]
+                            ↓
+               ┌────────────┴────────────┐
+               │                         │
+               ▼                         ▼
+         [Found]                    [Not Found]
+               │                         │
+               │                         │
+               ▼                         ▼
+      [Return Agent Type]         [Return None]
+               │                         │
+               ▼                         ▼
+      [Route to Agent]           [Use Default Agent]
+```
 
-**Related Tests:**
-- `test_github_issue_routes_to_issue_handler`
-- `test_github_pr_routes_to_pr_review`
-- `test_jira_ticket_routes_to_code_plan`
-- `test_slack_message_routes_to_inquiry`
-- `test_sentry_alert_routes_to_error_handler`
-- `test_discovery_task_routes_to_planning`
-- `test_implementation_task_routes_to_executor`
-- `test_question_task_routes_to_brain`
-- `test_unknown_source_returns_none`
-- `test_unknown_event_type_returns_none`
+**Routing Logic:**
+1. Task arrives with `source` (github, jira, slack, sentry)
+2. Task has `event_type` (issues, pull_request, etc.)
+3. Routing table lookup: `ROUTING[source][event_type]`
+4. If found, return specific agent type
+5. If not found, return None (uses brain as default)
 
-### CLI Provider Selection Flow [TESTED]
+### CLI Provider Selection Flow
 
-**Steps:**
-1. Determine agent type (complex vs execution)
-2. Check CLI_PROVIDER setting (claude/cursor)
-3. Select appropriate model
-4. Complex agents → opus/claude-sonnet-4.5
-5. Execution agents → sonnet/composer-1
+```
+[Task with Agent Type] → [Check Agent Category]
+                                 ↓
+                    ┌────────────┴────────────┐
+                    │                         │
+                    ▼                         ▼
+            [Complex Agent]           [Execution Agent]
+            (brain, planning,         (executor, handlers)
+             verifier)
+                    │                         │
+                    ▼                         ▼
+         [Check CLI_PROVIDER]       [Check CLI_PROVIDER]
+                    │                         │
+         ┌─────────┴─────────┐     ┌─────────┴─────────┐
+         │                   │     │                   │
+         ▼                   ▼     ▼                   ▼
+    [Claude]            [Cursor]  [Claude]        [Cursor]
+         │                   │     │                   │
+         ▼                   ▼     ▼                   ▼
+      [opus]     [claude-sonnet-4.5] [sonnet]   [composer-1]
+```
 
-**Related Tests:**
-- `test_complex_agents_use_opus_model`
-- `test_execution_agents_use_sonnet_model`
-- `test_cursor_complex_agents_use_pro_model`
-- `test_cursor_execution_agents_use_standard_model`
-- `test_provider_selection_claude`
-- `test_provider_selection_cursor`
-- `test_unknown_provider_uses_default`
-- `test_agent_type_determines_model`
+**Selection Rules:**
+- Complex agents require deeper reasoning → use more capable models
+- Execution agents need speed → use faster models
+- Claude provider: opus for complex, sonnet for execution
+- Cursor provider: claude-sonnet-4.5 for complex, composer-1 for execution
 
-## Flow Coverage Summary
+### Output Streaming Flow
 
-| Metric | Count |
-|--------|-------|
-| Total Flows | 5 |
-| Fully Tested | 5 |
-| Partially Tested | 0 |
-| Missing Tests | 0 |
-| **Coverage** | **100.0%** |
+```
+[CLI Process] → stdout → [Parse JSON Lines]
+                                 ↓
+                      [Extract Content Type]
+                                 ↓
+            ┌────────────────────┼────────────────────┐
+            │                    │                    │
+            ▼                    ▼                    ▼
+       [Text]              [Tool Call]           [Cost]
+            │                    │                    │
+            ▼                    ▼                    ▼
+    [Publish to          [Log Tool           [Accumulate
+     Pub/Sub]             Execution]          Metrics]
+            │                    │                    │
+            └────────────────────┼────────────────────┘
+                                 │
+                                 ▼
+                      [Dashboard WebSocket]
+```
+
+**Streaming Pipeline:**
+1. CLI process outputs JSON lines to stdout
+2. Each line parsed and content type extracted
+3. Text content published to Redis Pub/Sub
+4. Tool calls logged for audit
+5. Cost/token metrics accumulated
+6. Dashboard API subscribes and forwards to WebSocket

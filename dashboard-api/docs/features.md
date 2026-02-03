@@ -1,104 +1,132 @@
-# dashboard-api - Features
-
-Auto-generated on 2026-02-03
+# Dashboard API - Features
 
 ## Overview
 
-Backend API for groote-ai dashboard with real-time task streaming, analytics, and conversation management. Provides REST endpoints and WebSocket connections for the dashboard.
+Backend API for groote-ai dashboard with real-time task streaming, analytics, and conversation management. Provides REST endpoints and WebSocket connections for the frontend.
 
-## Features
+## Core Features
 
-### Task Management [PARTIAL]
+### Task Management
 
-List, filter, retrieve task details
+List, filter, and retrieve task details with pagination support. Tasks can be filtered by status, agent type, source, and date range.
 
-**Related Tests:**
-- `test_daily_task_count`
+**Capabilities:**
+- Paginated task listing
+- Status filtering (queued, running, completed, failed)
+- Agent type filtering
+- Date range queries
+- Full task detail retrieval
 
-### Real-Time Streaming [NEEDS TESTS]
+### Real-Time Streaming
 
-WebSocket streaming of task outputs
+WebSocket hub for live task output streaming. Clients subscribe to task channels and receive output in real-time.
 
-### Analytics [TESTED]
+**WebSocket Features:**
+- Connection management per client
+- Channel-based subscriptions
+- Redis Pub/Sub integration
+- Automatic reconnection support
 
-Cost tracking, performance metrics, histograms
+### Analytics
 
-**Related Tests:**
-- `test_opus_cost_calculation`
-- `test_sonnet_cost_calculation`
-- `test_unknown_model_uses_sonnet_pricing`
-- `test_daily_cost_aggregation`
-- `test_daily_task_count`
-- `test_success_rate_calculation`
-- `test_success_rate_with_no_tasks`
-- `test_success_rate_all_completed`
-- `test_average_duration_calculation`
-- `test_average_duration_excludes_failed`
-- `test_average_duration_no_completed_tasks`
-- `test_cost_by_agent_breakdown`
-- `test_total_cost_matches_breakdown`
+Cost tracking, performance metrics, and usage histograms for monitoring and optimization.
 
-### Conversations [TESTED]
+**Metrics Provided:**
+- Total cost (USD)
+- Average cost per task
+- Token usage (input/output)
+- Task success rate
+- Average task duration
+- Tasks per time period
 
-Chat interface for agent interactions
+**Histogram Types:**
+- Cost per hour/day
+- Task count per hour/day
+- Token usage per hour/day
 
-**Related Tests:**
-- `test_conversation_created_with_defaults`
-- `test_conversation_requires_machine_id`
-- `test_message_creation`
-- `test_conversation_can_add_messages`
+### Conversations
 
-### Webhook Status [TESTED]
+Chat interface for agent interactions with message history and task correlation.
 
-Monitor webhook configurations and events
+**Conversation Features:**
+- Create new conversations
+- List user conversations
+- Retrieve message history
+- Link tasks to conversations
 
-**Related Tests:**
-- `test_webhook_config_created_with_defaults`
-- `test_webhook_validation_requires_url`
-- `test_webhook_requires_valid_url`
-- `test_webhook_requires_valid_provider`
+### Webhook Status Monitoring
 
-### WebSocket Hub [NEEDS TESTS]
+Monitor webhook configurations and event history across all integrated sources.
 
-Manage WebSocket connections for live updates
+**Monitoring Features:**
+- Webhook configuration status
+- Recent event history
+- Success/failure rates
+- Last received timestamp
 
-### GET /api/status [NEEDS TESTS]
+### OAuth Status
 
-Machine status endpoint
+Display OAuth installation status for GitHub, Jira, and Slack integrations.
 
-### GET /api/tasks [NEEDS TESTS]
+**OAuth Information:**
+- Installation status per platform
+- Connected organizations
+- Token expiration status
+- Scope information
 
-List tasks with pagination
+### Data Source Management
 
-### GET /api/analytics/summary [PARTIAL]
+Manage knowledge sources for RAG integration (GitHub repos, Jira projects, Confluence spaces).
 
-Analytics summary
+**Source Types:**
+- GitHub repositories
+- Jira projects
+- Confluence spaces
 
-**Related Tests:**
-- `test_success_rate_calculation`
+**Operations:**
+- List configured sources
+- Add new sources
+- Remove sources
+- Trigger re-indexing
 
-### GET /api/analytics/costs/histogram [TESTED]
+## API Endpoints
 
-Cost breakdown by time
+### Dashboard
 
-**Related Tests:**
-- `test_daily_cost_aggregation`
-- `test_cost_by_agent_breakdown`
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/status` | GET | Machine status |
+| `/api/tasks` | GET | List tasks with pagination |
+| `/api/tasks/{task_id}` | GET | Task details |
+| `/api/tasks/{task_id}/logs/full` | GET | Complete task logs |
+| `/api/agents` | GET | List available agents |
 
-### GET /api/analytics/performance [TESTED]
+### Analytics
 
-Performance metrics
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/analytics/summary` | GET | Analytics summary |
+| `/api/analytics/costs/histogram` | GET | Cost breakdown by time |
+| `/api/analytics/performance` | GET | Performance metrics |
 
-**Related Tests:**
-- `test_average_duration_calculation`
-- `test_average_duration_excludes_failed`
+### Conversations
 
-## Test Coverage Summary
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/conversations` | GET | List conversations |
+| `/api/conversations` | POST | Create conversation |
+| `/api/conversations/{id}/messages` | GET | Get messages |
 
-| Metric | Count |
-|--------|-------|
-| Total Features | 12 |
-| Fully Tested | 5 |
-| Partially Tested | 2 |
-| Missing Tests | 5 |
-| **Coverage** | **50.0%** |
+### Webhooks
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/webhooks` | GET | Webhook configurations |
+| `/api/webhooks/events` | GET | Webhook events |
+| `/api/webhooks/stats` | GET | Webhook statistics |
+
+### WebSocket
+
+| Endpoint | Protocol | Description |
+|----------|----------|-------------|
+| `/ws` | WebSocket | Real-time updates |

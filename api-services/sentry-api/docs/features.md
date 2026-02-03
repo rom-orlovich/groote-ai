@@ -1,105 +1,113 @@
-# api-services/sentry-api - Features
-
-Auto-generated on 2026-02-03
+# Sentry API Service - Features
 
 ## Overview
 
-REST API wrapper for Sentry operations with issue management and error tracking. Provides endpoints for issue retrieval, event analysis, comment posting, and status management.
+REST API wrapper for Sentry operations with issue management and error tracking. Provides endpoints for issue retrieval, event analysis, comment posting, status management, and impact analysis.
 
-## Features
+## Core Features
 
-### Issue Retrieval [TESTED]
+### Issue Retrieval
 
-Get issue details including stacktrace and metadata
+Get issue details including metadata, stacktrace, and aggregated event information.
 
-**Related Tests:**
-- `test_get_issue_details`
-- `test_get_issue_with_stacktrace`
+**Information Retrieved:**
+- Issue title and message
+- First/last seen timestamps
+- Event count
+- User impact count
+- Status (unresolved, resolved, ignored)
+- Assigned user/team
 
-### Event Analysis [TESTED]
+### Event Analysis
 
-Retrieve error events with full context
+Retrieve error events with full context for debugging.
 
-**Related Tests:**
-- `test_get_issue_events`
+**Event Details:**
+- Stacktrace frames
+- Request context
+- User context
+- Tags and extra data
+- Browser/device info
 
-### Comment Posting [TESTED]
+### Stacktrace Processing
 
-Post investigation notes and resolution updates
+Extract and format stacktrace information for analysis.
 
-**Related Tests:**
-- `test_add_comment_to_issue`
+**Stacktrace Data:**
+- Function names
+- File paths and line numbers
+- Context lines (before/after)
+- Local variables (if available)
+- In-app vs library frames
 
-### Status Management [TESTED]
+### Comment Posting
 
-Resolve, ignore, or reopen issues
+Post investigation notes and resolution updates to issues.
 
-**Related Tests:**
-- `test_update_issue_status_resolved`
-- `test_update_issue_status_ignored`
-- `test_invalid_status_rejected`
+**Features:**
+- Plain text comments
+- Markdown support
+- Mention users
+- Link to commits
 
-### Impact Analysis [TESTED]
+### Status Management
 
-Get affected user count and occurrence frequency
+Update issue status through the lifecycle.
 
-**Related Tests:**
-- `test_get_affected_users`
+**Status Values:**
+- `unresolved` - Active issue
+- `resolved` - Marked as fixed
+- `ignored` - Suppressed
+- `resolvedInNextRelease` - Auto-resolve on deploy
 
-### Response Posting [TESTED]
+### Impact Analysis
 
-Post agent analysis back to Sentry issues
+Get affected user count and occurrence frequency.
 
-**Related Tests:**
-- `test_add_comment_to_issue`
+**Metrics:**
+- Unique users affected
+- Total event count
+- Events per hour/day
+- First/last occurrence
 
-### GET /issues/{issue_id} [TESTED]
+### Project Operations
 
-Get issue details
+Access project metadata and issue lists.
 
-**Related Tests:**
-- `test_get_issue_details`
-- `test_get_issue_with_stacktrace`
+**Operations:**
+- List projects
+- Get project details
+- List project issues
+- Get project stats
 
-### GET /issues/{issue_id}/events [TESTED]
+## API Endpoints
 
-Get issue events
+### Issues
 
-**Related Tests:**
-- `test_get_issue_events`
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/issues/{issue_id}` | GET | Get issue details |
+| `/issues/{issue_id}/events` | GET | Get issue events |
+| `/issues/{issue_id}/comments` | POST | Add comment |
+| `/issues/{issue_id}/status` | PUT | Update status |
 
-### POST /issues/{issue_id}/comments [TESTED]
+### Events
 
-Add comment to issue
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/events/{event_id}` | GET | Get event details |
+| `/events/{event_id}/stacktrace` | GET | Get stacktrace |
 
-**Related Tests:**
-- `test_add_comment_to_issue`
+### Projects
 
-### PUT /issues/{issue_id}/status [TESTED]
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/projects` | GET | List projects |
+| `/projects/{org}/{proj}` | GET | Get project |
+| `/projects/{org}/{proj}/issues` | GET | Project issues |
 
-Update issue status
+### Analysis
 
-**Related Tests:**
-- `test_update_issue_status_resolved`
-- `test_update_issue_status_ignored`
-
-### GET /issues/{issue_id}/affected-users [TESTED]
-
-Get affected users count
-
-**Related Tests:**
-- `test_get_affected_users`
-
-### GET /health [NEEDS TESTS]
-
-Health check endpoint
-
-## Test Coverage Summary
-
-| Metric | Count |
-|--------|-------|
-| Total Features | 12 |
-| Fully Tested | 11 |
-| Partially Tested | 0 |
-| Missing Tests | 1 |
-| **Coverage** | **91.7%** |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/issues/{issue_id}/affected-users` | GET | Get affected users |
