@@ -224,7 +224,7 @@ cp .env.example .env
 # See SETUP.md for OAuth app configuration
 
 # Start service
-cd agent-bot
+cd groote-ai
 docker-compose up -d oauth-service postgres
 
 # Verify

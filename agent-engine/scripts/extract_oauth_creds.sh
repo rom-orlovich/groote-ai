@@ -1,7 +1,7 @@
 #!/bin/bash
 # Extract OAuth credentials from macOS Keychain for Docker containers
 # This allows using Claude Pro/Team subscription instead of pay-per-use API key
-# Adapted for agent-bot microservices architecture
+# Adapted for groote-ai microservices architecture
 
 CREDS_FILE="${1:-$HOME/.claude/.credentials.json}"
 KEYCHAIN_SERVICE="Claude Code-credentials"

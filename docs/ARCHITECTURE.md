@@ -1,4 +1,4 @@
-# Agent Bot Architecture
+# Groote AI Architecture
 
 ## Overview
 
@@ -161,7 +161,7 @@ stateDiagram-v2
 ## Project Structure
 
 ```
-agent-bot/
+groote-ai/
 ├── CLAUDE.md                           # Project-level rules
 ├── docker-compose.yml                  # Main orchestration
 ├── Makefile                            # Development commands

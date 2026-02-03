@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Agent Bot Dashboard",
+    title="Groote AI Dashboard",
     version="1.0.0",
     description="Enhanced dashboard with task streaming and analytics",
     lifespan=lifespan,

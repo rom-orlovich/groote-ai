@@ -1,6 +1,6 @@
 # Knowledge System Integration Architecture
 
-> **Enterprise Knowledge Graph & RAG System for Agent Bot**
+> **Enterprise Knowledge Graph & RAG System for Groote AI**
 >
 > Integration of ChromaDB, LlamaIndex, and GitLab Knowledge Graph (GKG) with a two-tier architecture: basic knowledge tools in the core system, advanced features as optional services.
 
@@ -13,7 +13,7 @@
 ChromaDB and basic knowledge tools are included in the main docker-compose:
 
 ```bash
-cd agent-bot
+cd groote-ai
 make up                  # Starts all core services including ChromaDB
 ```
 
@@ -57,7 +57,7 @@ Advanced tools available:
 
 ## Executive Summary
 
-This document describes the **two-tier knowledge system** integrated into Agent Bot:
+This document describes the **two-tier knowledge system** integrated into Groote AI:
 
 ### Tier 1: Core Knowledge (Always Available)
 
@@ -1910,4 +1910,4 @@ This architecture provides:
 6. **Real-time Updates:** Webhook-triggered incremental indexing
 7. **Security:** Credential isolation and network segmentation
 
-The system integrates seamlessly with the existing Agent Bot architecture while adding powerful knowledge retrieval capabilities for the Claude Code CLI agents.
+The system integrates seamlessly with the existing Groote AI architecture while adding powerful knowledge retrieval capabilities for the Claude Code CLI agents.

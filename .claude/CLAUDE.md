@@ -1,6 +1,6 @@
-# Agent Bot Development Rules
+# Groote AI Development Rules
 
-**STRICT ENFORCEMENT** - Must be followed for all agent-bot code:
+**STRICT ENFORCEMENT** - Must be followed for all groote-ai code:
 
 - **Maximum 300 lines per file** - Split into: `constants.py`, `models.py`, `exceptions.py`, `core.py`
 - **NO `any` types EVER** - Use `ConfigDict(strict=True)` in Pydantic models

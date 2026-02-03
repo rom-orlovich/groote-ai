@@ -1,7 +1,7 @@
 [project]
-name = "agent-bot-tests"
+name = "groote-ai"
 version = "1.0.0"
-description = "AI Agent Bot - Production system for autonomous code management"
+description = "Groote AI - Production system for autonomous code management"
 requires-python = ">=3.11"
 dependencies = [
     "pytest>=8.0.0",
