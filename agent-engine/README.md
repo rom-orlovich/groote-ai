@@ -232,6 +232,11 @@ After task completion:
 curl http://localhost:8080/health
 ```
 
+## Documentation
+
+- [Features](docs/features.md) - Feature list with test coverage status
+- [Flows](docs/flows.md) - Process flow documentation
+
 ## Related Services
 
 - **api-gateway**: Creates tasks and enqueues to Redis

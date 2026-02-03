@@ -145,3 +145,8 @@ PYTHONPATH=task-logger:$PYTHONPATH uv run pytest task-logger/tests/ -v
 - Batch JSONL appends
 - Consumer group for load distribution
 - Redis streams for reliable delivery
+
+## Documentation
+
+- [Features](docs/features.md) - Feature list with test coverage status
+- [Flows](docs/flows.md) - Process flow documentation

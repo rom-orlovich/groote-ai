@@ -233,6 +233,11 @@ All errors logged with structured logging.
 curl http://localhost:8000/health
 ```
 
+## Documentation
+
+- [Features](docs/features.md) - Feature list with test coverage status
+- [Flows](docs/flows.md) - Process flow documentation
+
 ## Related Services
 
 - **agent-engine**: Consumes tasks from Redis queue

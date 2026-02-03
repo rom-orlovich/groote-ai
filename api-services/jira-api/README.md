@@ -151,6 +151,11 @@ Standardized error responses:
 curl http://localhost:3002/health
 ```
 
+## Documentation
+
+- [Features](docs/features.md) - Feature list with test coverage status
+- [Flows](docs/flows.md) - Process flow documentation
+
 ## Related Services
 
 - **agent-engine**: Uses this service for response posting
