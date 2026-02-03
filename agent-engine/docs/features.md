@@ -1,151 +1,142 @@
-# agent-engine - Features
-
-Auto-generated on 2026-02-03
+# Agent Engine - Features
 
 ## Overview
 
 Scalable task execution engine with multi-CLI provider support (Claude Code CLI and Cursor CLI). Consumes tasks from Redis queue, executes them using CLI providers, orchestrates 13 specialized agents, and posts results back to sources.
 
-## Features
+## Core Features
 
-### Task Consumption [TESTED]
+### Task Consumption
 
-Polls Redis queue (`BRPOP agent:tasks`)
+Polls Redis queue using BRPOP for efficient blocking consumption. Tasks are consumed atomically ensuring no duplicate processing across multiple engine replicas.
 
-**Related Tests:**
-- `test_task_created_in_queued_status`
-- `test_task_transitions_to_running_when_picked_up`
-- `test_complete_task_flow_success`
+**Capabilities:**
+- BRPOP-based blocking consumption
+- Atomic task pickup
+- Multi-replica support
+- Configurable batch size
 
-### CLI Execution [TESTED]
+### CLI Execution
 
-Spawns CLI provider with agent prompts
+Spawns CLI providers (Claude Code CLI or Cursor CLI) with agent-specific prompts. Handles process lifecycle, output streaming, and error capture.
 
-**Related Tests:**
-- `test_complex_agents_use_opus_model`
-- `test_execution_agents_use_sonnet_model`
-- `test_cursor_complex_agents_use_pro_model`
-- `test_cursor_execution_agents_use_standard_model`
-- `test_provider_selection_claude`
-- `test_provider_selection_cursor`
-- `test_unknown_provider_uses_default`
+**CLI Providers:**
+- Claude Code CLI: `claude -p --output-format stream-json`
+- Cursor CLI: `cursor --headless --output-format json-stream`
 
-### Agent Orchestration [TESTED]
+**Execution Features:**
+- Headless execution mode
+- JSON streaming output
+- Real-time cost/token tracking
+- Configurable timeout
 
-Routes to 13 specialized agents
+### Agent Orchestration
 
-**Related Tests:**
-- `test_github_issue_routes_to_issue_handler`
-- `test_github_issue_comment_routes_to_issue_handler`
-- `test_github_pr_routes_to_pr_review`
-- `test_github_pr_review_comment_routes_to_pr_review`
-- `test_jira_ticket_routes_to_code_plan`
-- `test_jira_updated_routes_to_code_plan`
-- `test_jira_comment_routes_to_code_plan`
-- `test_slack_message_routes_to_inquiry`
-- `test_slack_dm_routes_to_inquiry`
-- `test_sentry_alert_routes_to_error_handler`
-- `test_sentry_regression_routes_to_error_handler`
-- `test_discovery_task_routes_to_planning`
-- `test_implementation_task_routes_to_executor`
-- `test_question_task_routes_to_brain`
+Routes tasks to 13 specialized agents based on source and event type. Each agent has optimized prompts and tool access for its domain.
 
-### Result Processing [TESTED]
+**Core Agents:**
+- `brain` - Central orchestrator, delegates to specialists
+- `planning` - Discovery and PLAN.md creation
+- `executor` - TDD implementation
+- `verifier` - Quality verification
 
-Captures cost, tokens, stdout, stderr
+**Workflow Agents:**
+- `github-issue-handler` - GitHub issues and comments
+- `github-pr-review` - Pull request reviews
+- `jira-code-plan` - Jira ticket implementation
+- `slack-inquiry` - Slack questions and requests
 
-**Related Tests:**
-- `test_task_cost_accumulated_correctly`
-- `test_task_duration_calculated_on_completion`
-- `test_session_aggregates_task_costs`
+**Support Agents:**
+- `service-integrator` - External service coordination
+- `self-improvement` - Memory and learning
+- `agent-creator` - Dynamic agent generation
+- `skill-creator` - Dynamic skill generation
+- `webhook-generator` - Webhook configuration
 
-### Session Management [TESTED]
+### Result Processing
 
-Per-user session tracking and cost aggregation
+Captures execution results including cost, token usage, stdout, and stderr. Results are persisted to PostgreSQL and streamed to Redis Pub/Sub.
 
-**Related Tests:**
-- `test_session_created_with_defaults`
-- `test_session_requires_user_and_machine`
-- `test_session_has_unique_id`
-- `test_session_aggregates_task_costs`
-- `test_session_tracks_task_count`
-- `test_session_becomes_inactive_on_rate_limit`
-- `test_disconnected_session_preserves_data`
-- `test_session_active_by_default`
-- `test_session_can_be_rate_limited`
-- `test_session_cost_accumulation_multiple_tasks`
-- `test_failed_tasks_dont_add_cost`
+**Captured Metrics:**
+- Cost in USD (input + output tokens)
+- Input token count
+- Output token count
+- Execution duration
+- Exit code and status
 
-### Task Lifecycle [TESTED]
+### Session Management
 
-State machine governing all agent executions
+Tracks user sessions with cost aggregation and rate limiting. Sessions persist across disconnections.
 
-**Related Tests:**
-- `test_task_created_in_queued_status`
-- `test_task_requires_input_message`
-- `test_task_has_unique_id`
-- `test_task_transitions_to_running_when_picked_up`
-- `test_running_task_can_complete`
-- `test_running_task_can_fail`
-- `test_running_task_can_wait_for_input`
-- `test_waiting_task_can_resume`
-- `test_task_can_be_cancelled_from_queued`
-- `test_task_can_be_cancelled_from_running`
-- `test_task_cannot_transition_from_completed`
-- `test_task_cannot_transition_from_failed`
-- `test_task_cannot_transition_from_cancelled`
-- `test_complete_task_flow_success`
-- `test_complete_task_flow_with_user_input`
-- `test_complete_task_flow_failure`
-- `test_all_valid_transitions_defined`
-- `test_terminal_states_have_no_transitions`
-- `test_non_terminal_states_have_transitions`
+**Session Features:**
+- Per-user session tracking
+- Cost aggregation across tasks
+- Task count tracking
+- Rate limit enforcement
+- Disconnect preservation
 
-### Model Selection [TESTED]
+### Task Lifecycle
 
-Complex vs execution agent model mapping
+State machine governing all task executions with well-defined transitions.
 
-**Related Tests:**
-- `test_complex_agents_use_opus_model`
-- `test_execution_agents_use_sonnet_model`
-- `test_cursor_complex_agents_use_pro_model`
-- `test_cursor_execution_agents_use_standard_model`
-- `test_agent_type_determines_model`
-- `test_case_insensitive_matching`
+**Task States:**
+- `QUEUED` - Waiting in Redis queue
+- `RUNNING` - Currently executing
+- `WAITING_INPUT` - Awaiting user response
+- `COMPLETED` - Successfully finished
+- `FAILED` - Execution error
+- `CANCELLED` - User cancelled
 
-### Routing Table [TESTED]
+### Model Selection
 
-Complete agent-to-handler routing
+Maps agent types to appropriate models based on complexity.
 
-**Related Tests:**
-- `test_all_sources_have_routes`
-- `test_github_has_all_event_types`
-- `test_jira_has_all_event_types`
-- `test_unknown_source_returns_none`
-- `test_unknown_event_type_returns_none`
+**Claude Provider:**
+- Complex agents (brain, planning, verifier) → `opus`
+- Execution agents (executor, handlers) → `sonnet`
 
-### GET /health [NEEDS TESTS]
+**Cursor Provider:**
+- Complex agents → `claude-sonnet-4.5`
+- Execution agents → `composer-1`
 
-Health check endpoint
+### Agent Routing
 
-### GET /status [NEEDS TESTS]
+Complete routing table mapping sources and event types to agents.
 
-Service status endpoint
+**Routing Map:**
+| Source | Event Type | Agent |
+|--------|------------|-------|
+| github | issues | github-issue-handler |
+| github | pull_request | github-pr-review |
+| jira | issue_created | jira-code-plan |
+| slack | app_mention | slack-inquiry |
+| sentry | new_error | sentry-error-handler |
+| internal | discovery | planning |
+| internal | implementation | executor |
 
-### POST /tasks [NEEDS TESTS]
+### Output Streaming
 
-Create task (internal)
+Streams CLI output to Redis Pub/Sub and WebSocket in real-time for dashboard display.
 
-### GET /tasks/{task_id} [NEEDS TESTS]
+**Streaming Channels:**
+- Redis Pub/Sub: `task:{task_id}:output`
+- WebSocket: Dashboard API hub
 
-Get task status
+### MCP Integration
 
-## Test Coverage Summary
+Connects to MCP servers for external service access during agent execution.
 
-| Metric | Count |
-|--------|-------|
-| Total Features | 12 |
-| Fully Tested | 8 |
-| Partially Tested | 0 |
-| Missing Tests | 4 |
-| **Coverage** | **66.7%** |
+**MCP Servers:**
+- GitHub MCP: Repository and issue operations
+- Jira MCP: Ticket and project operations
+- Slack MCP: Channel and message operations
+- Sentry MCP: Error and event operations
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check endpoint |
+| `/status` | GET | Service status with queue depth |
+| `/tasks` | POST | Create task (internal) |
+| `/tasks/{task_id}` | GET | Get task status |

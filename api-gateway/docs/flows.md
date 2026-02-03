@@ -1,97 +1,176 @@
-# api-gateway - Flows
-
-Auto-generated on 2026-02-03
+# API Gateway - Flows
 
 ## Process Flows
 
-### GitHub Flow [TESTED]
+### GitHub Webhook Flow
 
-**Steps:**
-1. Receive POST → Validate signature (middleware)
-2. Parse `X-GitHub-Event` header
-3. Extract metadata (owner, repo, PR/issue number)
-4. Check `@agent` command in comment
-5. Skip if from bot → Return `200 OK`
-6. Create task → Queue to Redis → Return `202 Accepted`
-7. Async: Add 👀 reaction via `github-api`
+```
+[GitHub] → POST /webhooks/github → [Middleware: Validate Signature]
+                                           ↓
+                               [Parse X-GitHub-Event header]
+                                           ↓
+                           [Extract metadata: owner, repo, number]
+                                           ↓
+                              [Check if event should process]
+                                     ↓           ↓
+                                 [Skip]     [Process]
+                                   ↓             ↓
+                              [200 OK]    [Create Task]
+                                               ↓
+                                    [Enqueue to Redis]
+                                               ↓
+                                       [202 Accepted]
+                                               ↓
+                                [Async: Add 👀 reaction]
+```
 
-**Related Tests:**
-- `test_github_issue_to_task_flow`
-- `test_github_issue_comment_flow`
-- `test_github_pr_opened_flow`
-- `test_github_invalid_signature_rejected`
-- `test_github_unsupported_event_ignored`
-- `test_github_bot_comment_ignored`
-- `test_issue_opened_extracts_task_info`
-- `test_issue_comment_extracts_comment_info`
-- `test_pr_opened_extracts_pr_info`
+**Processing Steps:**
+1. Receive POST request with GitHub webhook payload
+2. Middleware validates HMAC-SHA256 signature using `GITHUB_WEBHOOK_SECRET`
+3. Parse `X-GitHub-Event` header to determine event type
+4. Extract metadata: owner, repo, PR/issue number, labels
+5. Check if event type and action are supported
+6. Skip bot comments and unsupported events → Return 200 OK
+7. Create task with extracted metadata and appropriate agent type
+8. Enqueue task to Redis (`agent:tasks` list)
+9. Return 202 Accepted with task_id
+10. Async: Post 👀 reaction to acknowledge via github-api service
 
-### Jira Flow [TESTED]
+### Jira Webhook Flow
 
-**Steps:**
-1. Receive POST → Validate signature (middleware)
-2. Parse issue data
-3. Check AI-Fix label → Skip if missing → Return `200 OK`
-4. Check assignee matches AI agent
-5. Create task → Queue to Redis → Return `202 Accepted`
+```
+[Jira] → POST /webhooks/jira → [Middleware: Validate Signature]
+                                          ↓
+                                 [Parse Issue Data]
+                                          ↓
+                               [Check for AI-Fix label]
+                                    ↓          ↓
+                              [No Label]   [Has Label]
+                                  ↓             ↓
+                             [200 OK]     [Check Assignee]
+                                               ↓
+                                        [Create Task]
+                                               ↓
+                                    [Enqueue to Redis]
+                                               ↓
+                                       [202 Accepted]
+```
 
-**Related Tests:**
-- `test_jira_ai_fix_label_creates_task`
-- `test_jira_without_ai_fix_ignored`
-- `test_jira_invalid_signature_rejected`
-- `test_jira_metadata_preserved`
-- `test_jira_routes_to_code_plan`
+**Processing Steps:**
+1. Receive POST request with Jira webhook payload
+2. Middleware validates signature using `JIRA_WEBHOOK_SECRET`
+3. Parse issue data: key, summary, description, labels
+4. Check if issue has "AI-Fix" label
+5. Skip if no AI-Fix label → Return 200 OK
+6. Check if assignee matches AI agent configuration
+7. Create task with ticket metadata
+8. Enqueue task to Redis for `jira-code-plan` agent
+9. Return 202 Accepted with task_id
 
-### Slack Flow [TESTED]
+### Slack Webhook Flow
 
-**Steps:**
-1. Receive POST → Handle URL verification challenge
-2. Validate signature (middleware)
-3. Parse event (mention, command)
-4. Skip if from bot → Return `200 OK`
-5. Create task → Queue to Redis → Return `200 OK`
+```
+[Slack] → POST /webhooks/slack → [URL Verification Challenge?]
+                                         ↓
+                           [Yes: Return challenge value]
+                           [No: Validate Signature]
+                                         ↓
+                              [Parse Event Data]
+                                         ↓
+                              [Check if from bot]
+                                    ↓         ↓
+                                [Bot]     [User]
+                                  ↓           ↓
+                             [200 OK]   [Create Task]
+                                              ↓
+                                   [Enqueue to Redis]
+                                              ↓
+                                        [200 OK]
+```
 
-**Related Tests:**
-- `test_slack_app_mention_creates_task`
-- `test_slack_bot_message_ignored`
-- `test_slack_thread_context_preserved`
-- `test_slack_routes_to_inquiry`
+**Processing Steps:**
+1. Receive POST request from Slack Events API
+2. Handle URL verification challenge if present
+3. Validate signature using `SLACK_SIGNING_SECRET`
+4. Parse event: type, user, channel, text, thread_ts
+5. Skip bot messages → Return 200 OK
+6. Create task with channel context and thread info
+7. Enqueue task to Redis for `slack-inquiry` agent
+8. Return 200 OK (Slack expects 200 for all responses)
 
-### Sentry Flow [TESTED]
+### Sentry Webhook Flow
 
-**Steps:**
-1. Receive POST → Validate signature (middleware)
-2. Parse alert data
-3. Skip if unsupported → Return `200 OK`
-4. Create task → Queue to Redis → Return `202 Accepted`
+```
+[Sentry] → POST /webhooks/sentry → [Middleware: Validate Signature]
+                                            ↓
+                                   [Parse Alert Data]
+                                            ↓
+                                 [Check Event Type]
+                                      ↓         ↓
+                               [Resolved]   [New/Regression]
+                                   ↓              ↓
+                              [200 OK]      [Create Task]
+                                                  ↓
+                                       [Enqueue to Redis]
+                                                  ↓
+                                          [202 Accepted]
+```
 
-**Related Tests:**
-- `test_sentry_new_error_creates_task`
-- `test_sentry_regression_high_priority`
-- `test_sentry_resolved_ignored`
-- `test_sentry_routes_to_error_handler`
+**Processing Steps:**
+1. Receive POST request with Sentry alert webhook
+2. Middleware validates signature using `SENTRY_WEBHOOK_SECRET`
+3. Parse alert: issue ID, project, event type, culprit
+4. Skip resolved events → Return 200 OK
+5. Create task with error context
+6. Set high priority for regressions
+7. Enqueue task to Redis for `sentry-error-handler` agent
+8. Return 202 Accepted with task_id
 
-### Loop Prevention Flow [TESTED]
+### Loop Prevention Flow
 
-**Steps:**
-1. Check if comment ID in Redis posted-comments set
-2. If found → Return `200 OK` with "loop prevention"
-3. Check if user is bot type
-4. If bot → Return `200 OK` with "bot comment"
-5. Otherwise → Continue processing
+```
+[Incoming Webhook] → [Check Comment ID in Redis]
+                              ↓
+                    [Found in posted-comments?]
+                         ↓           ↓
+                      [Yes]        [No]
+                        ↓            ↓
+                   [200 OK]   [Check User Type]
+                                    ↓
+                              [Is Bot?]
+                              ↓       ↓
+                           [Yes]    [No]
+                             ↓        ↓
+                        [200 OK]  [Continue]
+```
 
-**Related Tests:**
-- `test_agent_posted_comment_ignored`
-- `test_different_comment_processed`
-- `test_github_bot_comment_ignored`
-- `test_slack_bot_message_ignored`
+**Prevention Logic:**
+1. When processing webhook, extract comment ID
+2. Check if comment ID exists in Redis `posted-comments` set
+3. If found → Skip processing (agent already processed this)
+4. Check if user type is "Bot" or username matches known bots
+5. If bot → Skip processing to avoid infinite loops
+6. Otherwise → Continue with normal processing
 
-## Flow Coverage Summary
+## Response Flow
 
-| Metric | Count |
-|--------|-------|
-| Total Flows | 5 |
-| Fully Tested | 5 |
-| Partially Tested | 0 |
-| Missing Tests | 0 |
-| **Coverage** | **100.0%** |
+### Immediate Response (< 50ms)
+
+All webhooks return response immediately after enqueue:
+- External service doesn't timeout
+- Task processing happens asynchronously
+- Response includes task_id for tracking
+
+### Visual Acknowledgment (< 100ms)
+
+For GitHub webhooks, async acknowledgment:
+1. Task enqueued → Response returned
+2. Background: POST to github-api service
+3. Add 👀 reaction to comment/issue
+4. User sees immediate feedback
+
+### Final Result (async)
+
+After agent-engine completes:
+- **Success**: Comment with results + cost
+- **Failure**: 👎 reaction (no new comment to avoid noise)

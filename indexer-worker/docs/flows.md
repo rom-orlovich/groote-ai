@@ -1,82 +1,223 @@
-# indexer-worker - Flows
-
-Auto-generated on 2026-02-03
+# Indexer Worker - Flows
 
 ## Process Flows
 
-### Job Processing Flow [TESTED]
+### Job Processing Flow
 
-**Steps:**
-1. Poll Redis queue for indexing jobs
-2. Update job status to "running"
+```
+[Redis Queue] ← BRPOP indexer:jobs → [Indexer Worker]
+                                           ↓
+                                  [Update Status: running]
+                                           ↓
+                                  [Fetch Source Configs]
+                                           ↓
+                          ┌────────────────┼────────────────┐
+                          │                │                │
+                          ▼                ▼                ▼
+                      [GitHub]         [Jira]        [Confluence]
+                          │                │                │
+                          ▼                ▼                ▼
+                      [Index]          [Index]         [Index]
+                          │                │                │
+                          └────────────────┼────────────────┘
+                                           ↓
+                                  [Update Status: completed]
+                                           ↓
+                                  [Publish Completion Event]
+```
+
+**Processing Steps:**
+1. Worker polls Redis queue for indexing jobs
+2. Update job status to "running" in database
 3. Fetch source configurations from Dashboard API
-4. For each enabled source, create indexer
-5. Index source to vector store
+4. For each enabled source, create appropriate indexer
+5. Index source to vector store (ChromaDB)
 6. If GKG enabled, index code to graph store
 7. Update job status to "completed"
-8. Publish completion event
+8. Publish completion event to Redis Pub/Sub
 
-**Related Tests:**
-- `test_job_updates_status_to_running`
-- `test_successful_job_completes`
-- `test_job_completion_published`
+### GitHub Indexing Flow
 
-### Code Indexing Flow [TESTED]
+```
+[GitHub Source Config] → [Clone/Pull Repository]
+                               ↓
+                      [Scan for Code Files]
+                               ↓
+                      [Filter by language/pattern]
+                               ↓
+              ┌────────────────┼────────────────┐
+              │                │                │
+              ▼                ▼                ▼
+         [Python]           [JS/TS]         [Other]
+              │                │                │
+              └────────────────┼────────────────┘
+                               ↓
+                      [Parse Source Files]
+                               ↓
+                      [Extract Entities]
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+              ▼                ▼                ▼
+        [Functions]       [Classes]       [Imports]
+              │                │                │
+              └────────────────┼────────────────┘
+                               ↓
+                      [Chunk File Content]
+                               ↓
+                      [Generate Embeddings]
+                               ↓
+                      [Store in ChromaDB]
+                               ↓
+            [GKG Enabled?] ─────┼─────────────
+                   ↓            │            ↓
+                [Yes]           │          [No]
+                   ↓            │            │
+            [Index to GKG]      │            │
+                   │            │            │
+                   └────────────┘            │
+                               ↓             │
+                      [Return Success]←──────┘
+```
 
-**Steps:**
-1. Clone/pull repository
-2. Parse code files
-3. Chunk code into segments
-4. Generate embeddings for chunks
-5. Store chunks in vector store
-6. Index to GKG graph store (if enabled)
+**GitHub Indexing Details:**
+- Clone via GITHUB_TOKEN authentication
+- Incremental updates via git pull
+- File filtering by extension (.py, .js, .ts, .go, etc.)
+- AST parsing for entity extraction
 
-**Related Tests:**
-- `test_code_chunks_stored_to_vector_store`
-- `test_graph_indexing_when_enabled`
+### Jira Indexing Flow
 
-### Document Indexing Flow [TESTED]
+```
+[Jira Source Config] → [Authenticate with API]
+                              ↓
+                      [Fetch Projects]
+                              ↓
+                      [For each Project:]
+                              ↓
+                      [Fetch Issues (JQL)]
+                              ↓
+                      [For each Issue:]
+                              │
+              ┌───────────────┼───────────────┐
+              │               │               │
+              ▼               ▼               ▼
+         [Summary]      [Description]    [Comments]
+              │               │               │
+              └───────────────┼───────────────┘
+                              ↓
+                      [Chunk Content]
+                              ↓
+                      [Generate Embeddings]
+                              ↓
+                      [Store in ChromaDB]
+```
 
-**Steps:**
-1. Fetch documents from source API (Jira/Confluence)
-2. Parse document content
-3. Chunk content into segments
-4. Generate embeddings for chunks
-5. Store chunks in appropriate collection
-6. (jira_tickets or confluence_pages)
+**Jira Indexed Fields:**
+- `summary` - Issue title
+- `description` - Full description
+- `comments` - All comments
+- `labels`, `priority`, `status` - Metadata
 
-**Related Tests:**
-- `test_document_chunks_stored_with_correct_collection`
+### Chunking Flow
 
-### Source Filtering Flow [TESTED]
+```
+[Source Content] → [Detect Content Type]
+                          ↓
+              ┌───────────┼───────────┐
+              │           │           │
+              ▼           ▼           ▼
+           [Code]      [Text]      [HTML]
+              │           │           │
+              ▼           ▼           ▼
+         [AST-aware]  [Sentence]  [Strip+Text]
+              │           │           │
+              └───────────┼───────────┘
+                          ↓
+                  [Split into chunks]
+                          ↓
+                  [Apply overlap]
+                          ↓
+                  [Return chunks]
+```
 
-**Steps:**
-1. Fetch source configurations
-2. Filter by org_id
-3. Check enabled flag
-4. Skip disabled sources
-5. Process only enabled sources
+**Chunking Parameters:**
+```
+CHUNK_SIZE=1500        # Characters per chunk
+CHUNK_OVERLAP=200      # Overlap between chunks
+```
 
-**Related Tests:**
-- `test_disabled_source_skipped`
+### Embedding Generation Flow
 
-### Health Check Flow [TESTED]
+```
+[Content Chunks] → [Batch by size (32)]
+                          ↓
+                  [Load Embedding Model]
+                          ↓
+                  [For each batch:]
+                          ↓
+                  [Generate embeddings]
+                          ↓
+                  [Yield (chunk, embedding)]
+```
 
-**Steps:**
-1. Check Redis queue connection
-2. Check vector store connection
-3. Check graph store connection
-4. Return component status map
+**Embedding Configuration:**
+- Model: sentence-transformers/all-MiniLM-L6-v2
+- Batch size: 32
+- GPU acceleration if available
 
-**Related Tests:**
-- `test_health_check_returns_all_components`
+### Vector Store Flow
 
-## Flow Coverage Summary
+```
+[Chunks + Embeddings] → [Get/Create Collection]
+                               ↓
+                       [Prepare documents]
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+              ▼                ▼                ▼
+           [ids]         [embeddings]     [metadata]
+              │                │                │
+              └────────────────┼────────────────┘
+                               ↓
+                       [ChromaDB.add()]
+                               ↓
+                       [Return count]
+```
 
-| Metric | Count |
-|--------|-------|
-| Total Flows | 5 |
-| Fully Tested | 5 |
-| Partially Tested | 0 |
-| Missing Tests | 0 |
-| **Coverage** | **100.0%** |
+**Collection Naming:**
+- `code` - Code files
+- `tickets` - Jira tickets
+- `docs` - Confluence pages
+
+### Parallel Processing Flow
+
+```
+[Multiple Repos] → [Check ENABLE_PARALLEL]
+                          ↓
+              ┌───────────┴───────────┐
+              │                       │
+              ▼                       ▼
+          [True]                  [False]
+              │                       │
+              ▼                       ▼
+      [Create Thread Pool]     [Sequential]
+              │                       │
+              ▼                       │
+      [Submit Repo Tasks]             │
+              │                       │
+              ▼                       │
+      [Limit: MAX_PARALLEL_REPOS]     │
+              │                       │
+              ▼                       │
+      [Collect Results]               │
+              │                       │
+              └───────────────────────┘
+                          ↓
+                  [Return Summary]
+```
+
+**Parallel Configuration:**
+- Max parallel: 5 (configurable)
+- Semaphore-based limiting
+- Async/await for I/O operations

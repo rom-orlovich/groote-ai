@@ -1,173 +1,110 @@
-# api-gateway - Features
-
-Auto-generated on 2026-02-03
+# API Gateway - Features
 
 ## Overview
 
 Central webhook reception and routing service for groote-ai system. Receives webhooks from GitHub, Jira, Slack, and Sentry, validates signatures, extracts routing metadata, and enqueues tasks to Redis.
 
-## Features
+## Core Features
 
-### Webhook Reception [TESTED]
+### Webhook Reception
 
-HTTP POST from external services
+Receives HTTP POST requests from external services (GitHub, Jira, Slack, Sentry) and processes them asynchronously. Each webhook source has a dedicated endpoint with source-specific handling logic.
 
-**Related Tests:**
-- `test_github_issue_to_task_flow`
-- `test_github_issue_comment_flow`
-- `test_github_pr_opened_flow`
-- `test_jira_ai_fix_label_creates_task`
-- `test_slack_app_mention_creates_task`
-- `test_sentry_new_error_creates_task`
+**Supported Sources:**
+- GitHub: Issues, pull requests, comments, push events
+- Jira: Ticket creation, updates, comments
+- Slack: App mentions, direct messages, slash commands
+- Sentry: Error alerts, regressions, resolved events
 
-### Security Validation [TESTED]
+### Security Validation
 
-HMAC signature verification (middleware)
+HMAC signature verification implemented as middleware for each webhook source. Invalid signatures are rejected immediately with 401 Unauthorized before any processing occurs.
 
-**Related Tests:**
-- `test_github_invalid_signature_rejected`
-- `test_jira_invalid_signature_rejected`
+**Security Features:**
+- HMAC-SHA256 signature validation
+- Per-source secret configuration
+- Timing-safe comparison
+- Request body integrity verification
 
-### Event Parsing [TESTED]
+### Event Parsing
 
-Extract metadata (repo, PR, ticket key)
+Extracts routing metadata from webhook payloads to determine how tasks should be processed. Metadata extraction is source-specific.
 
-**Related Tests:**
-- `test_issue_opened_extracts_task_info`
-- `test_issue_comment_extracts_comment_info`
-- `test_pr_opened_extracts_pr_info`
-- `test_pr_review_comment_extracts_path_info`
-- `test_push_extracts_commit_info`
-- `test_repository_info_always_included`
-- `test_labels_extracted_from_issue`
-- `test_jira_metadata_preserved`
+**Extracted Metadata:**
+- GitHub: owner, repo, PR/issue number, comment ID, labels
+- Jira: ticket key, project, labels, assignee
+- Slack: channel ID, thread timestamp, user ID
+- Sentry: issue ID, project, event count
 
-### Task Creation [TESTED]
+### Task Creation
 
-Generate task_id, create task metadata
+Generates unique task IDs and creates task metadata structures for processing by agent-engine. Tasks contain all information needed for autonomous processing.
 
-**Related Tests:**
-- `test_github_issue_to_task_flow`
-- `test_jira_ai_fix_label_creates_task`
-- `test_slack_app_mention_creates_task`
-- `test_sentry_new_error_creates_task`
-- `test_jira_metadata_preserved`
+**Task Structure:**
+- Unique UUID task_id
+- Source identification
+- Event type classification
+- Extracted prompt text
+- Source-specific metadata
+- Agent type routing
+- Repository path
 
-### Queue Management [TESTED]
+### Queue Management
 
-Enqueue to Redis for agent-engine
+Enqueues tasks to Redis for consumption by agent-engine workers. Uses Redis LPUSH for reliable delivery with BRPOP consumption on the worker side.
 
-**Related Tests:**
-- `test_github_issue_to_task_flow`
-- `test_jira_ai_fix_label_creates_task`
-- `test_slack_app_mention_creates_task`
+**Queue Features:**
+- Atomic task enqueue
+- Redis list-based queue
+- Task persistence until consumed
+- Multiple consumer support
 
-### Immediate Response [TESTED]
+### Immediate Response
 
-Return 202/200 within 50ms
+Returns HTTP response within 50ms to prevent webhook timeouts. Actual task processing happens asynchronously after response.
 
-**Related Tests:**
-- `test_github_unsupported_event_ignored`
-- `test_jira_without_ai_fix_ignored`
-- `test_sentry_resolved_ignored`
+**Response Types:**
+- `202 Accepted`: Task queued successfully
+- `200 OK`: Event acknowledged but skipped
+- `401 Unauthorized`: Invalid signature
+- `400 Bad Request`: Invalid payload
 
-### POST /webhooks/github [TESTED]
+### Loop Prevention
 
-GitHub events (PR, issues, comments)
+Prevents infinite loops from agent-posted comments triggering new tasks. Uses Redis set tracking and bot detection.
 
-**Related Tests:**
-- `test_github_issue_to_task_flow`
-- `test_github_issue_comment_flow`
-- `test_github_pr_opened_flow`
-- `test_github_invalid_signature_rejected`
-- `test_github_unsupported_event_ignored`
-- `test_github_bot_comment_ignored`
-- `test_github_issue_routes_to_issue_handler`
-- `test_github_pr_routes_to_pr_review`
+**Prevention Methods:**
+- Comment ID tracking with TTL (1 hour)
+- Bot username detection
+- User type checking
 
-### POST /webhooks/jira [TESTED]
+### Event Filtering
 
-Jira events (ticket assignment, status)
+Only processes relevant event types and actions. Ignores unsupported events to reduce noise.
 
-**Related Tests:**
-- `test_jira_ai_fix_label_creates_task`
-- `test_jira_without_ai_fix_ignored`
-- `test_jira_invalid_signature_rejected`
-- `test_jira_metadata_preserved`
-- `test_jira_routes_to_code_plan`
+**Processed Events:**
+- GitHub: issues (opened, edited, labeled), issue_comment (created), pull_request (opened, synchronize, reopened), push
+- Jira: Issues with AI-Fix label
+- Slack: app_mention, message (DM only)
+- Sentry: New errors, regressions
 
-### POST /webhooks/slack [TESTED]
+### Agent Routing
 
-Slack events (mentions, commands)
+Routes webhooks to appropriate agent types based on source and event type.
 
-**Related Tests:**
-- `test_slack_app_mention_creates_task`
-- `test_slack_bot_message_ignored`
-- `test_slack_thread_context_preserved`
-- `test_slack_routes_to_inquiry`
+**Routing Map:**
+- GitHub issues → `github-issue-handler`
+- GitHub PRs → `github-pr-review`
+- Jira tickets → `jira-code-plan`
+- Slack mentions → `slack-inquiry`
+- Sentry alerts → `sentry-error-handler`
 
-### POST /webhooks/sentry [TESTED]
+## API Endpoints
 
-Sentry alerts
-
-**Related Tests:**
-- `test_sentry_new_error_creates_task`
-- `test_sentry_regression_high_priority`
-- `test_sentry_resolved_ignored`
-- `test_sentry_routes_to_error_handler`
-
-### GET /health [NEEDS TESTS]
-
-Health check endpoint
-
-### Loop Prevention [TESTED]
-
-Redis tracking of posted comment IDs, bot username detection
-
-**Related Tests:**
-- `test_agent_posted_comment_ignored`
-- `test_different_comment_processed`
-- `test_github_bot_comment_ignored`
-- `test_slack_bot_message_ignored`
-
-### Event Filtering [TESTED]
-
-Only relevant events processed
-
-**Related Tests:**
-- `test_issue_opened_is_processed`
-- `test_issue_edited_is_processed`
-- `test_issue_labeled_is_processed`
-- `test_issue_comment_created_is_processed`
-- `test_pr_opened_is_processed`
-- `test_pr_synchronize_is_processed`
-- `test_pr_reopened_is_processed`
-- `test_pr_review_comment_is_processed`
-- `test_push_is_processed`
-- `test_unsupported_event_ignored`
-- `test_unsupported_action_ignored`
-- `test_supported_issues_actions`
-- `test_supported_issue_comment_actions`
-- `test_supported_pr_actions`
-- `test_supported_pr_review_comment_actions`
-
-### Agent Routing [TESTED]
-
-Route webhooks to correct agent types
-
-**Related Tests:**
-- `test_github_issue_routes_to_issue_handler`
-- `test_github_pr_routes_to_pr_review`
-- `test_jira_routes_to_code_plan`
-- `test_slack_routes_to_inquiry`
-- `test_sentry_routes_to_error_handler`
-
-## Test Coverage Summary
-
-| Metric | Count |
-|--------|-------|
-| Total Features | 14 |
-| Fully Tested | 13 |
-| Partially Tested | 0 |
-| Missing Tests | 1 |
-| **Coverage** | **92.9%** |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/webhooks/github` | POST | GitHub webhook events |
+| `/webhooks/jira` | POST | Jira webhook events |
+| `/webhooks/slack` | POST | Slack Events API |
+| `/webhooks/sentry` | POST | Sentry webhook alerts |
+| `/health` | GET | Health check endpoint |

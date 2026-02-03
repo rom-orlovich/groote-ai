@@ -1,105 +1,95 @@
-# oauth-service - Features
-
-Auto-generated on 2026-02-03
+# OAuth Service - Features
 
 ## Overview
 
-Multi-tenant OAuth token management service for GitHub, Jira, and Slack integrations. Manages OAuth tokens for organization-level installations - no individual user accounts required.
+Multi-tenant OAuth token management service for GitHub, Jira, and Slack integrations. Manages OAuth tokens for organization-level installations with automatic token refresh.
 
-## Features
+## Core Features
 
-### OAuth Flow Management [TESTED]
+### OAuth Flow Management
 
-Handle OAuth authorization flows for all platforms
+Handle OAuth authorization flows for GitHub, Jira, and Slack platforms.
 
-**Related Tests:**
-- `test_get_authorization_url` (GitHub)
-- `test_get_authorization_url` (Slack)
-- `test_get_authorization_url` (Jira)
+**Supported Platforms:**
+- GitHub (OAuth App and GitHub App)
+- Jira (OAuth 2.0 3LO)
+- Slack (OAuth 2.0)
 
-### Token Exchange [TESTED]
+**Flow Capabilities:**
+- Generate authorization URLs with state
+- Handle OAuth callbacks
+- Store tokens securely
 
-Exchange OAuth codes for access tokens
+### Token Exchange
 
-**Related Tests:**
-- `test_exchange_code_success`
+Exchange authorization codes for access tokens during OAuth callback.
 
-### Token Storage [NEEDS TESTS]
+**Exchange Process:**
+- Receive authorization code
+- Validate state parameter
+- Exchange for access/refresh tokens
+- Store with organization mapping
 
-Securely store OAuth tokens per organization/workspace
+### Token Storage
 
-### Token Refresh [NEEDS TESTS]
+Secure storage of OAuth tokens with encryption.
 
-Automatically refresh expired tokens
+**Storage Features:**
+- Fernet encryption for tokens
+- PostgreSQL persistence
+- Organization-level mapping
+- Scope tracking
 
-### Token Lookup [NEEDS TESTS]
+### Token Refresh
 
-Provide token lookup APIs for other services
+Automatic refresh of expired tokens for seamless operation.
 
-### Installation Management [NEEDS TESTS]
+**Refresh Features:**
+- Automatic expiration detection
+- Transparent refresh before API calls
+- Refresh token rotation support
+- Failed refresh handling
 
-Track OAuth app installations
+### Installation Management
 
-### GitHub OAuth Provider [TESTED]
+Track and manage OAuth installations per organization.
 
-GitHub App installation flow with state parameter
+**Installation Data:**
+- Platform (github, jira, slack)
+- External organization ID
+- Organization name
+- Token scopes
+- Installation status
 
-**Related Tests:**
-- `test_get_authorization_url`
+### Multi-Tenant Lookup
 
-### Slack OAuth Provider [TESTED]
+Lookup tokens by organization for multi-tenant API access.
 
-Slack OAuth v2 flow with scopes
+**Lookup Methods:**
+- By organization ID
+- By workspace ID (Slack)
+- By site ID (Jira)
 
-**Related Tests:**
-- `test_get_authorization_url`
-- `test_exchange_code_success`
+## API Endpoints
 
-### Jira OAuth Provider [TESTED]
+### OAuth Flows
 
-Jira OAuth with PKCE (code challenge)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/oauth/install/{platform}` | GET | Start OAuth flow |
+| `/oauth/callback/{platform}` | GET | OAuth callback |
 
-**Related Tests:**
-- `test_get_authorization_url`
-- `test_code_verifier_generation`
-- `test_code_challenge_generation`
+### Token Management
 
-### GET /oauth/install/{platform} [PARTIAL]
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/oauth/token/{platform}` | GET | Get token for org |
+| `/oauth/installations` | GET | List installations |
+| `/oauth/installations/{id}` | DELETE | Revoke installation |
 
-Start OAuth flow
+### Status
 
-**Related Tests:**
-- `test_get_authorization_url` (indirect)
-
-### GET /oauth/callback/{platform} [PARTIAL]
-
-OAuth callback handler
-
-**Related Tests:**
-- `test_exchange_code_success` (indirect)
-
-### GET /oauth/token/{platform} [NEEDS TESTS]
-
-Get token for organization
-
-### GET /oauth/installations [NEEDS TESTS]
-
-List installations
-
-### DELETE /oauth/installations/{id} [NEEDS TESTS]
-
-Revoke installation
-
-### GET /health [NEEDS TESTS]
-
-Health check endpoint
-
-## Test Coverage Summary
-
-| Metric | Count |
-|--------|-------|
-| Total Features | 15 |
-| Fully Tested | 4 |
-| Partially Tested | 2 |
-| Missing Tests | 9 |
-| **Coverage** | **33.3%** |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/oauth/status` | GET | OAuth status summary |

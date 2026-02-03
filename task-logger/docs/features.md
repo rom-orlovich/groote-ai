@@ -1,102 +1,95 @@
-# task-logger - Features
-
-Auto-generated on 2026-02-03
+# Task Logger - Features
 
 ## Overview
 
-Dedicated service for structured task logging. Consumes task events from Redis stream and writes structured log files per task.
+Dedicated service for structured task logging. Consumes task events from Redis stream and writes structured log files per task for audit trails and debugging.
 
-## Features
+## Core Features
 
-### Task Directory Creation [TESTED]
+### Task Directory Creation
 
-Create unique log directory for each task
+Create unique log directory for each task with organized structure.
 
-**Related Tests:**
-- `test_create_task_directory`
+**Directory Structure:**
+```
+/data/logs/tasks/{task_id}/
+├── metadata.json
+├── 01-input.json
+├── 02-webhook-flow.jsonl
+├── 03-agent-output.jsonl
+├── 03-user-inputs.jsonl
+└── 04-final-result.json
+```
 
-### Metadata Writing [TESTED]
+### Metadata Writing
 
-Write task metadata as JSON
+Write task metadata as static JSON at task creation.
 
-**Related Tests:**
-- `test_write_metadata`
+**Metadata Contents:**
+- Task ID
+- Source (github, jira, slack, sentry)
+- Agent type
+- User ID
+- Machine ID
+- Created timestamp
 
-### Input Logging [TESTED]
+### Event Streaming
 
-Write initial task input as JSON
+Consume events from Redis stream with reliable delivery.
 
-**Related Tests:**
-- `test_write_input`
+**Event Types:**
+- `task:created` - Task metadata
+- `task:started` - Execution begins
+- `task:output` - Streaming agent output
+- `task:user_input` - User interactive input
+- `task:completed` - Final results
+- `task:failed` - Error information
 
-### User Input Logging [TESTED]
+### Webhook Flow Logging
 
-Append user interactive inputs as JSONL
+Log webhook processing steps for debugging.
 
-**Related Tests:**
-- `test_append_user_input`
+**Logged Events:**
+- `webhook:received` - Raw payload received
+- `webhook:validated` - Signature verified
+- `webhook:matched` - Command matched
+- `webhook:task_created` - Task queued
 
-### Webhook Event Logging [TESTED]
+### Agent Output Logging
 
-Append webhook processing events as JSONL
+Stream and persist agent output for audit.
 
-**Related Tests:**
-- `test_append_webhook_event`
+**Output Types:**
+- Text output (thoughts, explanations)
+- Tool calls (file edits, searches)
+- Cost/token metrics
+- Error messages
 
-### Agent Output Logging [TESTED]
+### Final Result Writing
 
-Append Claude output/thinking/tool calls as JSONL
+Write completion results with metrics.
 
-**Related Tests:**
-- `test_append_agent_output`
+**Result Contents:**
+- Status (completed/failed)
+- Cost (USD)
+- Input/output tokens
+- Duration (seconds)
+- Exit code
 
-### Knowledge Interaction Logging [TESTED]
+### Atomic File Writes
 
-Append knowledge query results as JSONL
+Crash-safe file writing using temp + rename.
 
-**Related Tests:**
-- `test_append_knowledge_interaction`
+**Write Process:**
+1. Write to temp file
+2. fsync temp file
+3. Rename to target
+4. fsync directory
 
-### Final Result Writing [TESTED]
+## API Endpoints
 
-Write final results and metrics as JSON
-
-**Related Tests:**
-- `test_write_final_result`
-
-### Log File Ordering [TESTED]
-
-Maintain correct order of log files
-
-**Related Tests:**
-- `test_log_file_ordering`
-
-### GET /health [NEEDS TESTS]
-
-Health check endpoint
-
-### GET /tasks/{task_id}/logs [NEEDS TESTS]
-
-Retrieve task logs
-
-### GET /metrics [NEEDS TESTS]
-
-Queue depth, processed count
-
-### Redis Stream Consumer [NEEDS TESTS]
-
-Consume events from Redis stream
-
-### Event Processing [NEEDS TESTS]
-
-Process different event types
-
-## Test Coverage Summary
-
-| Metric | Count |
-|--------|-------|
-| Total Features | 14 |
-| Fully Tested | 9 |
-| Partially Tested | 0 |
-| Missing Tests | 5 |
-| **Coverage** | **64.3%** |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/tasks/{task_id}/logs` | GET | Get task logs |
+| `/metrics` | GET | Queue depth, stats |

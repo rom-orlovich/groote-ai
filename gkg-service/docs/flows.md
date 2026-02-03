@@ -1,81 +1,220 @@
-# gkg-service - Flows
-
-Auto-generated on 2026-02-03
+# GKG Service - Flows
 
 ## Process Flows
 
-### Dependency Query Flow [TESTED]
+### Dependency Query Flow
 
-**Steps:**
+```
+[Client] → POST /analyze/dependencies
+                     ↓
+            [Parse Request]
+            {file_path, depth}
+                     ↓
+            [Check Cache]
+               ↓       ↓
+           [Hit]     [Miss]
+               ↓       ↓
+          [Return]  [Query Graph]
+                         ↓
+                [Build Dependency Tree]
+                         ↓
+                [Traverse to depth]
+                         ↓
+                [Cache Result]
+                         ↓
+                [Return Dependencies]
+```
+
+**Processing Steps:**
 1. Receive POST request with file_path and depth
 2. Check cache for existing result
 3. If cached, return cached result
-4. Query graph analyzer for dependencies
-5. Build dependency tree up to specified depth
-6. Cache result
-7. Return dependency tree
+4. Query graph analyzer for direct dependencies
+5. Recursively traverse to specified depth
+6. Build dependency tree structure
+7. Cache result with TTL
+8. Return dependency tree
 
-**Related Tests:**
-- `test_dependency_query_returns_file_dependencies`
-- `test_dependency_query_respects_depth_parameter`
-- `test_cached_dependencies_returned_on_repeat_query`
+### Symbol Usage Flow
 
-### Call Graph Flow [TESTED]
+```
+[Client] → POST /query/usages
+                    ↓
+           [Parse Request]
+           {symbol_name, scope}
+                    ↓
+           [Query Graph Index]
+                    ↓
+           [Find All References]
+                    ↓
+         ┌─────────┼─────────┐
+         │         │         │
+         ▼         ▼         ▼
+   [Definitions] [Calls] [Imports]
+         │         │         │
+         └─────────┼─────────┘
+                   ↓
+           [Group by File]
+                   ↓
+           [Return Usages]
+```
 
-**Steps:**
-1. Receive POST request with function_name and direction
-2. Query graph analyzer for call relationships
-3. If direction is "callers", return only callers
-4. If direction is "callees", return only callees
-5. If direction is "both", return both
-6. Return call graph
+**Usage Response:**
+```json
+{
+  "symbol": "process_request",
+  "definition": {"file": "main.py", "line": 42},
+  "usages": [
+    {"file": "handler.py", "line": 15, "type": "call"},
+    {"file": "test_main.py", "line": 8, "type": "import"}
+  ]
+}
+```
 
-**Related Tests:**
-- `test_call_graph_returns_callers_and_callees`
-- `test_call_graph_respects_direction_callers_only`
-- `test_call_graph_respects_direction_callees_only`
+### Call Graph Flow
 
-### Class Hierarchy Flow [TESTED]
+```
+[Client] → POST /graph/calls
+                    ↓
+           [Parse Request]
+           {function_name, direction, depth}
+                    ↓
+           [Find Function Node]
+                    ↓
+           [Traverse Call Edges]
+                    ↓
+           [Direction?]
+               ↓       ↓
+          [callers] [callees]
+               ↓       ↓
+          [Incoming] [Outgoing]
+               │       │
+               └───────┘
+                   ↓
+           [Build Graph Structure]
+                   ↓
+           [Return Call Graph]
+```
 
-**Steps:**
-1. Receive POST request with class_name
-2. Query graph analyzer for inheritance
-3. Find parent classes
-4. Find child classes
-5. Return hierarchy tree
+**Call Graph Response:**
+```json
+{
+  "root": "process_request",
+  "direction": "callees",
+  "depth": 2,
+  "nodes": [
+    {"name": "process_request", "file": "main.py", "line": 42},
+    {"name": "validate", "file": "utils.py", "line": 10}
+  ],
+  "edges": [
+    {"from": "process_request", "to": "validate"}
+  ]
+}
+```
 
-**Related Tests:**
-- `test_hierarchy_returns_parents_and_children`
+### Class Hierarchy Flow
 
-### Batch Query Flow [TESTED]
+```
+[Client] → POST /graph/hierarchy
+                    ↓
+           [Parse Request]
+           {class_name, direction}
+                    ↓
+           [Find Class Node]
+                    ↓
+           [Traverse Inheritance]
+                    ↓
+           [Direction?]
+               ↓       ↓
+          [parents] [children]
+               ↓       ↓
+          [Superclass] [Subclass]
+               │       │
+               └───────┘
+                   ↓
+           [Build Hierarchy Tree]
+                   ↓
+           [Return Hierarchy]
+```
 
-**Steps:**
-1. Receive POST request with entity list
-2. Check if batch operations enabled
-3. If disabled, return empty results
-4. Query each entity in parallel
-5. Aggregate results
-6. Return results map
+**Hierarchy Response:**
+```json
+{
+  "class": "UserService",
+  "parents": ["BaseService"],
+  "children": ["AdminUserService", "GuestUserService"],
+  "interfaces": ["Authenticatable"]
+}
+```
 
-**Related Tests:**
-- `test_batch_related_returns_results_for_all_entities`
-- `test_batch_disabled_returns_empty`
+### Repository Indexing Flow
 
-### Repository Indexing Flow [NEEDS TESTS]
+```
+[Client] → POST /index
+                ↓
+       [Parse Request]
+       {repo_path, incremental}
+                ↓
+       [Load Repository]
+                ↓
+       [Incremental?]
+           ↓       ↓
+        [Yes]    [No]
+           ↓       ↓
+     [Git Diff]  [Full Scan]
+           │       │
+           └───────┘
+                ↓
+       [Parse Source Files]
+                ↓
+       [Extract Entities]
+           │
+    ┌──────┼──────┐
+    │      │      │
+    ▼      ▼      ▼
+[Classes] [Functions] [Imports]
+    │      │      │
+    └──────┼──────┘
+           ↓
+       [Build Relationships]
+                ↓
+       [Store in Graph DB]
+                ↓
+       [Return Status]
+```
 
-**Steps:**
-1. Receive POST request with repo_url
-2. Clone repository to REPOS_DIR
-3. Run GKG binary to index code
-4. Store graph in DATA_DIR
-5. Return indexing status
+**Indexing Response:**
+```json
+{
+  "status": "completed",
+  "files_indexed": 150,
+  "entities_extracted": 1200,
+  "relationships_created": 3500,
+  "duration_seconds": 45.2
+}
+```
 
-## Flow Coverage Summary
+### Cache Management Flow
 
-| Metric | Count |
-|--------|-------|
-| Total Flows | 5 |
-| Fully Tested | 4 |
-| Partially Tested | 0 |
-| Missing Tests | 1 |
-| **Coverage** | **80.0%** |
+```
+[Query Request] → [Generate Cache Key]
+                        ↓
+                 [Hash(query_params)]
+                        ↓
+                 [Check Redis]
+                    ↓       ↓
+                [Exists]  [Missing]
+                    ↓       ↓
+               [Return]  [Execute Query]
+                              ↓
+                         [Cache Result]
+                              ↓
+                         [Set TTL]
+                              ↓
+                         [Return Result]
+```
+
+**Cache Configuration:**
+- TTL: 300 seconds (configurable)
+- Invalidation: On repository re-index
+- Key format: `gkg:{query_type}:{hash(params)}`

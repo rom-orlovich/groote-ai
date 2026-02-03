@@ -1,103 +1,101 @@
-# api-services/github-api - Features
-
-Auto-generated on 2026-02-03
+# GitHub API Service - Features
 
 ## Overview
 
-REST API wrapper for GitHub operations with multi-tenant OAuth support. Provides REST endpoints for GitHub operations supporting both single-tenant (PAT) and multi-tenant (OAuth) authentication.
+REST API wrapper for GitHub operations with multi-tenant OAuth support. Provides endpoints for issue management, PR operations, file access, and repository metadata supporting both single-tenant (PAT) and multi-tenant (OAuth) authentication.
 
-## Features
+## Core Features
 
-### Issue Management [TESTED]
+### Issue Management
 
-Create, read, update issues and comments
+Full issue lifecycle management including creation, reading, updating, and commenting.
 
-**Related Tests:**
-- `test_get_issue`
-- `test_create_issue`
-- `test_add_comment_to_issue`
+**Operations:**
+- Get issue details with labels and assignees
+- Create new issues
+- Update issue status and properties
+- Add comments to issues
+- List issue comments
 
-### PR Operations [TESTED]
+### Pull Request Operations
 
-Review PRs, post comments, manage reviews
+Complete PR management including reviews, comments, and status checks.
 
-**Related Tests:**
-- `test_get_pull_request`
-- `test_add_comment_to_pr`
+**Operations:**
+- Get PR details with diff stats
+- Add line-level comments
+- Create PR reviews (approve, request changes, comment)
+- List PR files changed
+- Get PR review comments
 
-### File Operations [TESTED]
+### File Operations
 
-Read and write repository files
+Read and write repository files with commit support.
 
-**Related Tests:**
-- `test_get_file_contents`
-- `test_search_code`
+**Operations:**
+- Read file contents (with base64 decoding)
+- Create new files with commit message
+- Update existing files
+- Get file metadata (size, SHA, encoding)
 
-### Repository Operations [TESTED]
+### Repository Operations
 
-List repos, get repository metadata
+Access repository metadata and organizational information.
 
-**Related Tests:**
-- `test_get_repository`
-- `test_list_branches`
+**Operations:**
+- Get repository details
+- List organization repositories
+- Get repository branches
+- Access repository settings
 
-### Branch Operations [TESTED]
+### Multi-Tenant Support
 
-Create and manage branches
+Organization-level OAuth token management for multi-tenant deployments.
 
-**Related Tests:**
-- `test_create_branch`
-- `test_list_branches`
+**Features:**
+- OAuth token lookup per organization
+- Automatic fallback to default token
+- Token refresh via oauth-service
+- Installation-based access
 
-### Multi-Tenant Support [NEEDS TESTS]
+### Response Posting
 
-Handle OAuth tokens per organization
+Post agent results back to GitHub issues and PRs.
 
-### Response Posting [NEEDS TESTS]
+**Formats:**
+- Markdown-formatted comments
+- Code block support
+- Emoji reactions
+- Collapsible sections
 
-Post agent responses back to GitHub
+## API Endpoints
 
-### GET /issues/{owner}/{repo}/{number} [TESTED]
+### Issues
 
-Get issue details
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/issues/{owner}/{repo}/{number}` | GET | Get issue details |
+| `/issues/{owner}/{repo}/{number}/comments` | GET | List comments |
+| `/issues/{owner}/{repo}/{number}/comments` | POST | Add comment |
 
-**Related Tests:**
-- `test_get_issue`
+### Pull Requests
 
-### POST /issues/{owner}/{repo}/{number}/comments [TESTED]
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/pulls/{owner}/{repo}/{number}` | GET | Get PR details |
+| `/pulls/{owner}/{repo}/{number}/comments` | POST | Add PR comment |
+| `/pulls/{owner}/{repo}/{number}/reviews` | POST | Create review |
 
-Post issue comment
+### Repository Files
 
-**Related Tests:**
-- `test_add_comment_to_issue`
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/repos/{owner}/{repo}/contents/{path}` | GET | Read file |
+| `/repos/{owner}/{repo}/contents/{path}` | POST | Create/update file |
 
-### GET /pulls/{owner}/{repo}/{number} [TESTED]
+### Repositories
 
-Get PR details
-
-**Related Tests:**
-- `test_get_pull_request`
-
-### GET /repos/{owner}/{repo}/contents/{path} [TESTED]
-
-Read file contents
-
-**Related Tests:**
-- `test_get_file_contents`
-
-### GET /repos/{owner}/{repo} [TESTED]
-
-Get repository details
-
-**Related Tests:**
-- `test_get_repository`
-
-## Test Coverage Summary
-
-| Metric | Count |
-|--------|-------|
-| Total Features | 12 |
-| Fully Tested | 10 |
-| Partially Tested | 0 |
-| Missing Tests | 2 |
-| **Coverage** | **83.3%** |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/repos/{owner}/{repo}` | GET | Get repository |
+| `/orgs/{org}/repos` | GET | List org repos |
