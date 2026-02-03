@@ -2,6 +2,13 @@
 
 **STRICT ENFORCEMENT** - Must be followed for all groote-ai code:
 
+## Package Managers
+
+- **Python**: Use `uv` (NOT pip) - `uv pip install -r requirements.txt`
+- **JavaScript/TypeScript**: Use `pnpm` (NOT npm/yarn) - `pnpm install`, `pnpm add <pkg>`
+
+## Code Standards
+
 - **Maximum 300 lines per file** - Split into: `constants.py`, `models.py`, `exceptions.py`, `core.py`
 - **NO `any` types EVER** - Use `ConfigDict(strict=True)` in Pydantic models
 - **NO comments in code** - Self-explanatory code only

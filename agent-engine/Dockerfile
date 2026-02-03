@@ -21,8 +21,10 @@ RUN mkdir -p /home/agent/.claude /home/agent/.local/bin /app/repos \
 
 ENV PATH="/home/agent/.local/bin:${PATH}"
 
+RUN pip install uv
+
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN uv pip install --no-cache-dir --system -r requirements.txt
 
 COPY --chown=agent:agent . .
 

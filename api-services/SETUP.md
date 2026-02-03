@@ -148,7 +148,7 @@ curl http://localhost:3004/health
 cd api-services/github-api
 
 # Install dependencies
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
 # Set environment
 export PORT=3001
@@ -164,7 +164,7 @@ uvicorn main:app --host 0.0.0.0 --port 3001 --reload
 cd api-services/jira-api
 
 # Install dependencies
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
 # Set environment
 export PORT=3002
@@ -182,7 +182,7 @@ uvicorn main:app --host 0.0.0.0 --port 3002 --reload
 cd api-services/slack-api
 
 # Install dependencies
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
 # Set environment
 export PORT=3003
@@ -198,7 +198,7 @@ uvicorn main:app --host 0.0.0.0 --port 3003 --reload
 cd api-services/sentry-api
 
 # Install dependencies
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
 # Set environment
 export PORT=3004

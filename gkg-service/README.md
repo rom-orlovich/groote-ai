@@ -10,7 +10,7 @@ docker-compose --profile knowledge up gkg-service
 
 # Run locally
 cd gkg-service
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 python main.py
 ```
 

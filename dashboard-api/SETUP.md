@@ -47,7 +47,7 @@ docker-compose up -d dashboard-api
 cd dashboard-api
 
 # Install dependencies
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
 # Set environment variables
 export REDIS_URL=redis://localhost:6379/0
