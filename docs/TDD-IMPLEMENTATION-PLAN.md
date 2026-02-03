@@ -1,9 +1,9 @@
-# TDD Implementation Plan: Agent Bot Feature Expansion
+# TDD Implementation Plan: Groote AI Feature Expansion
 
 ## Overview
 
 This document outlines a comprehensive Test-Driven Development plan for:
-1. Porting Claude Code Agent features to Agent Bot dashboards (internal + external)
+1. Porting Claude Code Agent features to Groote AI dashboards (internal + external)
 2. OAuth integration button in external dashboard
 3. Environment variable consolidation
 4. Makefile cleanup and script organization
@@ -17,18 +17,18 @@ This document outlines a comprehensive Test-Driven Development plan for:
 
 **Files Found:**
 ```
-agent-bot/.env.example                          (ROOT - 106 lines)
-agent-bot/agent-engine/.env.example             (Service-specific)
-agent-bot/api-gateway/.env.example              (Service-specific)
-agent-bot/dashboard-api/.env.example            (Service-specific)
-agent-bot/oauth-service/.env.example            (Service-specific)
-agent-bot/api-services/github-api/.env.example  (Service-specific)
-agent-bot/api-services/jira-api/.env.example    (Service-specific)
-agent-bot/api-services/slack-api/.env.example   (Service-specific)
-agent-bot/api-services/sentry-api/.env.example  (Service-specific)
-agent-bot/mcp-servers/jira-mcp/.env.example     (Service-specific)
-agent-bot/mcp-servers/slack-mcp/.env.example    (Service-specific)
-agent-bot/mcp-servers/sentry-mcp/.env.example   (Service-specific)
+groote-ai/.env.example                          (ROOT - 106 lines)
+groote-ai/agent-engine/.env.example             (Service-specific)
+groote-ai/api-gateway/.env.example              (Service-specific)
+groote-ai/dashboard-api/.env.example            (Service-specific)
+groote-ai/oauth-service/.env.example            (Service-specific)
+groote-ai/api-services/github-api/.env.example  (Service-specific)
+groote-ai/api-services/jira-api/.env.example    (Service-specific)
+groote-ai/api-services/slack-api/.env.example   (Service-specific)
+groote-ai/api-services/sentry-api/.env.example  (Service-specific)
+groote-ai/mcp-servers/jira-mcp/.env.example     (Service-specific)
+groote-ai/mcp-servers/slack-mcp/.env.example    (Service-specific)
+groote-ai/mcp-servers/sentry-mcp/.env.example   (Service-specific)
 ```
 
 ### 1.2 Variable Classification
@@ -107,7 +107,7 @@ CURSOR_MODEL_EXECUTION=composer-1
 # ============================================
 # GitHub App
 GITHUB_APP_ID=123456
-GITHUB_APP_NAME=my-agent-bot
+GITHUB_APP_NAME=my-groote-ai
 GITHUB_CLIENT_ID=Iv1.abc123
 GITHUB_CLIENT_SECRET=xxx
 GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
@@ -164,7 +164,7 @@ CHROMA_COLLECTION=agent_knowledge
 ### 2.2 Proposed Script Structure
 
 ```
-agent-bot/
+groote-ai/
 ├── scripts/
 │   ├── cli/
 │   │   ├── start.sh          # Start CLI (provider arg)
@@ -458,11 +458,11 @@ async def manage_collections(
 
 ---
 
-## Phase 4: Claude Code Agent Features → Agent Bot
+## Phase 4: Claude Code Agent Features → Groote AI
 
 ### 4.1 Feature Comparison Matrix
 
-| Feature | Claude Code Agent | Agent Bot Internal | Agent Bot External | Priority |
+| Feature | Claude Code Agent | Groote AI Internal | Groote AI External | Priority |
 |---------|------------------|--------------------|--------------------|----------|
 | **Agents** |
 | Brain Orchestrator | ✅ | ✅ | - | - |
@@ -499,7 +499,7 @@ async def manage_collections(
 
 #### 4.2.1 Self-Improvement Agent
 
-**Location:** `agent-bot/agent-engine/.claude/agents/self-improvement.md`
+**Location:** `groote-ai/agent-engine/.claude/agents/self-improvement.md`
 
 **Triggers:**
 - Verification score ≥ 90%
@@ -577,7 +577,7 @@ POST /api/registry/reload          # Reload from disk
 
 **Directory Structure:**
 ```
-agent-bot/agent-engine/.claude/memory/
+groote-ai/agent-engine/.claude/memory/
 ├── code/
 │   └── patterns.md          # Code patterns learned
 ├── agents/

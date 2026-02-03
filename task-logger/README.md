@@ -108,11 +108,11 @@ curl http://localhost:8090/metrics
 Tests are co-located and self-contained (no shared dependencies).
 
 ```bash
-# From agent-bot root
+# From groote-ai root
 make test-logger
 
 # Or directly
-cd agent-bot
+cd groote-ai
 PYTHONPATH=task-logger:$PYTHONPATH uv run pytest task-logger/tests/ -v
 ```
 

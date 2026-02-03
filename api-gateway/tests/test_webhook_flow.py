@@ -695,7 +695,7 @@ class TestLoopPreventionFlow:
             issue_number=123,
             comment_id=456,
             body="I've analyzed this issue...",
-            user="agent-bot",
+            user="groote-ai",
         )
         signature = generate_github_signature(payload)
 

@@ -2,13 +2,13 @@
 
 ## Overview
 
-This document maps all environment variables across agent-bot services, identifies redundancies, and provides a consolidated configuration strategy.
+This document maps all environment variables across groote-ai services, identifies redundancies, and provides a consolidated configuration strategy.
 
 ---
 
 ## Current State: All .env.example Files
 
-### 1. Root `.env.example` (agent-bot/.env.example)
+### 1. Root `.env.example` (groote-ai/.env.example)
 
 | Variable | Value | Description |
 |----------|-------|-------------|
@@ -38,7 +38,7 @@ This document maps all environment variables across agent-bot services, identifi
 | CURSOR_MODEL_EXECUTION | composer-1 | Cursor execution model |
 | BASE_URL | https://yourdomain.com | OAuth base URL |
 | GITHUB_APP_ID | 123456 | GitHub App ID |
-| GITHUB_APP_NAME | my-agent-bot | GitHub App name |
+| GITHUB_APP_NAME | my-groote-ai | GitHub App name |
 | GITHUB_CLIENT_ID | Iv1.abc123 | GitHub OAuth client |
 | GITHUB_CLIENT_SECRET | xxx | GitHub OAuth secret |
 | GITHUB_PRIVATE_KEY | "-----BEGIN..." | GitHub App key |
@@ -113,7 +113,7 @@ This document maps all environment variables across agent-bot services, identifi
 | BASE_URL | https://yourdomain.com | **YES** - in root |
 | DATABASE_URL | postgresql+asyncpg://... | No - computed |
 | GITHUB_APP_ID | 123456 | **YES** - in root |
-| GITHUB_APP_NAME | my-agent-bot | **YES** - in root |
+| GITHUB_APP_NAME | my-groote-ai | **YES** - in root |
 | GITHUB_CLIENT_ID | Iv1.abc123 | **YES** - in root |
 | GITHUB_CLIENT_SECRET | xxx | **YES** - in root |
 | GITHUB_PRIVATE_KEY | "-----BEGIN..." | **YES** - in root |
@@ -227,7 +227,7 @@ This document maps all environment variables across agent-bot services, identifi
 
 | File | Reason |
 |------|--------|
-| `agent-bot/.env.example` | Single source of truth |
+| `groote-ai/.env.example` | Single source of truth |
 
 ### Files to Delete (After Migration)
 
@@ -291,7 +291,7 @@ GITHUB_WEBHOOK_SECRET=your-github-webhook-secret
 
 # GitHub App OAuth (for multi-tenant)
 GITHUB_APP_ID=123456
-GITHUB_APP_NAME=my-agent-bot
+GITHUB_APP_NAME=my-groote-ai
 GITHUB_CLIENT_ID=Iv1.abc123
 GITHUB_CLIENT_SECRET=your-github-client-secret
 GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"

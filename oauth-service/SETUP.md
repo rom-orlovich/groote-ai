@@ -4,7 +4,7 @@
 
 ```bash
 # 1. Copy environment file
-cd agent-bot/oauth-service && cp .env.example .env
+cd groote-ai/oauth-service && cp .env.example .env
 
 # 2. Configure OAuth credentials in .env (see below)
 

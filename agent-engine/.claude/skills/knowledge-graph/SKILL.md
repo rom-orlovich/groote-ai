@@ -72,7 +72,7 @@ Get the file and directory structure of a repository.
 {
   "action": "get_code_structure",
   "parameters": {
-    "repository": "agent-bot",
+    "repository": "groote-ai",
     "path": "src/services"
   }
 }

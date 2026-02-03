@@ -2,13 +2,13 @@
 
 ## Complete Implementation Plan with TDD Approach
 
-> **Goal**: Integrate `claude-code-agent` business logic into `agent-bot` containerized architecture with full test coverage, strict typing, and modular code.
+> **Goal**: Integrate `claude-code-agent` business logic into `groote-ai` containerized architecture with full test coverage, strict typing, and modular code.
 
 ---
 
 ## Executive Summary
 
-This document provides a step-by-step implementation plan for migrating the production-tested `claude-code-agent` system into the containerized `agent-bot` microservices architecture. The implementation follows strict TDD (Test-Driven Development) methodology:
+This document provides a step-by-step implementation plan for migrating the production-tested `claude-code-agent` system into the containerized `groote-ai` microservices architecture. The implementation follows strict TDD (Test-Driven Development) methodology:
 
 **TDD Cycle**: `Write Test → Run (Fail) → Implement → Run (Pass) → Refactor`
 
@@ -180,13 +180,13 @@ import pytest
 from pathlib import Path
 
 def test_agent_engine_package_exists():
-    package_dir = Path("agent-bot/agent-engine-package")
+    package_dir = Path("groote-ai/agent-engine-package")
     assert package_dir.exists()
     assert (package_dir / "pyproject.toml").exists()
     assert (package_dir / "agent_engine" / "__init__.py").exists()
 
 def test_core_modules_exist():
-    core_dir = Path("agent-bot/agent-engine-package/agent_engine/core")
+    core_dir = Path("groote-ai/agent-engine-package/agent_engine/core")
     assert (core_dir / "cli" / "base.py").exists()
     assert (core_dir / "cli" / "executor.py").exists()
     assert (core_dir / "worker.py").exists()
@@ -194,7 +194,7 @@ def test_core_modules_exist():
     assert (core_dir / "config.py").exists()
 
 def test_provider_directories_exist():
-    providers_dir = Path("agent-bot/agent-engine-package/agent_engine/core/cli/providers")
+    providers_dir = Path("groote-ai/agent-engine-package/agent_engine/core/cli/providers")
     assert (providers_dir / "claude").exists()
     assert (providers_dir / "cursor").exists()
 ```
@@ -207,7 +207,7 @@ def test_provider_directories_exist():
 
 **Files to Create**:
 ```
-agent-bot/
+groote-ai/
 ├── agent-engine-package/
 │   ├── pyproject.toml
 │   ├── agent_engine/
@@ -407,11 +407,11 @@ from pathlib import Path
 import yaml
 
 def test_docker_compose_exists():
-    compose_file = Path("agent-bot/docker-compose.yml")
+    compose_file = Path("groote-ai/docker-compose.yml")
     assert compose_file.exists()
 
 def test_docker_compose_services():
-    compose_file = Path("agent-bot/docker-compose.yml")
+    compose_file = Path("groote-ai/docker-compose.yml")
     with open(compose_file) as f:
         compose = yaml.safe_load(f)
 
@@ -422,7 +422,7 @@ def test_docker_compose_services():
     assert "agent-engine" in services
 
 def test_agent_engine_dockerfile_exists():
-    dockerfile = Path("agent-bot/agent-engine/Dockerfile")
+    dockerfile = Path("groote-ai/agent-engine/Dockerfile")
     assert dockerfile.exists()
 ```
 
@@ -1658,7 +1658,7 @@ def test_webhook_to_task_flow(compose):
 ## Directory Structure Summary
 
 ```
-agent-bot/
+groote-ai/
 ├── CLAUDE.md                           # Root documentation
 ├── docker-compose.yml                  # Main orchestration
 ├── Makefile                            # Dev commands
