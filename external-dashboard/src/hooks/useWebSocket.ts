@@ -9,7 +9,7 @@ interface WebSocketMessage {
 export function useWebSocket(sessionId: string = "dashboard") {
   const wsRef = useRef<WebSocket | null>(null);
   const queryClient = useQueryClient();
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let ws: WebSocket | null = null;

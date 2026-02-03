@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useMetrics, type Metric } from './useMetrics';
 
-global.fetch = vi.fn();
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -187,7 +188,7 @@ describe('useMetrics analytics fetch', () => {
   });
 
   it('should fetch analytics summary and map today_cost to daily_burn', async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>)
+    mockFetch
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -222,7 +223,7 @@ describe('useMetrics analytics fetch', () => {
   });
 
   it('should map total_tasks to total_jobs', async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>)
+    mockFetch
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -257,7 +258,7 @@ describe('useMetrics analytics fetch', () => {
   });
 
   it('should map total_cost to cumulative_cost', async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>)
+    mockFetch
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -292,7 +293,7 @@ describe('useMetrics analytics fetch', () => {
   });
 
   it('should handle analytics fetch errors gracefully', async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>)
+    mockFetch
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -321,7 +322,7 @@ describe('useMetrics analytics fetch', () => {
   });
 
   it('should call analytics summary endpoint', async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>)
+    mockFetch
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -349,7 +350,7 @@ describe('useMetrics analytics fetch', () => {
     });
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/analytics/summary');
+      expect(mockFetch).toHaveBeenCalledWith('/api/analytics/summary');
     });
   });
 });
@@ -360,7 +361,7 @@ describe('useMetrics OAuth fetch', () => {
   });
 
   it('should fetch OAuth usage and map session data', async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>)
+    mockFetch
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -411,7 +412,7 @@ describe('useMetrics OAuth fetch', () => {
   });
 
   it('should map OAuth weekly data', async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>)
+    mockFetch
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -462,7 +463,7 @@ describe('useMetrics OAuth fetch', () => {
   });
 
   it('should calculate percentage from used and limit', async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>)
+    mockFetch
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -518,7 +519,7 @@ describe('useMetrics OAuth fetch', () => {
   });
 
   it('should handle null OAuth data gracefully', async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>)
+    mockFetch
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -564,7 +565,7 @@ describe('useMetrics OAuth fetch', () => {
   });
 
   it('should handle OAuth fetch errors gracefully', async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>)
+    mockFetch
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -601,7 +602,7 @@ describe('useMetrics OAuth fetch', () => {
   });
 
   it('should call OAuth usage endpoint', async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>)
+    mockFetch
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -637,7 +638,7 @@ describe('useMetrics OAuth fetch', () => {
     });
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/credentials/usage');
+      expect(mockFetch).toHaveBeenCalledWith('/api/credentials/usage');
     });
   });
 });
