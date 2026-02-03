@@ -1,5 +1,78 @@
 # Docs-Tests Sync Templates
 
+## Architecture Document Template
+
+```markdown
+# {service_name} Architecture
+
+## Overview
+
+{purpose_from_readme}
+
+## Design Principles
+
+1. **Protocol-Based Interfaces** - All external dependencies implement typed protocols
+2. **Dependency Injection** - Components wired via factory at startup
+3. **Behavior-Focused Testing** - Tests verify business behavior, not implementation
+
+## Component Architecture
+
+```mermaid
+graph TB
+    subgraph Clients["Internal Clients"]
+        {client_components}
+    end
+
+    subgraph Service["{service_name} :port"]
+        {service_components}
+    end
+
+    subgraph External["External Services"]
+        {external_services}
+    end
+
+    Clients --> Service
+    Service --> External
+```
+
+## Directory Structure
+
+```
+{service_path}/
+├── main.py                    # Application entry point
+├── api/                       # HTTP layer
+│   └── routes.py              # Route handlers
+├── core/                      # Business logic
+│   ├── interfaces.py          # Protocol definitions
+│   └── models.py              # Domain models
+├── adapters/                  # External implementations
+├── config/                    # Configuration
+└── tests/                     # Behavior-driven tests
+```
+
+## Data Flow
+
+{data_flow_description}
+
+```mermaid
+sequenceDiagram
+    {sequence_diagram}
+```
+
+## Protocol Interfaces
+
+{protocol_definitions}
+
+## Testing Strategy
+
+Tests focus on **behavior**, not implementation:
+
+- ✅ "Feature X returns expected result"
+- ❌ "Internal method called with specific args"
+```
+
+---
+
 ## Features Document Template
 
 ```markdown
