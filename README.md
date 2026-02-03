@@ -86,6 +86,16 @@ KNOWLEDGE_SERVICES_ENABLED=true make start
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for complete knowledge layer documentation.
 
+## Setup Guide
+
+For complete step-by-step setup instructions, see **[SETUP.md](SETUP.md)**.
+
+The setup guide covers:
+- Prerequisites and required credentials
+- Detailed environment configuration
+- Service integration and webhook setup
+- Verification and troubleshooting
+
 ## Quick Start
 
 ### Prerequisites
@@ -138,6 +148,8 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for complete knowledge layer do
    make health
    curl http://localhost:8000/health
    ```
+
+For detailed setup instructions including webhook configuration and service integration, see **[SETUP.md](SETUP.md)**.
 
 ## Key Commands
 
@@ -348,6 +360,18 @@ For detailed security architecture, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE
 - **Structured Logging**: JSON-formatted logs throughout
 
 ## Related Documentation
+
+### Setup Guides
+
+- **[SETUP.md](SETUP.md)** - Complete system setup guide (start here)
+- **[api-gateway/SETUP.md](api-gateway/SETUP.md)** - API Gateway setup and webhook configuration
+- **[agent-engine/SETUP.md](agent-engine/SETUP.md)** - Agent Engine and CLI provider setup
+- **[dashboard-api/SETUP.md](dashboard-api/SETUP.md)** - Dashboard API setup
+- **[external-dashboard/SETUP.md](external-dashboard/SETUP.md)** - React dashboard setup
+- **[oauth-service/SETUP.md](oauth-service/SETUP.md)** - OAuth service and app configuration
+- **[mcp-servers/SETUP.md](mcp-servers/SETUP.md)** - MCP servers setup
+- **[api-services/SETUP.md](api-services/SETUP.md)** - API services and credentials setup
+- **[docs/SETUP-KNOWLEDGE.md](docs/SETUP-KNOWLEDGE.md)** - Knowledge layer setup (optional)
 
 ### Core Documentation
 
