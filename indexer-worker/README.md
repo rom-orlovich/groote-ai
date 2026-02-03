@@ -10,7 +10,7 @@ docker-compose --profile knowledge up indexer-worker
 
 # Run locally
 cd indexer-worker
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 python worker.py
 ```
 

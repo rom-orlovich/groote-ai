@@ -135,6 +135,72 @@ flowchart TD
     style N fill:#2d2d2d,color:#ffffff,stroke-width:2px
 ```
 
+## How It Works
+
+### System Flow
+
+1. **Webhook Reception**: External services (GitHub, Jira, Slack, Sentry) send webhooks to the API Gateway
+2. **Validation & Queuing**: API Gateway validates signatures, creates task in PostgreSQL, and enqueues to Redis
+3. **Task Pickup**: Agent Engine picks up task from Redis queue (`agent:tasks`)
+4. **CLI Execution**: Agent Engine executes task using Claude or Cursor CLI with specialized agents
+5. **MCP Tool Calls**: Agents use MCP tools (via SSE) to interact with external services
+6. **Response Posting**: Results are posted back to the originating service
+7. **Real-time Updates**: Output streams to Dashboard via WebSocket
+
+### Layer Architecture
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'16px', 'primaryColor':'#2d2d2d', 'primaryTextColor':'#ffffff', 'primaryBorderColor':'#ffffff', 'lineColor':'#ffffff'}}}%%
+graph TB
+    subgraph Layer1["Layer 1: Presentation"]
+        Dashboard[External Dashboard :3005]
+        DashboardAPI[Dashboard API :5000]
+    end
+
+    subgraph Layer2["Layer 2: Core Services"]
+        AgentEngine[Agent Engine :8080]
+        APIGateway[API Gateway :8000]
+        OAuth[OAuth Service :8010]
+        TaskLogger[Task Logger :8090]
+    end
+
+    subgraph Layer3["Layer 3: Integration"]
+        MCPServers[MCP Servers :9001-9007]
+        APIServices[API Services :3001-3004]
+    end
+
+    subgraph Layer4["Layer 4: Storage"]
+        PostgreSQL[PostgreSQL :5432]
+        Redis[Redis :6379]
+    end
+
+    subgraph Layer5["Layer 5: Knowledge - Optional"]
+        LlamaIndex[LlamaIndex :8002]
+        GKG[GKG Service :8003]
+        ChromaDB[ChromaDB :8001]
+    end
+
+    Layer1 --> Layer2
+    Layer2 --> Layer3
+    Layer2 --> Layer4
+    Layer3 --> Layer4
+    Layer3 -.-> Layer5
+
+    style Layer1 fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style Layer2 fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style Layer3 fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style Layer4 fill:#2d2d2d,color:#ffffff,stroke-width:2px
+    style Layer5 fill:#1a1a1a,color:#ffffff,stroke-width:2px
+```
+
+### Key Design Principles
+
+- **Service Isolation**: Each service runs in its own Docker container
+- **Credential Security**: API keys only stored in API service containers
+- **Async Processing**: Webhooks respond immediately (HTTP 200), tasks processed asynchronously
+- **Horizontal Scaling**: Agent Engine can scale to multiple instances
+- **No Direct Imports**: Services communicate via API/Queue only
+
 ## Quick Start
 
 ```bash

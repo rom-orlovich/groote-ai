@@ -10,7 +10,7 @@ docker-compose --profile knowledge up gkg-mcp
 
 # Run locally
 cd mcp-servers/gkg-mcp
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 python main.py
 ```
 
