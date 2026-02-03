@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
-import { useCLIStatus } from './useCLIStatus';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useCLIStatus } from "./useCLIStatus";
 
 const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
+vi.stubGlobal("fetch", mockFetch);
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -18,12 +18,12 @@ const createWrapper = () => {
   );
 };
 
-describe('useCLIStatus', () => {
+describe("useCLIStatus", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should start with loading state', () => {
+  it("should start with loading state", () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ active: true }),
@@ -37,7 +37,7 @@ describe('useCLIStatus', () => {
     expect(result.current.active).toBe(null);
   });
 
-  it('should load active status successfully', async () => {
+  it("should load active status successfully", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ active: true }),
@@ -55,7 +55,7 @@ describe('useCLIStatus', () => {
     expect(result.current.error).toBeNull();
   });
 
-  it('should load inactive status successfully', async () => {
+  it("should load inactive status successfully", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ active: false }),
@@ -72,8 +72,8 @@ describe('useCLIStatus', () => {
     expect(result.current.active).toBe(false);
   });
 
-  it('should handle fetch errors gracefully', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+  it("should handle fetch errors gracefully", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
     const { result } = renderHook(() => useCLIStatus(), {
       wrapper: createWrapper(),
@@ -87,7 +87,7 @@ describe('useCLIStatus', () => {
     expect(result.current.active).toBe(null);
   });
 
-  it('should handle non-ok responses', async () => {
+  it("should handle non-ok responses", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
@@ -104,7 +104,7 @@ describe('useCLIStatus', () => {
     expect(result.current.error).toBeTruthy();
   });
 
-  it('should use correct query key', () => {
+  it("should use correct query key", () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ active: true }),
@@ -114,6 +114,6 @@ describe('useCLIStatus', () => {
       wrapper: createWrapper(),
     });
 
-    expect(mockFetch).toHaveBeenCalledWith('/api/credentials/cli-status');
+    expect(mockFetch).toHaveBeenCalledWith("/api/credentials/cli-status");
   });
 });

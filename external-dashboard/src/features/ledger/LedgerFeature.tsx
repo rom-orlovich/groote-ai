@@ -1,9 +1,10 @@
 import { ChevronLeft, ChevronRight, Filter, RefreshCcw } from "lucide-react";
-import { useLedger } from "./hooks/useLedger";
 import { useTaskModal } from "../../hooks/useTaskModal";
+import { useLedger } from "./hooks/useLedger";
 
 export function LedgerFeature() {
-  const { tasks, agents, isLoading, refetch, filters, setFilters, page, setPage, totalPages } = useLedger();
+  const { tasks, agents, isLoading, refetch, filters, setFilters, page, setPage, totalPages } =
+    useLedger();
   const { openTask } = useTaskModal();
 
   return (
@@ -55,7 +56,14 @@ export function LedgerFeature() {
             onClick={() => refetch()}
             className="flex items-center gap-2 px-4 py-2 bg-primary border border-primary/20 hover:opacity-90 text-white text-[10px] font-heading font-bold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20 rounded-sm"
           >
-            <RefreshCcw size={14} className={isLoading ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"} />
+            <RefreshCcw
+              size={14}
+              className={
+                isLoading
+                  ? "animate-spin"
+                  : "group-hover:rotate-180 transition-transform duration-500"
+              }
+            />
             REFRESH_LEDGER
           </button>
         </div>
@@ -105,8 +113,8 @@ export function LedgerFeature() {
                 </tr>
               ) : (
                 tasks.map((task) => (
-                  <tr 
-                    key={task.id} 
+                  <tr
+                    key={task.id}
                     onClick={() => openTask(task.id)}
                     className="hover:bg-slate-500/5 transition-colors group cursor-pointer"
                   >
@@ -114,7 +122,9 @@ export function LedgerFeature() {
                       <span className="md:hidden">{task.id.slice(0, 8)}...</span>
                       <span className="hidden md:inline">{task.id}</span>
                     </td>
-                    <td className="py-3 px-4 text-xs font-mono text-app-muted hidden sm:table-cell">{task.session_id}</td>
+                    <td className="py-3 px-4 text-xs font-mono text-app-muted hidden sm:table-cell">
+                      {task.session_id}
+                    </td>
                     <td className="py-3 px-4 text-xs font-heading text-app-main">
                       {task.assigned_agent}
                     </td>
@@ -125,7 +135,9 @@ export function LedgerFeature() {
                         {task.status.toUpperCase()}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-xs font-mono font-bold text-app-main hidden lg:table-cell">${parseFloat(task.cost_usd).toFixed(4)}</td>
+                    <td className="py-3 px-4 text-xs font-mono font-bold text-app-main hidden lg:table-cell">
+                      ${parseFloat(task.cost_usd).toFixed(4)}
+                    </td>
                     <td className="py-3 px-4 text-xs font-mono text-app-muted hidden lg:table-cell">
                       {task.duration_seconds}s
                     </td>

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export interface Webhook {
   id: string;
@@ -16,6 +16,22 @@ export interface WebhookEvent {
   status: "processed" | "error";
 }
 
+interface WebhookApiItem {
+  webhook_id: string;
+  name: string;
+  provider: string;
+  enabled: boolean;
+  endpoint: string;
+}
+
+interface EventApiItem {
+  event_id: string;
+  webhook_id: string;
+  event_type: string;
+  created_at: string;
+  response_sent: boolean;
+}
+
 export function useWebhooks() {
   const queryClient = useQueryClient();
   const { data: webhooks, isLoading: isWhLoading } = useQuery<Webhook[]>({
@@ -23,7 +39,7 @@ export function useWebhooks() {
     queryFn: async () => {
       const res = await fetch("/api/webhooks-status");
       const json = await res.json();
-      return (json.data?.webhooks || []).map((wh: any) => ({
+      return (json.data?.webhooks || []).map((wh: WebhookApiItem) => ({
         id: wh.webhook_id,
         name: wh.name,
         provider: wh.provider,
@@ -42,7 +58,7 @@ export function useWebhooks() {
     queryFn: async () => {
       const res = await fetch("/api/webhooks/events/recent");
       const json = await res.json();
-      return (json.data || []).map((ev: any) => ({
+      return (json.data || []).map((ev: EventApiItem) => ({
         id: ev.event_id,
         webhook_id: ev.webhook_id,
         event: ev.event_type,
