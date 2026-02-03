@@ -14,7 +14,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { CategoricalChartState } from "recharts/types/chart/types";
 import { useAnalyticsData } from "./hooks/useAnalyticsData";
 
 interface TooltipPayloadItem {
@@ -154,9 +153,10 @@ export function AnalyticsFeature() {
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={trendData}
-                onMouseMove={(e: CategoricalChartState) =>
-                  e.activeLabel && setHoverDate(String(e.activeLabel))
-                }
+                onMouseMove={(e) => {
+                  const label = e?.activeLabel;
+                  if (label) setHoverDate(String(label));
+                }}
                 onMouseLeave={() => setHoverDate(null)}
               >
                 <defs>
@@ -210,9 +210,10 @@ export function AnalyticsFeature() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={trendData}
-                onMouseMove={(e: CategoricalChartState) =>
-                  e.activeLabel && setHoverDate(String(e.activeLabel))
-                }
+                onMouseMove={(e) => {
+                  const label = e?.activeLabel;
+                  if (label) setHoverDate(String(label));
+                }}
                 onMouseLeave={() => setHoverDate(null)}
               >
                 <CartesianGrid
@@ -253,9 +254,10 @@ export function AnalyticsFeature() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={trendData}
-                onMouseMove={(e: CategoricalChartState) =>
-                  e.activeLabel && setHoverDate(String(e.activeLabel))
-                }
+                onMouseMove={(e) => {
+                  const label = e?.activeLabel;
+                  if (label) setHoverDate(String(label));
+                }}
                 onMouseLeave={() => setHoverDate(null)}
               >
                 <CartesianGrid
