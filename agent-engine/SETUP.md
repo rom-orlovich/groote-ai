@@ -71,7 +71,7 @@ docker-compose up -d --scale cli=3 cli
 cd agent-engine
 
 # Install dependencies
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
 # Set environment variables
 export CLI_PROVIDER=claude

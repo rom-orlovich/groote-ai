@@ -10,7 +10,7 @@ docker-compose --profile knowledge up llamaindex-mcp
 
 # Run locally
 cd mcp-servers/llamaindex-mcp
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 python main.py
 ```
 
