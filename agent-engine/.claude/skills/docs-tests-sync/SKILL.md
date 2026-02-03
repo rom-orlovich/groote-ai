@@ -75,6 +75,7 @@ Match test to feature when:
 ## Output Files
 
 Generate per service in `{service}/docs/`:
+- `ARCHITECTURE.md` - Component diagrams, protocols, data flows (mermaid)
 - `features.md` - All features with coverage status
 - `flows.md` - All flows with step validation
 

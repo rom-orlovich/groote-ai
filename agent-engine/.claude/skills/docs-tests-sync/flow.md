@@ -93,6 +93,39 @@ For each feature:
 
 ### Step 5: Report Generation
 
+Generate `ARCHITECTURE.md` (if missing):
+
+```markdown
+# {service} Architecture
+
+## Overview
+{extracted from README.md purpose section}
+
+## Design Principles
+1. **Protocol-Based Interfaces** - All external dependencies implement typed protocols
+2. **Dependency Injection** - Components wired via factory at startup
+3. **Behavior-Focused Testing** - Tests verify business behavior, not implementation
+
+## Component Architecture
+```mermaid
+graph TB
+    subgraph Service["{service} :port"]
+        direction TB
+        {components extracted from folder structure}
+    end
+```
+
+## Directory Structure
+{generated from actual folder structure}
+
+## Data Flow
+{extracted from README flow sections or generated from API endpoints}
+
+## Testing Strategy
+- Tests focus on behavior, not implementation
+- {extracted test patterns}
+```
+
 Generate `features.md`:
 
 ```markdown
