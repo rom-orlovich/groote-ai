@@ -40,7 +40,7 @@ The system consists of 18 containerized services:
 - **MCP Protocol**: Model Context Protocol servers for external service integration
 - **TDD Workflow**: Test-Driven Development methodology enforced throughout
 
-For detailed architecture documentation, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/SYSTEM-ARCHITECTURE.md](docs/SYSTEM-ARCHITECTURE.md).
+For detailed architecture documentation, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 For integration and implementation details, see [docs/INTEGRATION-IMPLEMENTATION-PLAN.md](docs/INTEGRATION-IMPLEMENTATION-PLAN.md).
 
@@ -84,7 +84,7 @@ docker-compose --profile knowledge up -d
 KNOWLEDGE_SERVICES_ENABLED=true make start
 ```
 
-See [docs/SYSTEM-ARCHITECTURE.md](docs/SYSTEM-ARCHITECTURE.md) for complete knowledge layer documentation.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for complete knowledge layer documentation.
 
 ## Quick Start
 
@@ -352,7 +352,6 @@ For detailed security architecture, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE
 ### Core Documentation
 
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Complete system architecture, data flow, service interactions, and deployment details
-- **[docs/SYSTEM-ARCHITECTURE.md](docs/SYSTEM-ARCHITECTURE.md)** - Detailed system architecture with diagrams, layers, and data flows
 - **[docs/INTEGRATION-IMPLEMENTATION-PLAN.md](docs/INTEGRATION-IMPLEMENTATION-PLAN.md)** - Integration guide and TDD implementation plan
 - **[CLAUDE.md](CLAUDE.md)** - Development rules, conventions, and coding standards
 
