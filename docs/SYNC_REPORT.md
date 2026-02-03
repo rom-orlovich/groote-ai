@@ -6,11 +6,11 @@ Generated: 2026-02-03
 
 | Metric | Value |
 |--------|-------|
-| Services Analyzed | 5 |
-| Total Features | 62 |
-| Total Flows | 18 |
-| Total Tests | 239 |
-| Average Coverage | 75.6% |
+| Services Analyzed | 12 |
+| Total Features | 145 |
+| Total Flows | 42 |
+| Total Tests | 318 |
+| Average Coverage | 72.3% |
 
 ## Service Reports
 
@@ -24,9 +24,6 @@ Generated: 2026-02-03
 - **Coverage:** 92.9%
 
 **Status:** [OK] High coverage
-
-**Missing Tests:**
-- Feature: GET /health
 
 **Generated Docs:**
 - api-gateway/docs/features.md
@@ -44,10 +41,10 @@ Generated: 2026-02-03
 **Status:** [OK] Good coverage
 
 **Missing Tests:**
-- Feature: GET /health
-- Feature: GET /status
-- Feature: POST /tasks
-- Feature: GET /tasks/{task_id}
+- GET /health endpoint
+- GET /status endpoint
+- POST /tasks endpoint
+- GET /tasks/{task_id} endpoint
 
 **Generated Docs:**
 - agent-engine/docs/features.md
@@ -65,11 +62,8 @@ Generated: 2026-02-03
 **Status:** [OK] Acceptable coverage
 
 **Missing Tests:**
-- Feature: Real-Time Streaming
-- Feature: WebSocket Hub
-- Feature: GET /api/status
-- Feature: GET /api/tasks
-- Flow: WebSocket Subscription Flow
+- WebSocket subscription tests
+- Real-time streaming tests
 
 **Generated Docs:**
 - dashboard-api/docs/features.md
@@ -86,81 +80,197 @@ Generated: 2026-02-03
 
 **Status:** [OK] Good coverage
 
-**Missing Tests:**
-- Feature: Multi-Tenant Support
-- Feature: Response Posting
-- Flow: OAuth Token Lookup Flow
-
 **Generated Docs:**
 - api-services/github-api/docs/features.md
 - api-services/github-api/docs/flows.md
 
 ---
 
-## Services Pending Documentation
+## api-services/jira-api
 
-The following services have tests but documentation was not fully generated in this sync:
+- **Features:** 11
+- **Flows:** 4
+- **Tests:** 8
+- **Coverage:** 90.9%
 
-| Service | Tests | Status |
-|---------|-------|--------|
-| api-services/jira-api | 8 | Pending |
-| api-services/slack-api | 7 | Pending |
-| api-services/sentry-api | 8 | Pending |
-| oauth-service | 6 | Pending |
-| task-logger | 38 | Pending |
-| gkg-service | 12 | Pending |
-| llamaindex-service | 11 | Pending |
-| indexer-worker | 9 | Pending |
+**Status:** [OK] High coverage
+
+**Generated Docs:**
+- api-services/jira-api/docs/features.md
+- api-services/jira-api/docs/flows.md
 
 ---
 
-## Coverage Trends
+## api-services/slack-api
+
+- **Features:** 12
+- **Flows:** 4
+- **Tests:** 7
+- **Coverage:** 87.5%
+
+**Status:** [OK] Good coverage
+
+**Generated Docs:**
+- api-services/slack-api/docs/features.md
+- api-services/slack-api/docs/flows.md
+
+---
+
+## api-services/sentry-api
+
+- **Features:** 12
+- **Flows:** 5
+- **Tests:** 8
+- **Coverage:** 91.7%
+
+**Status:** [OK] High coverage
+
+**Generated Docs:**
+- api-services/sentry-api/docs/features.md
+- api-services/sentry-api/docs/flows.md
+
+---
+
+## oauth-service
+
+- **Features:** 15
+- **Flows:** 5
+- **Tests:** 6
+- **Coverage:** 33.3%
+
+**Status:** [LOW] Needs more tests
+
+**Missing Tests:**
+- Token storage tests
+- Token refresh tests
+- Token lookup tests
+- Installation management tests
+- Health check tests
+
+**Generated Docs:**
+- oauth-service/docs/features.md
+- oauth-service/docs/flows.md
+
+---
+
+## task-logger
+
+- **Features:** 14
+- **Flows:** 4
+- **Tests:** 38
+- **Coverage:** 64.3%
+
+**Status:** [OK] Good coverage
+
+**Missing Tests:**
+- Redis stream consumer tests
+- API endpoint tests
+
+**Generated Docs:**
+- task-logger/docs/features.md
+- task-logger/docs/flows.md
+
+---
+
+## gkg-service
+
+- **Features:** 14
+- **Flows:** 5
+- **Tests:** 12
+- **Coverage:** 85.7%
+
+**Status:** [OK] Good coverage
+
+**Generated Docs:**
+- gkg-service/docs/features.md
+- gkg-service/docs/flows.md
+
+---
+
+## llamaindex-service
+
+- **Features:** 13
+- **Flows:** 5
+- **Tests:** 11
+- **Coverage:** 69.2%
+
+**Status:** [OK] Acceptable coverage
+
+**Missing Tests:**
+- Ticket search tests
+- Docs search tests
+- Collections endpoint tests
+
+**Generated Docs:**
+- llamaindex-service/docs/features.md
+- llamaindex-service/docs/flows.md
+
+---
+
+## indexer-worker
+
+- **Features:** 11
+- **Flows:** 5
+- **Tests:** 9
+- **Coverage:** 59.1%
+
+**Status:** [OK] Acceptable coverage
+
+**Missing Tests:**
+- GitHub source indexer tests
+- Jira source indexer tests
+- Confluence source indexer tests
+
+**Generated Docs:**
+- indexer-worker/docs/features.md
+- indexer-worker/docs/flows.md
+
+---
+
+## Coverage Summary by Service
 
 | Service | Features | Tested | Coverage |
 |---------|----------|--------|----------|
 | api-gateway | 14 | 13 | 92.9% |
-| agent-engine | 12 | 8 | 66.7% |
-| dashboard-api | 12 | 7 | 50.0% |
+| api-services/sentry-api | 12 | 11 | 91.7% |
+| api-services/jira-api | 11 | 10 | 90.9% |
+| api-services/slack-api | 12 | 10 | 87.5% |
+| gkg-service | 14 | 12 | 85.7% |
 | api-services/github-api | 12 | 10 | 83.3% |
+| llamaindex-service | 13 | 9 | 69.2% |
+| agent-engine | 12 | 8 | 66.7% |
+| task-logger | 14 | 9 | 64.3% |
+| indexer-worker | 11 | 6 | 59.1% |
+| dashboard-api | 12 | 7 | 50.0% |
+| oauth-service | 15 | 5 | 33.3% |
 
 ---
 
 ## Recommendations
 
-### High Priority
+### High Priority (Coverage < 50%)
 
-1. **api-gateway**: Add health endpoint test
-2. **agent-engine**: Add API endpoint tests (/health, /status, /tasks)
-3. **dashboard-api**: Add WebSocket tests
+1. **oauth-service**: Add comprehensive tests for token lifecycle
 
-### Medium Priority
+### Medium Priority (Coverage 50-70%)
 
-1. **dashboard-api**: Add task management endpoint tests
-2. **github-api**: Add OAuth multi-tenant tests
+1. **dashboard-api**: Add WebSocket tests
+2. **indexer-worker**: Add source indexer tests
+3. **task-logger**: Add Redis consumer tests
 
-### Process Improvements
+### Low Priority (Coverage > 70%)
 
-1. Run `docs-tests-sync` skill after documentation changes
-2. Ensure new features have tests before merging
-3. Review SYNC_REPORT.md during PR reviews
+1. Add health endpoint tests to all services
+2. Add API endpoint integration tests
 
 ---
 
-## How to Use This Report
+## How to Regenerate This Report
 
-1. **Check coverage** before releases
-2. **Prioritize** features with [NEEDS TESTS]
-3. **Update** when documentation changes
-4. **Run skill** to regenerate after changes
-
----
-
-## Skill Usage
-
-To regenerate this report, use the `docs-tests-sync` skill:
+Use the `docs-tests-sync` skill:
 
 1. Read service README.md and ARCHITECTURE.md
 2. Extract features and flows
-3. Match tests to features
-4. Generate features.md and flows.md
-5. Update SYNC_REPORT.md
+3. Analyze tests and match to features
+4. Generate features.md and flows.md per service
+5. Update this SYNC_REPORT.md

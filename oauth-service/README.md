@@ -237,6 +237,11 @@ curl http://localhost:8010/health
 curl http://localhost:8010/health
 ```
 
+## Documentation
+
+- [Features](docs/features.md) - Feature list with test coverage status
+- [Flows](docs/flows.md) - Process flow documentation
+
 ## Related Services
 
 - **github-api**: Uses this service to lookup OAuth tokens

@@ -105,3 +105,8 @@ class PineconeAdapter(VectorStoreProtocol):
         # Pinecone-specific implementation
         pass
 ```
+
+## Documentation
+
+- [Features](docs/features.md) - Feature list with test coverage status
+- [Flows](docs/flows.md) - Process flow documentation
