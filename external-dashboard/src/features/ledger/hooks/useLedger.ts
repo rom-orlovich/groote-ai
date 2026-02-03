@@ -11,6 +11,20 @@ export interface LedgerTask {
   created_at: string;
 }
 
+interface TaskApiItem {
+  task_id?: string;
+  session_id: string;
+  assigned_agent: string;
+  status: string;
+  cost_usd: string;
+  duration_seconds: number;
+  created_at: string;
+}
+
+interface AgentApiItem {
+  name?: string;
+}
+
 export function useLedger() {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({
@@ -33,7 +47,7 @@ export function useLedger() {
       if (!res.ok) throw new Error("Failed to fetch ledger");
       const result = await res.json();
       return {
-        tasks: (result.tasks || []).map((t: any) => ({
+        tasks: (result.tasks || []).map((t: TaskApiItem) => ({
           ...t,
           task_id: t.task_id || "N/A",
           id: t.task_id || Math.random().toString(),
@@ -49,7 +63,9 @@ export function useLedger() {
     queryFn: async () => {
       const res = await fetch("/api/agents");
       const data = await res.json();
-      return Array.isArray(data) ? data.map((a: any) => typeof a === 'string' ? a : a.name || "") : [];
+      return Array.isArray(data)
+        ? data.map((a: string | AgentApiItem) => (typeof a === "string" ? a : a.name || ""))
+        : [];
     },
   });
 
