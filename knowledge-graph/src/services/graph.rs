@@ -1,12 +1,10 @@
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
-use crate::models::{
-    Direction, Edge, EdgeType, GraphStats, Node, NodeType, PathResult,
-};
+use crate::models::{Direction, Edge, EdgeType, GraphStats, Node, NodeType, PathResult};
 
-use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::algo::dijkstra;
+use petgraph::graph::{DiGraph, NodeIndex};
 
 pub struct KnowledgeGraph {
     graph: DiGraph<Uuid, f64>,
@@ -40,7 +38,8 @@ impl KnowledgeGraph {
     pub fn remove_node(&mut self, id: &Uuid) -> Option<Node> {
         if let Some(idx) = self.node_indices.remove(id) {
             self.graph.remove_node(idx);
-            self.edges.retain(|_, e| e.source_id != *id && e.target_id != *id);
+            self.edges
+                .retain(|_, e| e.source_id != *id && e.target_id != *id);
             self.nodes.remove(id)
         } else {
             None

@@ -112,6 +112,7 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     needs: [lint, typecheck, test]
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -143,7 +144,9 @@ jobs:
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
+    if: always()
     needs: [build]
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 

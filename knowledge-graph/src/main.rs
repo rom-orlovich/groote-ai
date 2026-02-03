@@ -39,11 +39,17 @@ async fn main() {
         .route("/api/v1/nodes", get(api::handlers::list_nodes))
         .route("/api/v1/nodes", post(api::handlers::create_node))
         .route("/api/v1/nodes/:id", get(api::handlers::get_node))
-        .route("/api/v1/nodes/:id", axum::routing::delete(api::handlers::delete_node))
+        .route(
+            "/api/v1/nodes/:id",
+            axum::routing::delete(api::handlers::delete_node),
+        )
         .route("/api/v1/edges", get(api::handlers::list_edges))
         .route("/api/v1/edges", post(api::handlers::create_edge))
         .route("/api/v1/query/path", post(api::handlers::find_path))
-        .route("/api/v1/query/neighbors", post(api::handlers::find_neighbors))
+        .route(
+            "/api/v1/query/neighbors",
+            post(api::handlers::find_neighbors),
+        )
         .route("/api/v1/query/search", post(api::handlers::search_nodes))
         .route("/api/v1/stats", get(api::handlers::get_stats))
         .layer(CorsLayer::permissive())
