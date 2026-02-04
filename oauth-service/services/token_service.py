@@ -9,7 +9,7 @@ from providers.slack import SlackOAuthProvider
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from agent_engine.models import Installation, InstallationStatus, Platform
+from models import Installation, InstallationStatus, Platform
 
 logger = structlog.get_logger(__name__)
 

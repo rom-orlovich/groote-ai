@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_URL || "";
 const DEFAULT_ORG_ID = import.meta.env.VITE_ORG_ID || "default-org";
 
 export interface DataSource {
