@@ -326,8 +326,6 @@ make init                            # Initialize project
 make test                            # Run all tests
 make lint                            # Lint code
 make format                          # Format code
-make db-migrate MSG="..."            # Create migration
-make db-upgrade                      # Apply migrations
 ```
 
 ### Knowledge Services (Optional)
@@ -370,7 +368,7 @@ See `.env.example` for complete configuration.
 ```bash
 curl http://localhost:8000/health    # API Gateway
 curl http://localhost:8080/health    # Agent Engine
-curl http://localhost:5000/health    # Dashboard API
+curl http://localhost:5000/api/health  # Dashboard API
 curl http://localhost:8010/health    # OAuth Service
 curl http://localhost:8090/health    # Task Logger
 curl http://localhost:4000/health    # Knowledge Graph
