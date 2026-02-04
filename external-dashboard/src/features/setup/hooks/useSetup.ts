@@ -81,8 +81,7 @@ export function useInfrastructure() {
 export function useSaveStep() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ step, data }: { step: string; data: SaveStepRequest }) =>
-      saveStep(step, data),
+    mutationFn: ({ step, data }: { step: string; data: SaveStepRequest }) => saveStep(step, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["setup-status"] });
     },
@@ -94,8 +93,10 @@ export function useValidateService() {
     mutationFn: ({
       service,
       credentials,
-    }: { service: string; credentials: Record<string, string> }) =>
-      validateService(service, credentials),
+    }: {
+      service: string;
+      credentials: Record<string, string>;
+    }) => validateService(service, credentials),
   });
 }
 

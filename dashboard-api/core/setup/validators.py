@@ -59,7 +59,10 @@ async def validate_github(token: str) -> ValidationResult:
             async with httpx.AsyncClient(timeout=VALIDATION_TIMEOUT) as client:
                 response = await client.get(
                     "https://api.github.com/user",
-                    headers={"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"},
+                    headers={
+                        "Authorization": f"token {token}",
+                        "Accept": "application/vnd.github.v3+json",
+                    },
                 )
                 if response.status_code == 200:
                     data = response.json()
@@ -75,7 +78,9 @@ async def validate_github(token: str) -> ValidationResult:
                     message=f"Authentication failed (HTTP {response.status_code})",
                 )
         except httpx.RequestError as e:
-            return ValidationResult(service="github", success=False, message=f"Connection error: {e!s}")
+            return ValidationResult(
+                service="github", success=False, message=f"Connection error: {e!s}"
+            )
 
     return await with_retry(_attempt, "github")
 
@@ -96,7 +101,10 @@ async def validate_jira(url: str, email: str, token: str) -> ValidationResult:
                         service="jira",
                         success=True,
                         message=f"Connected as {data.get('displayName', 'unknown')}",
-                        details={"display_name": data.get("displayName", ""), "email": data.get("emailAddress", "")},
+                        details={
+                            "display_name": data.get("displayName", ""),
+                            "email": data.get("emailAddress", ""),
+                        },
                     )
                 return ValidationResult(
                     service="jira",
@@ -104,7 +112,9 @@ async def validate_jira(url: str, email: str, token: str) -> ValidationResult:
                     message=f"Authentication failed (HTTP {response.status_code})",
                 )
         except httpx.RequestError as e:
-            return ValidationResult(service="jira", success=False, message=f"Connection error: {e!s}")
+            return ValidationResult(
+                service="jira", success=False, message=f"Connection error: {e!s}"
+            )
 
     return await with_retry(_attempt, "jira")
 
@@ -137,7 +147,9 @@ async def validate_slack(bot_token: str) -> ValidationResult:
                     message=f"HTTP error {response.status_code}",
                 )
         except httpx.RequestError as e:
-            return ValidationResult(service="slack", success=False, message=f"Connection error: {e!s}")
+            return ValidationResult(
+                service="slack", success=False, message=f"Connection error: {e!s}"
+            )
 
     return await with_retry(_attempt, "slack")
 
@@ -162,7 +174,9 @@ async def validate_sentry(auth_token: str) -> ValidationResult:
                     message=f"Authentication failed (HTTP {response.status_code})",
                 )
         except httpx.RequestError as e:
-            return ValidationResult(service="sentry", success=False, message=f"Connection error: {e!s}")
+            return ValidationResult(
+                service="sentry", success=False, message=f"Connection error: {e!s}"
+            )
 
     return await with_retry(_attempt, "sentry")
 
@@ -190,7 +204,9 @@ async def validate_anthropic(api_key: str) -> ValidationResult:
                     message=f"Authentication failed (HTTP {response.status_code})",
                 )
         except httpx.RequestError as e:
-            return ValidationResult(service="anthropic", success=False, message=f"Connection error: {e!s}")
+            return ValidationResult(
+                service="anthropic", success=False, message=f"Connection error: {e!s}"
+            )
 
     return await with_retry(_attempt, "anthropic")
 

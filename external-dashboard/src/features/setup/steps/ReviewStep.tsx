@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { CheckCircle, Download, Loader2, RotateCcw, SkipForward } from "lucide-react";
+import { useState } from "react";
+import { SETUP_STEPS } from "../constants";
 import { useCompleteSetup, useExportConfig } from "../hooks/useSetup";
 import type { ExportFormat, SetupStatus } from "../types";
-import { SETUP_STEPS } from "../constants";
 
 interface ReviewStepProps {
   status: SetupStatus;
@@ -26,9 +26,7 @@ const FILENAMES: Record<ExportFormat, string> = {
 export function ReviewStep({ status, onComplete }: ReviewStepProps) {
   const completeSetup = useCompleteSetup();
   const exportConfig = useExportConfig();
-  const [exportFormat, setExportFormat] = useState<ExportFormat>(
-    status.is_cloud ? "k8s" : "env",
-  );
+  const [exportFormat, setExportFormat] = useState<ExportFormat>(status.is_cloud ? "k8s" : "env");
 
   const handleExport = () => {
     exportConfig.mutate(exportFormat, {
@@ -48,9 +46,7 @@ export function ReviewStep({ status, onComplete }: ReviewStepProps) {
     completeSetup.mutate(undefined, { onSuccess: () => onComplete() });
   };
 
-  const configuredSteps = SETUP_STEPS.filter(
-    (s) => s.id !== "welcome" && s.id !== "review",
-  );
+  const configuredSteps = SETUP_STEPS.filter((s) => s.id !== "welcome" && s.id !== "review");
 
   return (
     <div className="space-y-6">

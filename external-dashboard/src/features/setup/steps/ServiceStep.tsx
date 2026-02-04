@@ -74,12 +74,16 @@ export function ServiceStep({ step, onNext, onSkip }: ServiceStepProps) {
       <div className="space-y-4">
         {step.fields.map((field) => (
           <div key={field.key}>
-            <label className="block text-[10px] font-heading text-gray-400 mb-1.5">
+            <label
+              htmlFor={`field-${field.key}`}
+              className="block text-[10px] font-heading text-gray-400 mb-1.5"
+            >
               {field.label}
               {field.required && <span className="text-red-400 ml-1">*</span>}
             </label>
             <div className="relative">
               <input
+                id={`field-${field.key}`}
                 type={field.sensitive && !showSecrets[field.key] ? "password" : "text"}
                 value={values[field.key] || ""}
                 onChange={(e) => updateValue(field.key, e.target.value)}

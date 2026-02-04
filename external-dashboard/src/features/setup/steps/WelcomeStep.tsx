@@ -16,7 +16,10 @@ function StatusIcon({ healthy }: { healthy: boolean | undefined }) {
 function InfraRow({
   label,
   status,
-}: { label: string; status: { healthy: boolean; message: string } | undefined }) {
+}: {
+  label: string;
+  status: { healthy: boolean; message: string } | undefined;
+}) {
   return (
     <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
       <span className="text-[10px] font-heading">{label}</span>
