@@ -58,21 +58,25 @@ integration with validation, and stores credentials encrypted in the database.
 git clone <repository-url>
 cd groote-ai
 
-# 2. Initialize the project (copies .env.example to .env)
+# 2. Initialize (creates .env from .env.example)
 make init
 
 # 3. Set bootstrap secrets only (database password + encryption key)
 #    Edit .env and set: POSTGRES_PASSWORD, TOKEN_ENCRYPTION_KEY
 nano .env
 
-# 4. Start all services
+# 4. Build and start all services
 make up
 
 # 5. Open the Setup Wizard in your browser
+#    (Dashboard auto-redirects here on first launch)
 open http://localhost:3005/setup
 
 # 6. Follow the wizard steps, then start the CLI
 make cli-claude    # or: make cli-cursor
+
+# 7. Verify all services are healthy
+make health
 ```
 
 The wizard is accessible at http://localhost:3005/setup. On first launch the
@@ -89,13 +93,13 @@ For users who prefer configuring via `.env` file directly:
 git clone <repository-url>
 cd groote-ai
 
-# 2. Initialize the project (copies .env.example to .env)
+# 2. Initialize (creates .env from .env.example)
 make init
 
 # 3. Edit .env with your API keys (minimum: ANTHROPIC_API_KEY or CURSOR_API_KEY)
 nano .env
 
-# 4. Start all services
+# 4. Build and start all services
 make up
 
 # 5. Start the AI agent CLI

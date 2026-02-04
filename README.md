@@ -210,17 +210,21 @@ cd groote-ai
 make init
 
 # 2. Set bootstrap secrets (only 2-3 vars needed)
-#    Edit .env with: POSTGRES_PASSWORD, TOKEN_ENCRYPTION_KEY
+#    Edit .env and set: POSTGRES_PASSWORD, TOKEN_ENCRYPTION_KEY
 nano .env
 
-# 3. Start all services
+# 3. Build and start all services
 make up
 
 # 4. Open the Setup Wizard — configures everything else via UI
+#    (Dashboard auto-redirects here on first launch)
 open http://localhost:3005/setup
 
-# 5. Start AI agent CLI
+# 5. Start the AI agent CLI
 make cli-claude    # or: make cli-cursor
+
+# 6. Verify everything is running
+make health
 ```
 
 ### Setup Wizard
@@ -301,10 +305,9 @@ For detailed setup instructions, see **[SETUP.md](SETUP.md)**.
 ```bash
 make cli-claude                      # Start Claude CLI
 make cli-cursor                      # Start Cursor CLI
-make cli-up PROVIDER=claude SCALE=3  # Scale CLI instances
+make cli PROVIDER=claude SCALE=3     # Scale CLI instances
 make cli-down PROVIDER=claude        # Stop CLI
 make cli-logs PROVIDER=claude        # View CLI logs
-make cli-status PROVIDER=claude      # Check CLI status
 ```
 
 ### Service Management
