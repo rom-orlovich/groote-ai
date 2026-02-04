@@ -209,18 +209,32 @@ git clone <repository-url>
 cd groote-ai
 make init
 
-# 2. Configure environment (minimum: ANTHROPIC_API_KEY)
+# 2. Set bootstrap secrets (only 2-3 vars needed)
+#    Edit .env with: POSTGRES_PASSWORD, TOKEN_ENCRYPTION_KEY
 nano .env
 
 # 3. Start all services
 make up
 
-# 4. Start AI agent CLI
-make cli-claude    # or: make cli-cursor
+# 4. Open the Setup Wizard — configures everything else via UI
+open http://localhost:3005/setup
 
-# 5. Verify health
-make health
+# 5. Start AI agent CLI
+make cli-claude    # or: make cli-cursor
 ```
+
+### Setup Wizard
+
+On first launch the Dashboard redirects to a guided **Setup Wizard** at `/setup`.
+The wizard walks through each integration step-by-step:
+
+1. **Infrastructure Check** — verifies PostgreSQL and Redis are healthy
+2. **AI Provider** — configure Claude or Cursor API key
+3. **GitHub / Jira / Slack / Sentry** — optional, each can be skipped
+4. **Review & Export** — download config as `.env`, Kubernetes Secret, Docker Swarm secrets, or GitHub Actions format
+
+All credentials are Fernet-encrypted at rest in PostgreSQL. You can reconfigure
+anytime from **Settings** in the sidebar.
 
 **Access points:**
 - API Gateway: http://localhost:8000
