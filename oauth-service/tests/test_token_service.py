@@ -4,7 +4,6 @@ Tests token storage, retrieval, refresh, and installation management.
 """
 
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -177,7 +176,6 @@ class TestTokenRefresh:
     @pytest.mark.asyncio
     async def test_refresh_updates_access_token(self, token_store):
         """Business requirement: Token refresh updates access token."""
-        expires_at = datetime.utcnow() + timedelta(hours=1)
         await token_store.store_token(
             platform="jira",
             org_id="org-123",
@@ -224,12 +222,8 @@ class TestInstallationManagement:
     @pytest.mark.asyncio
     async def test_list_installations_returns_all(self, token_store):
         """Business requirement: All installations can be listed."""
-        await token_store.store_token(
-            platform="github", org_id="org-1", access_token="token1"
-        )
-        await token_store.store_token(
-            platform="slack", org_id="workspace-1", access_token="token2"
-        )
+        await token_store.store_token(platform="github", org_id="org-1", access_token="token1")
+        await token_store.store_token(platform="slack", org_id="workspace-1", access_token="token2")
 
         installations = await token_store.list_installations()
 
@@ -238,15 +232,9 @@ class TestInstallationManagement:
     @pytest.mark.asyncio
     async def test_list_installations_filters_by_platform(self, token_store):
         """Business requirement: Installations can be filtered by platform."""
-        await token_store.store_token(
-            platform="github", org_id="org-1", access_token="token1"
-        )
-        await token_store.store_token(
-            platform="github", org_id="org-2", access_token="token2"
-        )
-        await token_store.store_token(
-            platform="slack", org_id="workspace-1", access_token="token3"
-        )
+        await token_store.store_token(platform="github", org_id="org-1", access_token="token1")
+        await token_store.store_token(platform="github", org_id="org-2", access_token="token2")
+        await token_store.store_token(platform="slack", org_id="workspace-1", access_token="token3")
 
         github_installs = await token_store.list_installations(platform="github")
 
@@ -256,9 +244,7 @@ class TestInstallationManagement:
     @pytest.mark.asyncio
     async def test_delete_token_removes_installation(self, token_store):
         """Business requirement: Installations can be revoked."""
-        await token_store.store_token(
-            platform="github", org_id="org-123", access_token="token"
-        )
+        await token_store.store_token(platform="github", org_id="org-123", access_token="token")
 
         result = await token_store.delete_token("github", "org-123")
 
