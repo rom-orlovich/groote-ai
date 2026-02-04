@@ -16,8 +16,7 @@ help:
 # ============================================
 init:
 	@cp -n .env.example .env 2>/dev/null || true
-	@cd agent-engine-package && uv pip install -e ".[dev]"
-	@echo "✅ Initialized. Update .env with your credentials."
+	@echo "✅ Initialized. Edit .env with your credentials, then run: make up"
 
 env-validate:
 	@./scripts/env/validate.sh
