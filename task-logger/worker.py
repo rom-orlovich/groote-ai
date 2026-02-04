@@ -56,7 +56,7 @@ async def process_webhook_event(event: dict):
 async def process_task_event(event: dict):
     task_id = event.get("task_id")
     if not task_id:
-        logger.warning("task_event_missing_id", event=event)
+        logger.warning("task_event_missing_id event=%s", event)
         return
 
     event_type = event.get("type")
@@ -109,7 +109,7 @@ async def process_task_event(event: dict):
 async def process_knowledge_event(event: dict):
     task_id = event.get("task_id")
     if not task_id:
-        logger.warning("knowledge_event_missing_task_id", event=event)
+        logger.warning("knowledge_event_missing_task_id event=%s", event)
         return
 
     event_type = event.get("type")
@@ -180,7 +180,7 @@ async def process_event(event: dict):
     elif event_type.startswith("knowledge:"):
         await process_knowledge_event(event)
     else:
-        logger.warning("unknown_event_type", event_type=event_type)
+        logger.warning("unknown_event_type event_type=%s", event_type)
 
 
 async def run():
@@ -190,13 +190,13 @@ async def run():
         await redis_client.xgroup_create(
             settings.redis_stream, settings.redis_consumer_group, id="0", mkstream=True
         )
-        logger.info("consumer_group_created", group=settings.redis_consumer_group)
+        logger.info("consumer_group_created group=%s", settings.redis_consumer_group)
     except redis.ResponseError as e:
         if "BUSYGROUP" not in str(e):
             raise
-        logger.info("consumer_group_exists", group=settings.redis_consumer_group)
+        logger.info("consumer_group_exists group=%s", settings.redis_consumer_group)
 
-    logger.info("worker_started", stream=settings.redis_stream)
+    logger.info("worker_started stream=%s", settings.redis_stream)
 
     while running:
         try:
@@ -219,9 +219,9 @@ async def run():
                         )
                     except Exception as e:
                         logger.error(
-                            "event_processing_failed",
-                            message_id=message_id,
-                            error=str(e),
+                            "event_processing_failed message_id=%s error=%s",
+                            message_id,
+                            str(e),
                             exc_info=True,
                         )
 
@@ -229,7 +229,7 @@ async def run():
             logger.info("worker_cancelled")
             break
         except Exception as e:
-            logger.error("worker_error", error=str(e), exc_info=True)
+            logger.error("worker_error error=%s", str(e), exc_info=True)
             await asyncio.sleep(5)
 
     await redis_client.close()

@@ -26,7 +26,7 @@ worker_task = None
 async def startup():
     global worker_task
     worker_task = asyncio.create_task(worker_run())
-    logger.info("task_logger_started", port=settings.port)
+    logger.info("task_logger_started port=%s", settings.port)
 
 
 @app.on_event("shutdown")
@@ -109,7 +109,7 @@ async def get_metrics():
             "tasks_processed": tasks_processed,
         }
     except Exception as e:
-        logger.error("metrics_error", error=str(e))
+        logger.error("metrics_error error=%s", str(e))
         return {"error": str(e)}
     finally:
         await redis_client.close()
