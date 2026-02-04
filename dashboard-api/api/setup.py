@@ -3,10 +3,14 @@ from typing import Literal
 
 import structlog
 from core.database import get_session
+from core.setup.encryption import get_deployment_mode, is_cloud
 from core.setup.service import (
     SETUP_STEPS,
     complete_setup,
+    generate_docker_secrets_script,
     generate_env_content,
+    generate_github_actions_env,
+    generate_k8s_secret,
     get_all_configs,
     get_configs_by_category,
     get_setup_state,
@@ -21,7 +25,7 @@ from core.setup.validators import (
     validate_sentry,
     validate_slack,
 )
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,6 +44,8 @@ class SetupStatusResponse(BaseModel):
     progress_percent: float
     total_steps: int
     steps: list[str]
+    deployment_mode: str
+    is_cloud: bool
 
 
 class StepConfigItem(BaseModel):
@@ -94,6 +100,8 @@ async def get_status(db: AsyncSession = Depends(get_session)) -> SetupStatusResp
         progress_percent=state.progress_percent,
         total_steps=len(SETUP_STEPS),
         steps=SETUP_STEPS,
+        deployment_mode=get_deployment_mode(),
+        is_cloud=is_cloud(),
     )
 
 
@@ -187,6 +195,8 @@ async def mark_complete(
         progress_percent=state.progress_percent,
         total_steps=len(SETUP_STEPS),
         steps=SETUP_STEPS,
+        deployment_mode=get_deployment_mode(),
+        is_cloud=is_cloud(),
     )
 
 
@@ -203,18 +213,37 @@ async def reset(
         progress_percent=state.progress_percent,
         total_steps=len(SETUP_STEPS),
         steps=SETUP_STEPS,
+        deployment_mode=get_deployment_mode(),
+        is_cloud=is_cloud(),
     )
 
 
-@router.get("/setup/export-env")
-async def export_env(
+@router.get("/setup/export")
+async def export_config(
+    format: str = Query("env", pattern="^(env|k8s|docker-secrets|github-actions)$"),
+    namespace: str = Query("default"),
     db: AsyncSession = Depends(get_session),
 ) -> PlainTextResponse:
     configs = await get_all_configs(db)
-    content = generate_env_content(configs)
+
+    generators = {
+        "env": lambda: generate_env_content(configs),
+        "k8s": lambda: generate_k8s_secret(configs, namespace),
+        "docker-secrets": lambda: generate_docker_secrets_script(configs),
+        "github-actions": lambda: generate_github_actions_env(configs),
+    }
+
+    filenames = {
+        "env": ".env",
+        "k8s": "groote-ai-secret.yaml",
+        "docker-secrets": "create-secrets.sh",
+        "github-actions": "github-actions-secrets.txt",
+    }
+
+    content = generators[format]()
     return PlainTextResponse(
         content=content,
-        headers={"Content-Disposition": "attachment; filename=.env"},
+        headers={"Content-Disposition": f"attachment; filename={filenames[format]}"},
     )
 
 

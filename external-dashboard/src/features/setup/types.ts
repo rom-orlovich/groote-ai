@@ -1,3 +1,5 @@
+export type ExportFormat = "env" | "k8s" | "docker-secrets" | "github-actions";
+
 export interface SetupStatus {
   is_complete: boolean;
   current_step: string;
@@ -6,6 +8,8 @@ export interface SetupStatus {
   progress_percent: number;
   total_steps: number;
   steps: string[];
+  deployment_mode: string;
+  is_cloud: boolean;
 }
 
 export interface StepConfigItem {

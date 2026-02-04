@@ -56,9 +56,9 @@ async function resetSetup(): Promise<SetupStatus> {
   return res.json();
 }
 
-async function exportEnv(): Promise<string> {
-  const res = await fetch(`${API_BASE}/api/setup/export-env`);
-  if (!res.ok) throw new Error("Failed to export env");
+async function exportConfig(format = "env"): Promise<string> {
+  const res = await fetch(`${API_BASE}/api/setup/export?format=${format}`);
+  if (!res.ok) throw new Error("Failed to export config");
   return res.text();
 }
 
@@ -119,6 +119,6 @@ export function useResetSetup() {
   });
 }
 
-export function useExportEnv() {
-  return useMutation({ mutationFn: exportEnv });
+export function useExportConfig() {
+  return useMutation({ mutationFn: (format: string) => exportConfig(format) });
 }

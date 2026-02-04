@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://agent:agent@postgres:5432/agent_system"
     agent_engine_url: str = "http://agent-engine:8080"
 
+    deployment_mode: str = "local"
     port: int = 5000
     log_level: str = "INFO"
     cors_origins: str = "http://localhost:3005,http://external-dashboard:3005"

@@ -1,6 +1,14 @@
+import os
 
-from core.setup.encryption import decrypt_value, encrypt_value
-from core.setup.service import SETUP_STEPS, generate_env_content
+from core.setup.encryption import decrypt_value, encrypt_value, get_deployment_mode, is_cloud
+from core.setup.service import (
+    SETUP_STEPS,
+    generate_docker_secrets_script,
+    generate_env_content,
+    generate_github_actions_env,
+    generate_k8s_secret,
+)
+from core.setup.validators import _is_transient_error
 
 
 class TestEncryption:
@@ -126,3 +134,81 @@ class TestEnvGeneration:
         jira_section = result.split("Jira Configuration")[1]
         assert "JIRA_URL=https://test.atlassian.net" in jira_section
         assert "JIRA_EMAIL=test@test.com" in jira_section
+
+
+class TestDeploymentMode:
+    def test_default_is_local(self):
+        os.environ.pop("DEPLOYMENT_MODE", None)
+        assert get_deployment_mode() == "local"
+
+    def test_is_cloud_false_for_local(self):
+        os.environ["DEPLOYMENT_MODE"] = "local"
+        assert is_cloud() is False
+        os.environ.pop("DEPLOYMENT_MODE")
+
+    def test_is_cloud_true_for_kubernetes(self):
+        os.environ["DEPLOYMENT_MODE"] = "kubernetes"
+        assert is_cloud() is True
+        os.environ.pop("DEPLOYMENT_MODE")
+
+    def test_is_cloud_true_for_ecs(self):
+        os.environ["DEPLOYMENT_MODE"] = "ecs"
+        assert is_cloud() is True
+        os.environ.pop("DEPLOYMENT_MODE")
+
+
+class TestCloudExportFormats:
+    def test_generate_k8s_secret(self):
+        configs = [
+            {"key": "GITHUB_TOKEN", "value": "ghp_test", "is_sensitive": True},
+        ]
+        result = generate_k8s_secret(configs)
+        assert "apiVersion: v1" in result
+        assert "kind: Secret" in result
+        assert "GITHUB_TOKEN:" in result
+        assert "namespace: default" in result
+
+    def test_generate_k8s_secret_custom_namespace(self):
+        configs = [{"key": "KEY", "value": "val", "is_sensitive": False}]
+        result = generate_k8s_secret(configs, namespace="production")
+        assert "namespace: production" in result
+
+    def test_generate_docker_secrets_script(self):
+        configs = [
+            {"key": "GITHUB_TOKEN", "value": "ghp_test", "is_sensitive": True},
+        ]
+        result = generate_docker_secrets_script(configs)
+        assert "docker secret create" in result
+        assert "groote_github_token" in result
+
+    def test_generate_github_actions_env_sensitive(self):
+        configs = [
+            {"key": "API_KEY", "value": "my_hidden_val_xyz", "is_sensitive": True},
+        ]
+        result = generate_github_actions_env(configs)
+        assert "Secret: API_KEY = <set in GitHub UI>" in result
+        assert "my_hidden_val_xyz" not in result
+
+    def test_generate_github_actions_env_non_sensitive(self):
+        configs = [
+            {"key": "LOG_LEVEL", "value": "INFO", "is_sensitive": False},
+        ]
+        result = generate_github_actions_env(configs)
+        assert "Variable: LOG_LEVEL = INFO" in result
+
+
+class TestRetryLogic:
+    def test_transient_error_detection_connection(self):
+        assert _is_transient_error("Connection error: timeout") is True
+
+    def test_transient_error_detection_503(self):
+        assert _is_transient_error("HTTP 503 Service Unavailable") is True
+
+    def test_transient_error_detection_429(self):
+        assert _is_transient_error("HTTP 429 Too Many Requests") is True
+
+    def test_non_transient_error(self):
+        assert _is_transient_error("Authentication failed (HTTP 401)") is False
+
+    def test_non_transient_error_403(self):
+        assert _is_transient_error("Authentication failed (HTTP 403)") is False

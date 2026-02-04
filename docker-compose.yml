@@ -179,6 +179,7 @@ services:
       - AGENT_ENGINE_URL=http://agent-engine:8080
       - CORS_ORIGINS=http://localhost:3005,http://external-dashboard:80
       - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY:-}
+      - DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-local}
     depends_on:
       redis:
         condition: service_healthy
