@@ -5,12 +5,14 @@ Complete step-by-step guide to set up and run the Groote AI system.
 ## Table of Contents
 
 1. [Prerequisites](#prerequisites)
-2. [Quick Start](#quick-start)
-3. [Detailed Setup](#detailed-setup)
-4. [Service Integration](#service-integration)
-5. [Verification](#verification)
-6. [Troubleshooting](#troubleshooting)
-7. [Service-Specific Setup](#service-specific-setup)
+2. [Quick Start (Setup Wizard)](#quick-start-setup-wizard)
+3. [Quick Start (Manual)](#quick-start-manual)
+4. [Setup Wizard Details](#setup-wizard-details)
+5. [Detailed Manual Setup](#detailed-manual-setup)
+6. [Service Integration](#service-integration)
+7. [Verification](#verification)
+8. [Troubleshooting](#troubleshooting)
+9. [Service-Specific Setup](#service-specific-setup)
 
 ---
 
@@ -46,9 +48,41 @@ You need API keys from at least one of these services to use the system:
 
 ---
 
-## Quick Start
+## Quick Start (Setup Wizard)
 
-For users who want to get started quickly with minimal configuration:
+The recommended way to configure Groote AI. The wizard guides you through each
+integration with validation, and stores credentials encrypted in the database.
+
+```bash
+# 1. Clone the repository
+git clone <repository-url>
+cd groote-ai
+
+# 2. Initialize the project (copies .env.example to .env)
+make init
+
+# 3. Set bootstrap secrets only (database password + encryption key)
+#    Edit .env and set: POSTGRES_PASSWORD, TOKEN_ENCRYPTION_KEY
+nano .env
+
+# 4. Start all services
+make up
+
+# 5. Open the Setup Wizard in your browser
+open http://localhost:3005/setup
+
+# 6. Follow the wizard steps, then start the CLI
+make cli-claude    # or: make cli-cursor
+```
+
+The wizard is accessible at http://localhost:3005/setup. On first launch the
+Dashboard automatically redirects there.
+
+---
+
+## Quick Start (Manual)
+
+For users who prefer configuring via `.env` file directly:
 
 ```bash
 # 1. Clone the repository
@@ -78,7 +112,65 @@ The system is now running at:
 
 ---
 
-## Detailed Setup
+## Setup Wizard Details
+
+The Setup Wizard provides a guided UI for configuring all integrations.
+
+### How It Works
+
+1. **Infrastructure Check** — verifies PostgreSQL and Redis connectivity
+2. **AI Provider** — configure your CLI provider (Claude or Cursor) API key
+3. **GitHub** — token and webhook secret (optional, skippable)
+4. **Jira** — URL, email, API token, webhook secret (optional, skippable)
+5. **Slack** — bot token and signing secret (optional, skippable)
+6. **Sentry** — DSN, auth token, org slug (optional, skippable)
+7. **Review & Export** — view configuration summary and download in your format
+
+### Security
+
+- All sensitive values are **Fernet-encrypted** (AES-128-CBC + HMAC-SHA256) at rest in PostgreSQL
+- The `TOKEN_ENCRYPTION_KEY` env var is the only secret needed in `.env`
+- In cloud deployments, an explicit encryption key is **required** (no auto-generated keys)
+- Key rotation is supported via `TOKEN_ENCRYPTION_KEY_PREVIOUS`
+
+### Export Formats
+
+After completing the wizard, export your configuration for your deployment target:
+
+| Format | Use Case |
+|--------|----------|
+| `.env` | Docker Compose / local development |
+| Kubernetes Secret | K8s deployments (`kubectl apply -f`) |
+| Docker Swarm Secrets | Docker Swarm (`bash create-secrets.sh`) |
+| GitHub Actions | CI/CD secrets reference guide |
+
+### Cloud Deployments
+
+Set `DEPLOYMENT_MODE` in your environment to enable cloud-specific behavior:
+
+| Value | Environment |
+|-------|-------------|
+| `local` | Docker Compose on a local machine (default) |
+| `cloud` | Generic cloud VM |
+| `kubernetes` | Kubernetes cluster |
+| `ecs` | AWS ECS |
+| `cloudrun` | Google Cloud Run |
+
+When running in cloud mode, the wizard auto-selects the Kubernetes Secret export
+format and shows cloud-specific deployment instructions.
+
+### Re-running the Wizard
+
+Access the wizard anytime from **Settings** in the Dashboard sidebar, or navigate
+directly to http://localhost:3005/setup. Use the reset endpoint to start fresh:
+
+```bash
+curl -X POST http://localhost:5000/api/setup/reset
+```
+
+---
+
+## Detailed Manual Setup
 
 ### Step 1: Clone Repository
 
