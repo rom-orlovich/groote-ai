@@ -1,5 +1,7 @@
 import os
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from core.setup.encryption import decrypt_value, encrypt_value, get_deployment_mode, is_cloud
 from core.setup.service import (
     SETUP_STEPS,
@@ -8,7 +10,12 @@ from core.setup.service import (
     generate_github_actions_env,
     generate_k8s_secret,
 )
-from core.setup.validators import _is_transient_error
+from core.setup.validators import (
+    _is_transient_error,
+    validate_github_oauth,
+    validate_jira_oauth,
+    validate_slack_oauth,
+)
 
 
 class TestEncryption:
@@ -43,8 +50,18 @@ class TestEncryption:
 
 
 class TestSetupSteps:
-    def test_steps_are_defined(self):
-        assert len(SETUP_STEPS) == 7
+    def test_steps_include_oauth_platform_steps(self):
+        assert "github_oauth" in SETUP_STEPS
+        assert "jira_oauth" in SETUP_STEPS
+        assert "slack_oauth" in SETUP_STEPS
+
+    def test_sentry_remains_as_token_step(self):
+        assert "sentry" in SETUP_STEPS
+
+    def test_old_static_token_steps_removed(self):
+        assert "github" not in SETUP_STEPS
+        assert "jira" not in SETUP_STEPS
+        assert "slack" not in SETUP_STEPS
 
     def test_steps_have_correct_order(self):
         assert SETUP_STEPS[0] == "welcome"
@@ -58,35 +75,35 @@ class TestSetupSteps:
 
 
 class TestEnvGeneration:
-    def test_generate_env_with_single_category(self):
+    def test_generate_env_with_oauth_category(self):
         configs = [
             {
-                "key": "GITHUB_TOKEN",
-                "value": "ghp_test123",
-                "category": "github",
-                "display_name": "GitHub Token",
-                "is_sensitive": True,
+                "key": "GITHUB_CLIENT_ID",
+                "value": "Iv1.abc123",
+                "category": "github_oauth",
+                "display_name": "Client ID",
+                "is_sensitive": False,
             },
         ]
         result = generate_env_content(configs)
-        assert "GITHUB_TOKEN=ghp_test123" in result
+        assert "GITHUB_CLIENT_ID=Iv1.abc123" in result
         assert "GitHub Configuration" in result
 
-    def test_generate_env_with_multiple_categories(self):
+    def test_generate_env_with_multiple_oauth_categories(self):
         configs = [
             {
-                "key": "GITHUB_TOKEN",
-                "value": "ghp_test",
-                "category": "github",
-                "display_name": "Token",
-                "is_sensitive": True,
+                "key": "GITHUB_CLIENT_ID",
+                "value": "Iv1.abc",
+                "category": "github_oauth",
+                "display_name": "Client ID",
+                "is_sensitive": False,
             },
             {
-                "key": "SLACK_BOT_TOKEN",
-                "value": "xoxb-test",
-                "category": "slack",
-                "display_name": "Token",
-                "is_sensitive": True,
+                "key": "SLACK_CLIENT_ID",
+                "value": "slack-id",
+                "category": "slack_oauth",
+                "display_name": "Client ID",
+                "is_sensitive": False,
             },
             {
                 "key": "CLI_PROVIDER",
@@ -97,8 +114,8 @@ class TestEnvGeneration:
             },
         ]
         result = generate_env_content(configs)
-        assert "GITHUB_TOKEN=ghp_test" in result
-        assert "SLACK_BOT_TOKEN=xoxb-test" in result
+        assert "GITHUB_CLIENT_ID=Iv1.abc" in result
+        assert "SLACK_CLIENT_ID=slack-id" in result
         assert "CLI_PROVIDER=claude" in result
 
     def test_generate_env_empty_configs(self):
@@ -115,25 +132,25 @@ class TestEnvGeneration:
     def test_generate_env_category_grouping(self):
         configs = [
             {
-                "key": "JIRA_URL",
-                "value": "https://test.atlassian.net",
-                "category": "jira",
-                "display_name": "URL",
+                "key": "JIRA_CLIENT_ID",
+                "value": "jira-client-id",
+                "category": "jira_oauth",
+                "display_name": "Client ID",
                 "is_sensitive": False,
             },
             {
-                "key": "JIRA_EMAIL",
-                "value": "test@test.com",
-                "category": "jira",
-                "display_name": "Email",
-                "is_sensitive": False,
+                "key": "JIRA_CLIENT_SECRET",
+                "value": "jira-secret",
+                "category": "jira_oauth",
+                "display_name": "Client Secret",
+                "is_sensitive": True,
             },
         ]
         result = generate_env_content(configs)
         assert "Jira Configuration" in result
         jira_section = result.split("Jira Configuration")[1]
-        assert "JIRA_URL=https://test.atlassian.net" in jira_section
-        assert "JIRA_EMAIL=test@test.com" in jira_section
+        assert "JIRA_CLIENT_ID=jira-client-id" in jira_section
+        assert "JIRA_CLIENT_SECRET=jira-secret" in jira_section
 
 
 class TestDeploymentMode:
@@ -212,3 +229,197 @@ class TestRetryLogic:
 
     def test_non_transient_error_403(self):
         assert _is_transient_error("Authentication failed (HTTP 403)") is False
+
+
+class TestGitHubOAuthValidator:
+    @pytest.mark.asyncio
+    async def test_valid_github_app_credentials(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "id": 12345,
+            "name": "my-groote-app",
+            "slug": "my-groote-app",
+        }
+
+        mock_client = AsyncMock()
+        mock_client.get.return_value = mock_response
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+
+        with patch("core.setup.validators.httpx.AsyncClient", return_value=mock_client):
+            result = await validate_github_oauth("12345", "Iv1.abc", "secret123")
+
+        assert result.success is True
+        assert result.service == "github"
+        assert "my-groote-app" in result.message
+
+    @pytest.mark.asyncio
+    async def test_invalid_github_app_credentials(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 401
+
+        mock_client = AsyncMock()
+        mock_client.get.return_value = mock_response
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+
+        with patch("core.setup.validators.httpx.AsyncClient", return_value=mock_client):
+            result = await validate_github_oauth("12345", "Iv1.abc", "bad-secret")
+
+        assert result.success is False
+        assert "401" in result.message
+
+    @pytest.mark.asyncio
+    async def test_github_oauth_missing_app_id(self):
+        result = await validate_github_oauth("", "Iv1.abc", "secret")
+        assert result.success is False
+        assert "App ID" in result.message
+
+
+class TestJiraOAuthValidator:
+    @pytest.mark.asyncio
+    async def test_valid_jira_oauth_credentials(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+
+        mock_client = AsyncMock()
+        mock_client.get.return_value = mock_response
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+
+        with patch("core.setup.validators.httpx.AsyncClient", return_value=mock_client):
+            result = await validate_jira_oauth("jira-client-id", "jira-secret")
+
+        assert result.success is True
+        assert result.service == "jira"
+
+    @pytest.mark.asyncio
+    async def test_jira_oauth_empty_client_id(self):
+        result = await validate_jira_oauth("", "secret")
+        assert result.success is False
+        assert "Client ID" in result.message
+
+
+class TestSlackOAuthValidator:
+    @pytest.mark.asyncio
+    async def test_valid_slack_oauth_credentials(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+
+        mock_client = AsyncMock()
+        mock_client.post.return_value = mock_response
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+
+        with patch("core.setup.validators.httpx.AsyncClient", return_value=mock_client):
+            result = await validate_slack_oauth("slack-client-id", "slack-secret")
+
+        assert result.success is True
+        assert result.service == "slack"
+
+    @pytest.mark.asyncio
+    async def test_slack_oauth_empty_client_id(self):
+        result = await validate_slack_oauth("", "secret")
+        assert result.success is False
+        assert "Client ID" in result.message
+
+
+class TestValidatorMapIncludesOAuth:
+    def test_validator_map_has_github_oauth(self):
+        from core.setup.validators import VALIDATOR_MAP
+
+        assert "github_oauth" in VALIDATOR_MAP
+
+    def test_validator_map_has_jira_oauth(self):
+        from core.setup.validators import VALIDATOR_MAP
+
+        assert "jira_oauth" in VALIDATOR_MAP
+
+    def test_validator_map_has_slack_oauth(self):
+        from core.setup.validators import VALIDATOR_MAP
+
+        assert "slack_oauth" in VALIDATOR_MAP
+
+    def test_validator_map_still_has_sentry(self):
+        from core.setup.validators import VALIDATOR_MAP
+
+        assert "sentry" in VALIDATOR_MAP
+
+    def test_validator_map_still_has_anthropic(self):
+        from core.setup.validators import VALIDATOR_MAP
+
+        assert "anthropic" in VALIDATOR_MAP
+
+    def test_old_token_validators_removed_from_map(self):
+        from core.setup.validators import VALIDATOR_MAP
+
+        assert "github" not in VALIDATOR_MAP
+        assert "jira" not in VALIDATOR_MAP
+        assert "slack" not in VALIDATOR_MAP
+
+
+class TestCredentialEndpointMapping:
+    def test_platform_credential_keys_has_github(self):
+        from api.setup import PLATFORM_CREDENTIAL_KEYS
+
+        assert "github" in PLATFORM_CREDENTIAL_KEYS
+        keys = PLATFORM_CREDENTIAL_KEYS["github"]
+        assert "GITHUB_APP_ID" in keys
+        assert "GITHUB_CLIENT_ID" in keys
+        assert "GITHUB_CLIENT_SECRET" in keys
+        assert "GITHUB_PRIVATE_KEY" in keys
+
+    def test_platform_credential_keys_has_jira(self):
+        from api.setup import PLATFORM_CREDENTIAL_KEYS
+
+        assert "jira" in PLATFORM_CREDENTIAL_KEYS
+        keys = PLATFORM_CREDENTIAL_KEYS["jira"]
+        assert "JIRA_CLIENT_ID" in keys
+        assert "JIRA_CLIENT_SECRET" in keys
+
+    def test_platform_credential_keys_has_slack(self):
+        from api.setup import PLATFORM_CREDENTIAL_KEYS
+
+        assert "slack" in PLATFORM_CREDENTIAL_KEYS
+        keys = PLATFORM_CREDENTIAL_KEYS["slack"]
+        assert "SLACK_CLIENT_ID" in keys
+        assert "SLACK_CLIENT_SECRET" in keys
+
+    def test_platform_credential_keys_has_sentry(self):
+        from api.setup import PLATFORM_CREDENTIAL_KEYS
+
+        assert "sentry" in PLATFORM_CREDENTIAL_KEYS
+        keys = PLATFORM_CREDENTIAL_KEYS["sentry"]
+        assert "SENTRY_AUTH_TOKEN" in keys
+
+    def test_platform_category_map_uses_oauth_categories(self):
+        from api.setup import PLATFORM_CATEGORY_MAP
+
+        assert PLATFORM_CATEGORY_MAP["github"] == "github_oauth"
+        assert PLATFORM_CATEGORY_MAP["jira"] == "jira_oauth"
+        assert PLATFORM_CATEGORY_MAP["slack"] == "slack_oauth"
+        assert PLATFORM_CATEGORY_MAP["sentry"] == "sentry"
+
+
+class TestCategoryTitles:
+    def test_oauth_category_titles_exist(self):
+        from core.setup.service import CATEGORY_TITLES
+
+        assert "github_oauth" in CATEGORY_TITLES
+        assert "jira_oauth" in CATEGORY_TITLES
+        assert "slack_oauth" in CATEGORY_TITLES
+
+    def test_oauth_category_titles_are_readable(self):
+        from core.setup.service import CATEGORY_TITLES
+
+        assert CATEGORY_TITLES["github_oauth"] == "GitHub Configuration"
+        assert CATEGORY_TITLES["jira_oauth"] == "Jira Configuration"
+        assert CATEGORY_TITLES["slack_oauth"] == "Slack Configuration"
+
+    def test_old_plain_category_keys_removed(self):
+        from core.setup.service import CATEGORY_TITLES
+
+        assert "github" not in CATEGORY_TITLES
+        assert "jira" not in CATEGORY_TITLES
+        assert "slack" not in CATEGORY_TITLES

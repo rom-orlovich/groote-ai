@@ -51,6 +51,14 @@ export interface ServiceField {
   sensitive: boolean;
   required: boolean;
   helpText?: string;
+  multiline?: boolean;
+}
+
+export interface InstructionStep {
+  step: number;
+  title: string;
+  description: string;
+  link?: string;
 }
 
 export interface StepDefinition {
@@ -61,4 +69,7 @@ export interface StepDefinition {
   skippable: boolean;
   validationService?: string;
   fields: ServiceField[];
+  stepType?: "service" | "oauth_setup";
+  oauthPlatform?: string;
+  instructions?: InstructionStep[];
 }

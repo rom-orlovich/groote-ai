@@ -3,13 +3,12 @@ from uuid import UUID
 
 import structlog
 from config.settings import get_settings
+from models import Installation, InstallationStatus, Platform
 from providers.github import GitHubOAuthProvider
 from providers.jira import JiraOAuthProvider
 from providers.slack import SlackOAuthProvider
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from models import Installation, InstallationStatus, Platform
 
 logger = structlog.get_logger(__name__)
 

@@ -10,7 +10,15 @@ from core.setup.models import SetupConfigDB, SetupStateDB
 
 logger = structlog.get_logger()
 
-SETUP_STEPS = ["welcome", "ai_provider", "github", "jira", "slack", "sentry", "review"]
+SETUP_STEPS = [
+    "welcome",
+    "ai_provider",
+    "github_oauth",
+    "jira_oauth",
+    "slack_oauth",
+    "sentry",
+    "review",
+]
 
 
 async def get_setup_state(db: AsyncSession) -> SetupStateDB:
@@ -162,9 +170,9 @@ async def get_all_configs(db: AsyncSession) -> list[dict[str, str | bool]]:
 CATEGORY_TITLES = {
     "infrastructure": "Database Configuration",
     "ai_provider": "AI Provider Configuration",
-    "github": "GitHub Configuration",
-    "jira": "Jira Configuration",
-    "slack": "Slack Configuration",
+    "github_oauth": "GitHub Configuration",
+    "jira_oauth": "Jira Configuration",
+    "slack_oauth": "Slack Configuration",
     "sentry": "Sentry Configuration",
     "webhooks": "Webhook Secrets",
     "general": "General Configuration",
