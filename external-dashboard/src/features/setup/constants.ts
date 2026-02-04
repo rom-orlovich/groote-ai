@@ -30,8 +30,8 @@ export const SETUP_STEPS: StepDefinition[] = [
         label: "Anthropic API Key",
         placeholder: "sk-ant-...",
         sensitive: true,
-        required: true,
-        helpText: "Get from console.anthropic.com",
+        required: false,
+        helpText: "Optional if using ~/.anthropic credentials",
       },
       {
         key: "CLAUDE_MODEL_COMPLEX",
