@@ -263,12 +263,8 @@ make cli-claude
 make cli PROVIDER=claude SCALE=3
 ```
 
-### Step 6: Apply Database Migrations
-
-```bash
-# Run database migrations
-make db-upgrade
-```
+Database tables are created automatically when the Dashboard API starts.
+No manual migration step is needed.
 
 ---
 
@@ -354,7 +350,7 @@ make health
 # Or check individual services
 curl http://localhost:8000/health      # API Gateway
 curl http://localhost:8080/health      # Agent Engine
-curl http://localhost:5000/health      # Dashboard API
+curl http://localhost:5000/api/health  # Dashboard API
 curl http://localhost:8010/health      # OAuth Service
 curl http://localhost:8090/health      # Task Logger
 curl http://localhost:4000/health      # Knowledge Graph
@@ -377,12 +373,6 @@ make logs
 docker-compose logs -f api-gateway
 docker-compose logs -f cli
 docker-compose logs -f dashboard-api
-```
-
-### Check CLI Status
-
-```bash
-make cli-status PROVIDER=claude
 ```
 
 ### Access the Dashboard

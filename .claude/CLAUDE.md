@@ -29,8 +29,6 @@ make cli PROVIDER=claude SCALE=3  # Scale CLI instances
 make test                    # Run all tests
 make lint                    # Lint code
 make format                  # Format code
-make db-migrate MSG="..."    # Create migration
-make db-upgrade              # Apply migrations
 ```
 
 ## Architecture
