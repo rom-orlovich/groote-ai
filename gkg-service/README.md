@@ -90,3 +90,9 @@ pytest tests/ --cov=core --cov-report=term-missing
 |------|---------|-------------|
 | `ENABLE_CACHING` | `true` | Cache query results |
 | `ENABLE_BATCH` | `true` | Enable batch operations |
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) - Component diagrams, data flows, design principles
+- [Features](docs/features.md) - Feature list with test coverage status
+- [Flows](docs/flows.md) - Process flow documentation

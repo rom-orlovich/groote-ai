@@ -216,6 +216,12 @@ LOG_LEVEL=INFO
 curl http://localhost:5000/api/health
 ```
 
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) - Component diagrams, data flows, design principles
+- [Features](docs/features.md) - Feature list with test coverage status
+- [Flows](docs/flows.md) - Process flow documentation
+
 ## Related Services
 
 - **external-dashboard**: React frontend that consumes this API
