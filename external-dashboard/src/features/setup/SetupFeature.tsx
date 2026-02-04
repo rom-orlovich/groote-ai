@@ -92,7 +92,7 @@ export function SetupFeature() {
             GROOTE_AI
           </h1>
           <p className="text-[10px] font-heading text-gray-400 tracking-wider">
-            SETUP_WIZARD // STEP_{String(currentIndex + 1).padStart(2, "0")} OF_{" "}
+            SETUP_WIZARD {"//"} STEP_{String(currentIndex + 1).padStart(2, "0")} OF_{" "}
             {String(SETUP_STEPS.length).padStart(2, "0")}
           </p>
         </div>

@@ -131,9 +131,7 @@ async def get_configs_by_category(
     db: AsyncSession,
     category: str,
 ) -> list[dict[str, str | bool]]:
-    result = await db.execute(
-        select(SetupConfigDB).where(SetupConfigDB.category == category)
-    )
+    result = await db.execute(select(SetupConfigDB).where(SetupConfigDB.category == category))
     configs = result.scalars().all()
     return [
         {
