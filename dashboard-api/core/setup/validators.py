@@ -182,6 +182,13 @@ async def validate_sentry(auth_token: str) -> ValidationResult:
 
 
 async def validate_anthropic(api_key: str) -> ValidationResult:
+    if not api_key.strip():
+        return ValidationResult(
+            service="anthropic",
+            success=True,
+            message="Using credential-based authentication (~/.anthropic)",
+        )
+
     async def _attempt() -> ValidationResult:
         try:
             async with httpx.AsyncClient(timeout=VALIDATION_TIMEOUT) as client:
