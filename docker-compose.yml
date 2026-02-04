@@ -178,6 +178,7 @@ services:
       - DATABASE_URL=postgresql+asyncpg://agent:${POSTGRES_PASSWORD:-agent}@postgres:5432/agent_system
       - AGENT_ENGINE_URL=http://agent-engine:8080
       - CORS_ORIGINS=http://localhost:3005,http://external-dashboard:80
+      - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY:-}
     depends_on:
       redis:
         condition: service_healthy

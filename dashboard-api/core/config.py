@@ -16,3 +16,6 @@ class Settings(BaseSettings):
     port: int = 5000
     log_level: str = "INFO"
     cors_origins: str = "http://localhost:3005,http://external-dashboard:3005"
+
+
+settings = Settings()
