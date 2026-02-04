@@ -20,10 +20,10 @@ from core.setup.service import (
 )
 from core.setup.validators import (
     validate_anthropic,
-    validate_github,
-    validate_jira,
+    validate_github_oauth,
+    validate_jira_oauth,
     validate_sentry,
-    validate_slack,
+    validate_slack_oauth,
 )
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
@@ -152,21 +152,27 @@ async def get_step_config(
 
 @router.post("/setup/validate/{service}")
 async def validate_service(
-    service: Literal["github", "jira", "slack", "sentry", "anthropic"],
+    service: Literal["github_oauth", "jira_oauth", "slack_oauth", "sentry", "anthropic"],
     request: ValidateRequest,
 ) -> ValidateResponse:
     creds = request.credentials
 
-    if service == "github":
-        result = await validate_github(creds.get("GITHUB_TOKEN", ""))
-    elif service == "jira":
-        result = await validate_jira(
-            creds.get("JIRA_URL", ""),
-            creds.get("JIRA_EMAIL", ""),
-            creds.get("JIRA_API_TOKEN", ""),
+    if service == "github_oauth":
+        result = await validate_github_oauth(
+            creds.get("GITHUB_APP_ID", ""),
+            creds.get("GITHUB_CLIENT_ID", ""),
+            creds.get("GITHUB_CLIENT_SECRET", ""),
         )
-    elif service == "slack":
-        result = await validate_slack(creds.get("SLACK_BOT_TOKEN", ""))
+    elif service == "jira_oauth":
+        result = await validate_jira_oauth(
+            creds.get("JIRA_CLIENT_ID", ""),
+            creds.get("JIRA_CLIENT_SECRET", ""),
+        )
+    elif service == "slack_oauth":
+        result = await validate_slack_oauth(
+            creds.get("SLACK_CLIENT_ID", ""),
+            creds.get("SLACK_CLIENT_SECRET", ""),
+        )
     elif service == "sentry":
         result = await validate_sentry(creds.get("SENTRY_AUTH_TOKEN", ""))
     elif service == "anthropic":
@@ -245,6 +251,43 @@ async def export_config(
         content=content,
         headers={"Content-Disposition": f"attachment; filename={filenames[format]}"},
     )
+
+
+PLATFORM_CREDENTIAL_KEYS: dict[str, list[str]] = {
+    "github": [
+        "GITHUB_APP_ID",
+        "GITHUB_CLIENT_ID",
+        "GITHUB_CLIENT_SECRET",
+        "GITHUB_PRIVATE_KEY",
+        "GITHUB_WEBHOOK_SECRET",
+    ],
+    "jira": ["JIRA_CLIENT_ID", "JIRA_CLIENT_SECRET"],
+    "slack": ["SLACK_CLIENT_ID", "SLACK_CLIENT_SECRET", "SLACK_SIGNING_SECRET"],
+    "sentry": ["SENTRY_AUTH_TOKEN", "SENTRY_DSN", "SENTRY_ORG_SLUG"],
+}
+
+PLATFORM_CATEGORY_MAP: dict[str, str] = {
+    "github": "github_oauth",
+    "jira": "jira_oauth",
+    "slack": "slack_oauth",
+    "sentry": "sentry",
+}
+
+
+@router.get("/setup/oauth-credentials/{platform}")
+async def get_oauth_credentials(
+    platform: str,
+    db: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    if platform not in PLATFORM_CREDENTIAL_KEYS:
+        raise HTTPException(status_code=400, detail=f"Unknown platform: {platform}")
+
+    category = PLATFORM_CATEGORY_MAP[platform]
+    configs = await get_configs_by_category(db, category)
+    allowed_keys = set(PLATFORM_CREDENTIAL_KEYS[platform])
+    return {
+        str(c["key"]): str(c["value"]) for c in configs if c["key"] in allowed_keys and c["value"]
+    }
 
 
 @router.get("/setup/infrastructure")

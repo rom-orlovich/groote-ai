@@ -77,15 +77,15 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-orange-500 font-heading">02</span>
-            <span>GitHub - Repository access and issue automation (optional)</span>
+            <span>GitHub - Create GitHub App for repository automation (optional)</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-orange-500 font-heading">03</span>
-            <span>Jira - Ticket management and project tracking (optional)</span>
+            <span>Jira - Create Jira OAuth app for project management (optional)</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-orange-500 font-heading">04</span>
-            <span>Slack - Chat notifications and slash commands (optional)</span>
+            <span>Slack - Create Slack App for chat notifications (optional)</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-orange-500 font-heading">05</span>

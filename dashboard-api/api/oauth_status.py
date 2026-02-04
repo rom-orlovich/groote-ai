@@ -194,7 +194,7 @@ async def start_oauth_install(
             detail=f"Platform {platform} is not configured. Check environment variables.",
         )
 
-    redirect_url = f"{OAUTH_SERVICE_URL}/oauth/install/{platform}"
+    redirect_url = f"/oauth/install/{platform}"
 
     return OAuthInstallResponse(success=True, redirect_url=redirect_url)
 

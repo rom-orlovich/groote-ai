@@ -4,11 +4,10 @@ from typing import Any
 from uuid import UUID
 
 import structlog
+from models import Installation, InstallationStatus, OAuthState
 from providers.base import InstallationInfo, OAuthTokens
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from models import Installation, InstallationStatus, OAuthState
 
 logger = structlog.get_logger(__name__)
 

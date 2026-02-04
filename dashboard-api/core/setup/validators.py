@@ -53,14 +53,25 @@ class ValidationResult(BaseModel):
     details: dict[str, str] | None = None
 
 
-async def validate_github(token: str) -> ValidationResult:
+async def validate_github_oauth(
+    app_id: str,
+    client_id: str,
+    client_secret: str,
+) -> ValidationResult:
+    if not app_id.strip():
+        return ValidationResult(
+            service="github",
+            success=False,
+            message="App ID is required",
+        )
+
     async def _attempt() -> ValidationResult:
         try:
-            async with httpx.AsyncClient(timeout=VALIDATION_TIMEOUT) as client:
-                response = await client.get(
-                    "https://api.github.com/user",
+            async with httpx.AsyncClient(timeout=VALIDATION_TIMEOUT) as http:
+                response = await http.get(
+                    "https://api.github.com/app",
                     headers={
-                        "Authorization": f"token {token}",
+                        "Authorization": f"Bearer {client_secret[:20]}",
                         "Accept": "application/vnd.github.v3+json",
                     },
                 )
@@ -69,8 +80,12 @@ async def validate_github(token: str) -> ValidationResult:
                     return ValidationResult(
                         service="github",
                         success=True,
-                        message=f"Connected as {data.get('login', 'unknown')}",
-                        details={"login": data.get("login", ""), "name": data.get("name", "")},
+                        message=f"GitHub App: {data.get('name', 'unknown')}",
+                        details={
+                            "app_id": str(data.get("id", "")),
+                            "client_id": client_id,
+                            "slug": data.get("slug", ""),
+                        },
                     )
                 return ValidationResult(
                     service="github",
@@ -79,76 +94,87 @@ async def validate_github(token: str) -> ValidationResult:
                 )
         except httpx.RequestError as e:
             return ValidationResult(
-                service="github", success=False, message=f"Connection error: {e!s}"
+                service="github",
+                success=False,
+                message=f"Connection error: {e!s}",
             )
 
     return await with_retry(_attempt, "github")
 
 
-async def validate_jira(url: str, email: str, token: str) -> ValidationResult:
+async def validate_jira_oauth(
+    client_id: str,
+    client_secret: str,
+) -> ValidationResult:
+    if not client_id.strip():
+        return ValidationResult(
+            service="jira",
+            success=False,
+            message="Client ID is required",
+        )
+
     async def _attempt() -> ValidationResult:
         try:
-            api_url = url.rstrip("/")
-            async with httpx.AsyncClient(timeout=VALIDATION_TIMEOUT) as client:
-                response = await client.get(
-                    f"{api_url}/rest/api/3/myself",
-                    auth=(email, token),
-                    headers={"Accept": "application/json"},
+            async with httpx.AsyncClient(timeout=VALIDATION_TIMEOUT) as http:
+                response = await http.get(
+                    "https://auth.atlassian.com/.well-known/openid-configuration",
                 )
                 if response.status_code == 200:
-                    data = response.json()
                     return ValidationResult(
                         service="jira",
                         success=True,
-                        message=f"Connected as {data.get('displayName', 'unknown')}",
-                        details={
-                            "display_name": data.get("displayName", ""),
-                            "email": data.get("emailAddress", ""),
-                        },
+                        message="Jira OAuth credentials saved",
+                        details={"client_id": client_id, "has_secret": str(bool(client_secret))},
                     )
                 return ValidationResult(
                     service="jira",
                     success=False,
-                    message=f"Authentication failed (HTTP {response.status_code})",
+                    message=f"Atlassian auth endpoint error (HTTP {response.status_code})",
                 )
         except httpx.RequestError as e:
             return ValidationResult(
-                service="jira", success=False, message=f"Connection error: {e!s}"
+                service="jira",
+                success=False,
+                message=f"Connection error: {e!s}",
             )
 
     return await with_retry(_attempt, "jira")
 
 
-async def validate_slack(bot_token: str) -> ValidationResult:
+async def validate_slack_oauth(
+    client_id: str,
+    client_secret: str,
+) -> ValidationResult:
+    if not client_id.strip():
+        return ValidationResult(
+            service="slack",
+            success=False,
+            message="Client ID is required",
+        )
+
     async def _attempt() -> ValidationResult:
         try:
-            async with httpx.AsyncClient(timeout=VALIDATION_TIMEOUT) as client:
-                response = await client.post(
-                    "https://slack.com/api/auth.test",
-                    headers={"Authorization": f"Bearer {bot_token}"},
+            async with httpx.AsyncClient(timeout=VALIDATION_TIMEOUT) as http:
+                response = await http.post(
+                    "https://slack.com/api/api.test",
                 )
                 if response.status_code == 200:
-                    data = response.json()
-                    if data.get("ok"):
-                        return ValidationResult(
-                            service="slack",
-                            success=True,
-                            message=f"Connected to workspace: {data.get('team', 'unknown')}",
-                            details={"team": data.get("team", ""), "user": data.get("user", "")},
-                        )
                     return ValidationResult(
                         service="slack",
-                        success=False,
-                        message=f"Slack error: {data.get('error', 'unknown')}",
+                        success=True,
+                        message="Slack OAuth credentials saved",
+                        details={"client_id": client_id, "has_secret": str(bool(client_secret))},
                     )
                 return ValidationResult(
                     service="slack",
                     success=False,
-                    message=f"HTTP error {response.status_code}",
+                    message=f"Slack API error (HTTP {response.status_code})",
                 )
         except httpx.RequestError as e:
             return ValidationResult(
-                service="slack", success=False, message=f"Connection error: {e!s}"
+                service="slack",
+                success=False,
+                message=f"Connection error: {e!s}",
             )
 
     return await with_retry(_attempt, "slack")
@@ -219,9 +245,9 @@ async def validate_anthropic(api_key: str) -> ValidationResult:
 
 
 VALIDATOR_MAP: dict[str, str] = {
-    "github": "validate_github",
-    "jira": "validate_jira",
-    "slack": "validate_slack",
+    "github_oauth": "validate_github_oauth",
+    "jira_oauth": "validate_jira_oauth",
+    "slack_oauth": "validate_slack_oauth",
     "sentry": "validate_sentry",
     "anthropic": "validate_anthropic",
 }

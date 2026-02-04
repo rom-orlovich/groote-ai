@@ -62,46 +62,55 @@ async def oauth_callback(
     installation_id: str | None = Query(None),
     session: AsyncSession = Depends(get_session),
     settings: Settings = Depends(get_settings),
-) -> dict[str, Any]:
+) -> RedirectResponse:
+    frontend_base = settings.frontend_url
     if platform not in PROVIDERS:
-        raise HTTPException(status_code=400, detail=f"Unknown platform: {platform}")
+        return RedirectResponse(
+            url=f"{frontend_base}/integrations?oauth_callback={platform}&error=unknown_platform"
+        )
 
-    installation_service = InstallationService(session)
-    oauth_state = await installation_service.validate_oauth_state(state)
+    try:
+        installation_service = InstallationService(session)
+        oauth_state = await installation_service.validate_oauth_state(state)
 
-    if not oauth_state:
-        raise HTTPException(status_code=400, detail="Invalid or expired state")
+        if not oauth_state:
+            return RedirectResponse(
+                url=f"{frontend_base}/integrations?oauth_callback={platform}&error=invalid_state"
+            )
 
-    provider = PROVIDERS[platform](settings)
+        provider = PROVIDERS[platform](settings)
 
-    if platform == "jira" and oauth_state.code_verifier:
-        provider._code_verifiers[state] = oauth_state.code_verifier
+        if platform == "jira" and oauth_state.code_verifier:
+            provider._code_verifiers[state] = oauth_state.code_verifier
 
-    if platform == "github" and installation_id:
-        info = await provider.get_installation_by_id(installation_id)
-        tokens = await provider.get_installation_token(installation_id)
-    else:
-        tokens = await provider.exchange_code(code, state)
-        info = await provider.get_installation_info(tokens)
+        if platform == "github" and installation_id:
+            info = await provider.get_installation_by_id(installation_id)
+            tokens = await provider.get_installation_token(installation_id)
+        else:
+            tokens = await provider.exchange_code(code, state)
+            info = await provider.get_installation_info(tokens)
 
-    installation = await installation_service.create_installation(
-        platform=platform,
-        tokens=tokens,
-        info=info,
-    )
+        installation = await installation_service.create_installation(
+            platform=platform,
+            tokens=tokens,
+            info=info,
+        )
 
-    logger.info(
-        "oauth_installation_created",
-        platform=platform,
-        org_id=info.external_org_id,
-        installation_id=str(installation.id),
-    )
+        logger.info(
+            "oauth_installation_created",
+            platform=platform,
+            org_id=info.external_org_id,
+            installation_id=str(installation.id),
+        )
 
-    return {
-        "success": True,
-        "installation_id": str(installation.id),
-        "org_name": info.external_org_name,
-    }
+        return RedirectResponse(
+            url=f"{frontend_base}/integrations?oauth_callback={platform}&success=true"
+        )
+    except Exception as e:
+        logger.error("oauth_callback_error", platform=platform, error=str(e))
+        return RedirectResponse(
+            url=f"{frontend_base}/integrations?oauth_callback={platform}&error=callback_failed"
+        )
 
 
 @router.get("/installations")

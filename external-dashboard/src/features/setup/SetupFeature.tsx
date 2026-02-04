@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SETUP_STEPS } from "./constants";
 import { useSaveStep, useSetupStatus } from "./hooks/useSetup";
+import { OAuthSetupStep } from "./steps/OAuthSetupStep";
 import { ReviewStep } from "./steps/ReviewStep";
 import { ServiceStep } from "./steps/ServiceStep";
 import { WelcomeStep } from "./steps/WelcomeStep";
@@ -121,9 +122,17 @@ export function SetupFeature() {
             <ReviewStep status={status} onComplete={handleComplete} />
           )}
 
-          {currentStep.id !== "welcome" && currentStep.id !== "review" && (
-            <ServiceStep step={currentStep} onNext={goNext} onSkip={goNext} />
-          )}
+          {currentStep.id !== "welcome" &&
+            currentStep.id !== "review" &&
+            currentStep.stepType === "oauth_setup" && (
+              <OAuthSetupStep step={currentStep} onNext={goNext} onSkip={goNext} />
+            )}
+
+          {currentStep.id !== "welcome" &&
+            currentStep.id !== "review" &&
+            currentStep.stepType !== "oauth_setup" && (
+              <ServiceStep step={currentStep} onNext={goNext} onSkip={goNext} />
+            )}
         </div>
 
         <div className="text-center mt-6">
