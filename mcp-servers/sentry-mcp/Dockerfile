@@ -19,6 +19,6 @@ ENV SENTRY_API_URL=http://sentry-api:3004
 EXPOSE 9004
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:9004/health || exit 1
+    CMD python -c "import socket; s = socket.create_connection(('localhost', 9004), timeout=5); s.close()"
 
 CMD ["python", "main.py"]

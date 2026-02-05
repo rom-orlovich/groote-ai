@@ -27,6 +27,10 @@ AGENT_ENGINE_URL=http://cli:8080
 
 # CORS Configuration
 CORS_ORIGINS=http://localhost:3005,http://external-dashboard:80
+
+# Setup Wizard (optional for local, required for cloud)
+TOKEN_ENCRYPTION_KEY=            # Fernet key for encrypting stored credentials
+DEPLOYMENT_MODE=local            # local | cloud | kubernetes | ecs | cloudrun
 ```
 
 ## Start the Service
@@ -94,6 +98,29 @@ curl http://localhost:5000/docs
 | `/api/analytics/summary` | GET | Task summary stats |
 | `/api/analytics/by-source` | GET | Tasks by source |
 | `/api/analytics/timeline` | GET | Task timeline |
+
+### Setup Wizard
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/setup/status` | GET | Current setup state (progress, completed steps) |
+| `/api/setup/steps/{step}` | POST | Save configuration for a wizard step |
+| `/api/setup/steps/{step}/config` | GET | Retrieve saved config for a step |
+| `/api/setup/validate/{service}` | POST | Test connection to an external service |
+| `/api/setup/complete` | POST | Mark setup as complete |
+| `/api/setup/reset` | POST | Reset setup state to start over |
+| `/api/setup/export?format=env` | GET | Export config (env, k8s, docker-secrets, github-actions) |
+| `/api/setup/infrastructure` | GET | Check PostgreSQL and Redis health |
+| `/api/setup/oauth-credentials/{platform}` | GET | Get stored OAuth credentials for a platform (used by oauth-service) |
+
+### OAuth & Integrations
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/oauth/status` | GET | Get OAuth connection status for all platforms |
+| `/api/oauth/status/{platform}` | GET | Get status for a specific platform |
+| `/api/oauth/install/{platform}` | POST | Start OAuth install flow (returns redirect URL) |
+| `/api/oauth/revoke/{platform}` | DELETE | Revoke OAuth connection for a platform |
 
 ### WebSocket
 

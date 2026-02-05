@@ -1,8 +1,15 @@
-import { RefreshCw } from "lucide-react";
+import { CheckCircle, RefreshCw, XCircle } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { useOAuthStatus } from "./hooks/useOAuthStatus";
 import { IntegrationCard } from "./IntegrationCard";
 
 const PLATFORM_ORDER = ["github", "jira", "slack", "sentry"];
+
+interface CallbackNotification {
+  platform: string;
+  success: boolean;
+  error?: string;
+}
 
 export function IntegrationsFeature() {
   const {
@@ -16,6 +23,33 @@ export function IntegrationsFeature() {
     install,
     isInstalling,
   } = useOAuthStatus();
+
+  const [notification, setNotification] = useState<CallbackNotification | null>(null);
+
+  const handleOAuthCallback = useCallback(() => {
+    const params = new URLSearchParams(window.location.search);
+    const platform = params.get("oauth_callback");
+    if (!platform) return;
+
+    const success = params.get("success") === "true";
+    const callbackError = params.get("error");
+
+    setNotification({ platform, success, error: callbackError ?? undefined });
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete("oauth_callback");
+    url.searchParams.delete("success");
+    url.searchParams.delete("error");
+    window.history.replaceState({}, "", url.pathname);
+
+    refetch();
+
+    setTimeout(() => setNotification(null), 5000);
+  }, [refetch]);
+
+  useEffect(() => {
+    handleOAuthCallback();
+  }, [handleOAuthCallback]);
 
   if (isLoading) {
     return <div className="p-8 text-center font-heading">LOADING_INTEGRATIONS...</div>;
@@ -45,6 +79,23 @@ export function IntegrationsFeature() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {notification && (
+        <div
+          className={`flex items-center gap-3 p-4 border text-[10px] font-heading ${
+            notification.success
+              ? "border-green-200 bg-green-50 text-green-700"
+              : "border-red-200 bg-red-50 text-red-700"
+          }`}
+        >
+          {notification.success ? <CheckCircle size={14} /> : <XCircle size={14} />}
+          <span>
+            {notification.success
+              ? `${notification.platform.toUpperCase()} connected successfully`
+              : `${notification.platform.toUpperCase()} connection failed${notification.error ? `: ${notification.error}` : ""}`}
+          </span>
+        </div>
+      )}
+
       <section className="panel" data-label="INTEGRATIONS">
         <div className="flex justify-between items-center mb-6">
           <div className="flex gap-8">
@@ -89,52 +140,6 @@ export function IntegrationsFeature() {
                 />
               ),
           )}
-        </div>
-      </section>
-
-      <section className="panel" data-label="CONFIGURATION_GUIDE">
-        <h2 className="text-sm mb-4 font-heading text-gray-400">SETUP_INSTRUCTIONS</h2>
-        <div className="space-y-4 text-[10px] font-mono text-gray-600">
-          <div>
-            <div className="font-heading text-gray-800 mb-1">GitHub</div>
-            <p>
-              1. Create a GitHub App at github.com/settings/apps
-              <br />
-              2. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET
-              <br />
-              3. Configure webhook URL: {"{BASE_URL}"}/webhooks/github
-            </p>
-          </div>
-          <div>
-            <div className="font-heading text-gray-800 mb-1">Jira</div>
-            <p>
-              1. Create OAuth 2.0 app at developer.atlassian.com
-              <br />
-              2. Set JIRA_CLIENT_ID and JIRA_CLIENT_SECRET
-              <br />
-              3. Add callback URL: {"{BASE_URL}"}/oauth/callback/jira
-            </p>
-          </div>
-          <div>
-            <div className="font-heading text-gray-800 mb-1">Slack</div>
-            <p>
-              1. Create Slack App at api.slack.com/apps
-              <br />
-              2. Set SLACK_CLIENT_ID and SLACK_CLIENT_SECRET
-              <br />
-              3. Configure OAuth redirect: {"{BASE_URL}"}/oauth/callback/slack
-            </p>
-          </div>
-          <div>
-            <div className="font-heading text-gray-800 mb-1">Sentry</div>
-            <p>
-              1. Generate auth token at sentry.io/settings/auth-tokens
-              <br />
-              2. Set SENTRY_AUTH_TOKEN and SENTRY_ORG_SLUG
-              <br />
-              3. Configure webhook in Sentry project settings
-            </p>
-          </div>
         </div>
       </section>
     </div>

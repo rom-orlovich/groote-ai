@@ -9,6 +9,8 @@ class Settings(BaseSettings):
 
     port: int = 8010
     base_url: str = "http://localhost:8010"
+    frontend_url: str = "http://localhost:3005"
+    dashboard_api_url: str = "http://dashboard-api:5001"
 
     database_url: str = "postgresql+asyncpg://agent:agent@localhost:5432/agent_system"
 

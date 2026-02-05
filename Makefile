@@ -1,4 +1,4 @@
-.PHONY: help init build up down logs test test-all test-api-gateway test-agent-engine test-dashboard test-logger test-services test-cov lint format clean health cli cli-down cli-logs cli-claude cli-cursor db-migrate db-upgrade env-validate knowledge-up knowledge-down knowledge-logs knowledge-build up-full
+.PHONY: help init build up down logs test test-all test-api-gateway test-agent-engine test-dashboard test-logger test-services test-cov lint format clean health cli cli-down cli-logs cli-claude cli-cursor db-migrate db-upgrade knowledge-up knowledge-down knowledge-logs knowledge-build up-full
 
 PROVIDER ?= claude
 SCALE ?= 1
@@ -16,11 +16,7 @@ help:
 # ============================================
 init:
 	@cp -n .env.example .env 2>/dev/null || true
-	@cd agent-engine-package && uv pip install -e ".[dev]"
-	@echo "✅ Initialized. Update .env with your credentials."
-
-env-validate:
-	@./scripts/env/validate.sh
+	@echo "✅ Initialized. Edit .env with your credentials, then run: make up"
 
 # ============================================
 # SERVICES

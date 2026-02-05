@@ -32,20 +32,21 @@ docker-compose up -d external-dashboard
 cd external-dashboard
 
 # Install dependencies
-npm install
+pnpm install
 
 # Set environment variables
 export VITE_API_URL=http://localhost:5000
 export VITE_WS_URL=ws://localhost:5000/ws
 
 # Run development server
-npm run dev
+pnpm run dev
 ```
 
 ## Verify Installation
 
 1. Open http://localhost:3005 in your browser
-2. You should see the Groote AI dashboard
+2. On first launch, the dashboard redirects to the Setup Wizard at `/setup`
+3. After setup is complete, you will see the Groote AI dashboard
 
 ## Configuration
 
@@ -65,7 +66,7 @@ VITE_WS_URL=ws://localhost:5000/ws
 
 ```bash
 cd external-dashboard
-npm run build
+pnpm run build
 ```
 
 The build output is in `dist/` and served by nginx in the Docker container.
@@ -97,6 +98,8 @@ The build output is in `dist/` and served by nginx in the Docker container.
 external-dashboard/
 ├── src/
 │   ├── features/          # Feature modules
+│   │   ├── setup/         # Setup wizard
+│   │   ├── integrations/  # OAuth integrations
 │   │   ├── tasks/         # Task management
 │   │   ├── analytics/     # Analytics views
 │   │   └── settings/      # Settings pages
@@ -104,8 +107,7 @@ external-dashboard/
 │   ├── components/        # Shared components
 │   └── App.tsx            # Main app component
 ├── package.json
-├── vite.config.ts
-└── tailwind.config.js
+└── vite.config.ts
 ```
 
 ### Key Technologies
@@ -124,19 +126,19 @@ external-dashboard/
 
 ```bash
 # Development server
-npm run dev
+pnpm run dev
 
 # Build for production
-npm run build
+pnpm run build
 
 # Preview production build
-npm run preview
+pnpm run preview
 
 # Type checking
-npm run typecheck
+pnpm run typecheck
 
 # Linting
-npm run lint
+pnpm run lint
 ```
 
 ## Troubleshooting

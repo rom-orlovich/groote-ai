@@ -1,5 +1,7 @@
 # MCP Servers Setup
 
+> **Note**: Service credentials are managed through the [Setup Wizard](../SETUP.md#quick-start-setup-wizard) and [OAuth Service](../oauth-service/SETUP.md). MCP servers proxy requests to API Services which hold the actual credentials.
+
 MCP (Model Context Protocol) servers provide tool interfaces for AI agents to interact with external services.
 
 ## Overview
@@ -34,9 +36,10 @@ Agent Engine ──(MCP/SSE)──> MCP Server ──(HTTP)──> API Service �
 ### GitHub MCP (Official Server)
 
 ```bash
-GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_TOKEN}
 GITHUB_TOOLSETS=repos,issues,pull_requests
 ```
+
+Credentials are managed through the OAuth Service; the GitHub MCP receives an authenticated token at runtime.
 
 ### Jira MCP
 

@@ -1,4 +1,4 @@
-FROM rust:1.75-alpine AS gkg-builder
+FROM rust:1.88-alpine AS gkg-builder
 
 RUN apk add --no-cache musl-dev curl bash git cmake make g++ pkgconf openssl-dev
 
@@ -8,7 +8,7 @@ RUN curl -fsSL https://gitlab.com/gitlab-org/rust/knowledge-graph/-/raw/main/ins
     chmod +x install.sh && \
     HOME=/build bash install.sh
 
-FROM rust:1.75-alpine AS app-builder
+FROM rust:1.88-alpine AS app-builder
 
 RUN apk add --no-cache musl-dev cmake make g++ pkgconf
 
@@ -20,9 +20,9 @@ RUN cargo build --release 2>/dev/null || true
 RUN rm -rf src
 
 COPY . .
-RUN cargo build --release
+RUN touch src/main.rs && cargo build --release
 
-FROM alpine:3.19
+FROM alpine:3.22
 
 RUN apk add --no-cache ca-certificates bash git curl python3 py3-pip
 

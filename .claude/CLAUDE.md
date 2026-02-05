@@ -19,12 +19,16 @@
 ## Key Commands
 
 ```bash
-make init                    # Initialize project
-make cli-up PROVIDER=claude SCALE=1  # Start Claude CLI
-make cli-up PROVIDER=cursor SCALE=1  # Start Cursor CLI
+make init                    # Initialize project (creates .env)
+make up                      # Build and start all services
+make down                    # Stop all services
+make health                  # Check service health
+make cli-claude              # Start Claude CLI
+make cli-cursor              # Start Cursor CLI
+make cli PROVIDER=claude SCALE=3  # Scale CLI instances
 make test                    # Run all tests
-make db-migrate MSG="..."    # Create migration
-make db-upgrade              # Apply migrations
+make lint                    # Lint code
+make format                  # Format code
 ```
 
 ## Architecture
@@ -49,7 +53,8 @@ SLACK_WEBHOOK_SECRET=xxx
 ## Health Checks
 
 ```bash
+make health                            # All services
 curl http://localhost:8000/health      # API Gateway
 curl http://localhost:8080/health      # Agent Engine
-make cli-status PROVIDER=claude        # CLI status
+curl http://localhost:5000/api/health  # Dashboard API
 ```
