@@ -90,15 +90,16 @@ export function AIProviderStep({ step, onNext }: AIProviderStepProps) {
       </div>
 
       <div>
-        <label className="block text-[10px] font-heading text-gray-400 mb-2">
-          SELECT_PROVIDER
-        </label>
+        <span className="block text-[10px] font-heading text-gray-400 mb-2">SELECT_PROVIDER</span>
         <div className="grid grid-cols-3 gap-2">
           {PROVIDER_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               type="button"
-              onClick={() => { setMode(opt.value); setValidation({}); }}
+              onClick={() => {
+                setMode(opt.value);
+                setValidation({});
+              }}
               className={`py-2.5 text-[11px] font-heading tracking-wider border transition-colors ${
                 mode === opt.value
                   ? "border-orange-500 bg-orange-500/10 text-orange-500"
