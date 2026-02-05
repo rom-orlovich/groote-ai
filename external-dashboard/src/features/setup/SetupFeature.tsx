@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SETUP_STEPS } from "./constants";
 import { useSaveStep, useSetupStatus } from "./hooks/useSetup";
+import { AIProviderStep } from "./steps/AIProviderStep";
 import { OAuthSetupStep } from "./steps/OAuthSetupStep";
 import { ReviewStep } from "./steps/ReviewStep";
 import { ServiceStep } from "./steps/ServiceStep";
@@ -93,7 +94,7 @@ export function SetupFeature() {
             GROOTE_AI
           </h1>
           <p className="text-[10px] font-heading text-gray-400 tracking-wider">
-            SETUP_WIZARD {"//"} STEP_{String(currentIndex + 1).padStart(2, "0")} OF_{" "}
+            SETUP_WIZARD {"//"} STEP_{String(currentIndex + 1).padStart(2, "0")} OF_
             {String(SETUP_STEPS.length).padStart(2, "0")}
           </p>
         </div>
@@ -122,6 +123,10 @@ export function SetupFeature() {
             <ReviewStep status={status} onComplete={handleComplete} />
           )}
 
+          {currentStep.stepType === "ai_provider" && (
+            <AIProviderStep step={currentStep} onNext={goNext} />
+          )}
+
           {currentStep.id !== "welcome" &&
             currentStep.id !== "review" &&
             currentStep.stepType === "oauth_setup" && (
@@ -130,7 +135,8 @@ export function SetupFeature() {
 
           {currentStep.id !== "welcome" &&
             currentStep.id !== "review" &&
-            currentStep.stepType !== "oauth_setup" && (
+            currentStep.stepType !== "oauth_setup" &&
+            currentStep.stepType !== "ai_provider" && (
               <ServiceStep step={currentStep} onNext={goNext} onSkip={goNext} />
             )}
         </div>

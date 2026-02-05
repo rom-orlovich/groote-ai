@@ -8,7 +8,11 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        target: "http://localhost:5001",
+        changeOrigin: true,
+      },
+      "/oauth": {
+        target: "http://localhost:8010",
         changeOrigin: true,
       },
       "/webhooks": {
@@ -16,7 +20,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       "/ws": {
-        target: "http://localhost:8000",
+        target: "http://localhost:5001",
         ws: true,
       },
     },
