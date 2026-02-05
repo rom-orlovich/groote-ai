@@ -1,5 +1,7 @@
 export type ExportFormat = "env" | "k8s" | "docker-secrets" | "github-actions";
 
+export type ProviderMode = "claude" | "cursor" | "both";
+
 export interface SetupStatus {
   is_complete: boolean;
   current_step: string;
@@ -61,6 +63,12 @@ export interface InstructionStep {
   link?: string;
 }
 
+export interface ProviderFieldGroup {
+  provider: ProviderMode;
+  validationService: string;
+  fields: ServiceField[];
+}
+
 export interface StepDefinition {
   id: string;
   title: string;
@@ -69,7 +77,8 @@ export interface StepDefinition {
   skippable: boolean;
   validationService?: string;
   fields: ServiceField[];
-  stepType?: "service" | "oauth_setup";
+  stepType?: "service" | "oauth_setup" | "ai_provider";
   oauthPlatform?: string;
   instructions?: InstructionStep[];
+  providerGroups?: ProviderFieldGroup[];
 }

@@ -20,6 +20,7 @@ from core.setup.service import (
 )
 from core.setup.validators import (
     validate_anthropic,
+    validate_cursor,
     validate_github_oauth,
     validate_jira_oauth,
     validate_sentry,
@@ -152,7 +153,7 @@ async def get_step_config(
 
 @router.post("/setup/validate/{service}")
 async def validate_service(
-    service: Literal["github_oauth", "jira_oauth", "slack_oauth", "sentry", "anthropic"],
+    service: Literal["github_oauth", "jira_oauth", "slack_oauth", "sentry", "anthropic", "cursor"],
     request: ValidateRequest,
 ) -> ValidateResponse:
     creds = request.credentials
@@ -177,6 +178,8 @@ async def validate_service(
         result = await validate_sentry(creds.get("SENTRY_AUTH_TOKEN", ""))
     elif service == "anthropic":
         result = await validate_anthropic(creds.get("ANTHROPIC_API_KEY", ""))
+    elif service == "cursor":
+        result = await validate_cursor(creds.get("CURSOR_API_KEY", ""))
     else:
         raise HTTPException(status_code=400, detail=f"Unknown service: {service}")
 

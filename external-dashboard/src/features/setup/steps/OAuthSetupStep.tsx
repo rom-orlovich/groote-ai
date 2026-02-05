@@ -101,7 +101,7 @@ export function OAuthSetupStep({ step, onNext, onSkip }: OAuthSetupStepProps) {
                   <div className="flex-1">
                     <div className="text-[11px] font-heading mb-0.5">{instruction.title}</div>
                     <p className="text-[10px] text-gray-500 font-mono leading-relaxed">
-                      {instruction.description}
+                      {instruction.description.replace("{origin}", window.location.origin)}
                     </p>
                     {instruction.link && (
                       <a

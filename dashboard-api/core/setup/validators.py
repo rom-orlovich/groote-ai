@@ -244,10 +244,27 @@ async def validate_anthropic(api_key: str) -> ValidationResult:
     return await with_retry(_attempt, "anthropic")
 
 
+async def validate_cursor(api_key: str) -> ValidationResult:
+    if not api_key.strip():
+        return ValidationResult(
+            service="cursor",
+            success=True,
+            message="No API key provided; will use default Cursor credentials",
+        )
+
+    return ValidationResult(
+        service="cursor",
+        success=True,
+        message="Cursor API key saved",
+        details={"has_key": "true"},
+    )
+
+
 VALIDATOR_MAP: dict[str, str] = {
     "github_oauth": "validate_github_oauth",
     "jira_oauth": "validate_jira_oauth",
     "slack_oauth": "validate_slack_oauth",
     "sentry": "validate_sentry",
     "anthropic": "validate_anthropic",
+    "cursor": "validate_cursor",
 }

@@ -125,7 +125,7 @@ The Setup Wizard provides a guided UI for configuring all integrations.
 ### How It Works
 
 1. **Infrastructure Check** — verifies PostgreSQL and Redis connectivity
-2. **AI Provider** — configure your CLI provider (Claude or Cursor) API key
+2. **AI Provider** — select your provider (Claude, Cursor, or Both) and configure API keys
 3. **GitHub OAuth** — create a GitHub App (App ID, Client ID, Client Secret, Private Key). Includes step-by-step instructions with links. (optional, skippable)
 4. **Jira OAuth** — create a Jira OAuth 2.0 (3LO) app (Client ID, Client Secret). (optional, skippable)
 5. **Slack OAuth** — create a Slack App (Client ID, Client Secret, Signing Secret). (optional, skippable)
@@ -220,7 +220,7 @@ cp .env.example .env
 
 Edit `.env` with your credentials. Here's what each section needs:
 
-#### 3.1 CLI Provider (Required - choose one)
+#### 3.1 CLI Provider (Required - choose one or both)
 
 ```bash
 # Option A: Claude CLI (recommended)
@@ -230,7 +230,16 @@ ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx
 # Option B: Cursor CLI
 CLI_PROVIDER=cursor
 CURSOR_API_KEY=cur_xxxxxxxxxxxx
+
+# Option C: Both providers
+CLI_PROVIDER=both
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx
+CURSOR_API_KEY=cur_xxxxxxxxxxxx
 ```
+
+The Setup Wizard provides a visual toggle to select your provider(s) and shows
+only the relevant configuration fields. You can scale CLI instances per provider
+from the dashboard.
 
 #### 3.2 Database (use defaults or customize)
 
