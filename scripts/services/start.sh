@@ -7,7 +7,7 @@ echo "Starting Groote AI services..."
 
 test -f .env || cp .env.example .env
 
-$DC build --quiet
+$DC build
 $DC up -d
 
 sleep 5

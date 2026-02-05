@@ -209,18 +209,48 @@ git clone <repository-url>
 cd groote-ai
 make init
 
-# 2. Configure environment (minimum: ANTHROPIC_API_KEY)
+# 2. Set bootstrap secrets (only 2-3 vars needed)
+#    Edit .env and set: POSTGRES_PASSWORD, TOKEN_ENCRYPTION_KEY
 nano .env
 
-# 3. Start all services
+# 3. Build and start all services
 make up
 
-# 4. Start AI agent CLI
+# 4. Open the Setup Wizard — configures everything else via UI
+#    (Dashboard auto-redirects here on first launch)
+open http://localhost:3005/setup
+
+# 5. Start the AI agent CLI
 make cli-claude    # or: make cli-cursor
 
-# 5. Verify health
+# 6. Verify everything is running
 make health
 ```
+
+### Setup Wizard
+
+On first launch the Dashboard redirects to a guided **Setup Wizard** at `/setup`.
+The wizard walks through each integration step-by-step:
+
+1. **Infrastructure Check** — verifies PostgreSQL and Redis are healthy
+2. **AI Provider** — configure Claude or Cursor API key
+3. **GitHub OAuth** — create a GitHub App with step-by-step instructions (optional, skippable)
+4. **Jira OAuth** — create a Jira OAuth 2.0 app (optional, skippable)
+5. **Slack OAuth** — create a Slack App (optional, skippable)
+6. **Sentry** — API token for error tracking (optional, skippable)
+7. **Review & Export** — download config as `.env`, Kubernetes Secret, Docker Swarm secrets, or GitHub Actions format
+
+All credentials are Fernet-encrypted at rest in PostgreSQL. You can reconfigure
+anytime from **Settings** in the sidebar.
+
+### Integrations (End-User OAuth)
+
+After setup, end users connect their accounts via the **Integrations** page at `/integrations`:
+
+1. Click **CONNECT** on a platform (GitHub, Jira, Slack)
+2. Browser redirects to the platform's OAuth authorization page
+3. After authorization, redirected back with a success/error notification
+4. The connection status updates automatically
 
 **Access points:**
 - API Gateway: http://localhost:8000
@@ -287,10 +317,9 @@ For detailed setup instructions, see **[SETUP.md](SETUP.md)**.
 ```bash
 make cli-claude                      # Start Claude CLI
 make cli-cursor                      # Start Cursor CLI
-make cli-up PROVIDER=claude SCALE=3  # Scale CLI instances
+make cli PROVIDER=claude SCALE=3     # Scale CLI instances
 make cli-down PROVIDER=claude        # Stop CLI
 make cli-logs PROVIDER=claude        # View CLI logs
-make cli-status PROVIDER=claude      # Check CLI status
 ```
 
 ### Service Management
@@ -309,8 +338,6 @@ make init                            # Initialize project
 make test                            # Run all tests
 make lint                            # Lint code
 make format                          # Format code
-make db-migrate MSG="..."            # Create migration
-make db-upgrade                      # Apply migrations
 ```
 
 ### Knowledge Services (Optional)
@@ -322,7 +349,14 @@ make knowledge-up                         # Alternative command
 
 ## Environment Variables
 
-Minimum required configuration in `.env`:
+Minimum required for bootstrap (wizard configures the rest):
+
+```bash
+POSTGRES_PASSWORD=agent
+TOKEN_ENCRYPTION_KEY=             # Auto-generated on first run (local only)
+```
+
+Full configuration (set via Setup Wizard or `.env`):
 
 ```bash
 # CLI Provider (choose one)
@@ -334,14 +368,23 @@ ANTHROPIC_API_KEY=sk-ant-xxx         # For Claude
 POSTGRES_PASSWORD=agent
 REDIS_URL=redis://redis:6379/0
 
-# External Services (configure as needed)
-GITHUB_TOKEN=ghp_xxx
+# GitHub App (create at github.com/settings/apps)
+GITHUB_APP_ID=123456
+GITHUB_CLIENT_ID=Iv1.xxx
+GITHUB_CLIENT_SECRET=xxx
+GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."
 GITHUB_WEBHOOK_SECRET=xxx
-JIRA_URL=https://yourcompany.atlassian.net
-JIRA_EMAIL=your-email@company.com
-JIRA_API_TOKEN=xxx
-SLACK_BOT_TOKEN=xoxb-xxx
+
+# Jira OAuth 2.0 (create at developer.atlassian.com)
+JIRA_CLIENT_ID=xxx
+JIRA_CLIENT_SECRET=xxx
+
+# Slack App (create at api.slack.com/apps)
+SLACK_CLIENT_ID=xxx
+SLACK_CLIENT_SECRET=xxx
 SLACK_SIGNING_SECRET=xxx
+
+# Sentry (token-based)
 SENTRY_DSN=https://xxx@sentry.io/xxx
 SENTRY_AUTH_TOKEN=xxx
 ```
@@ -353,7 +396,7 @@ See `.env.example` for complete configuration.
 ```bash
 curl http://localhost:8000/health    # API Gateway
 curl http://localhost:8080/health    # Agent Engine
-curl http://localhost:5000/health    # Dashboard API
+curl http://localhost:5000/api/health  # Dashboard API
 curl http://localhost:8010/health    # OAuth Service
 curl http://localhost:8090/health    # Task Logger
 curl http://localhost:4000/health    # Knowledge Graph

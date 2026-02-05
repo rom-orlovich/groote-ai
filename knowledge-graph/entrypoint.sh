@@ -9,7 +9,7 @@ if [ -f "/app/scripts/sync-repos.sh" ]; then
 fi
 
 echo "Starting Rust API server on port ${PORT:-4000}..."
-exec /app/knowledge-graph &
+/app/knowledge-graph &
 API_PID=$!
 
 sleep 2

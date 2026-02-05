@@ -1,5 +1,7 @@
 # API Services Setup
 
+> **Note**: Credentials for these services are now primarily configured through the [Setup Wizard](../SETUP.md#quick-start-setup-wizard) and managed by the [OAuth Service](../oauth-service/SETUP.md). The direct API tokens documented below are for legacy or fallback scenarios.
+
 API Services are REST API wrappers that securely hold credentials for external services.
 
 ## Overview

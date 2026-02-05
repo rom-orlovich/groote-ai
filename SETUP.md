@@ -5,12 +5,14 @@ Complete step-by-step guide to set up and run the Groote AI system.
 ## Table of Contents
 
 1. [Prerequisites](#prerequisites)
-2. [Quick Start](#quick-start)
-3. [Detailed Setup](#detailed-setup)
-4. [Service Integration](#service-integration)
-5. [Verification](#verification)
-6. [Troubleshooting](#troubleshooting)
-7. [Service-Specific Setup](#service-specific-setup)
+2. [Quick Start (Setup Wizard)](#quick-start-setup-wizard)
+3. [Quick Start (Manual)](#quick-start-manual)
+4. [Setup Wizard Details](#setup-wizard-details)
+5. [Detailed Manual Setup](#detailed-manual-setup)
+6. [Service Integration](#service-integration)
+7. [Verification](#verification)
+8. [Troubleshooting](#troubleshooting)
+9. [Service-Specific Setup](#service-specific-setup)
 
 ---
 
@@ -34,34 +36,72 @@ Complete step-by-step guide to set up and run the Groote AI system.
 
 ### Required Credentials
 
-You need API keys from at least one of these services to use the system:
+You need credentials from at least one of these services to use the system:
 
 | Service | Required For | How to Get |
 |---------|--------------|------------|
 | Anthropic API Key | Claude CLI | [console.anthropic.com](https://console.anthropic.com) |
-| GitHub Token | GitHub integration | [github.com/settings/tokens](https://github.com/settings/tokens) |
-| Jira API Token | Jira integration | [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens) |
-| Slack Bot Token | Slack integration | [api.slack.com/apps](https://api.slack.com/apps) |
+| GitHub App | GitHub integration | [github.com/settings/apps](https://github.com/settings/apps/new) |
+| Jira OAuth App | Jira integration | [developer.atlassian.com](https://developer.atlassian.com/console/myapps/) |
+| Slack App | Slack integration | [api.slack.com/apps](https://api.slack.com/apps) |
 | Sentry Auth Token | Sentry integration | [sentry.io/settings/auth-tokens](https://sentry.io/settings/auth-tokens) |
+
+The Setup Wizard walks you through creating each OAuth app with step-by-step instructions.
 
 ---
 
-## Quick Start
+## Quick Start (Setup Wizard)
 
-For users who want to get started quickly with minimal configuration:
+The recommended way to configure Groote AI. The wizard guides you through each
+integration with validation, and stores credentials encrypted in the database.
 
 ```bash
 # 1. Clone the repository
 git clone <repository-url>
 cd groote-ai
 
-# 2. Initialize the project (copies .env.example to .env)
+# 2. Initialize (creates .env from .env.example)
+make init
+
+# 3. Set bootstrap secrets only (database password + encryption key)
+#    Edit .env and set: POSTGRES_PASSWORD, TOKEN_ENCRYPTION_KEY
+nano .env
+
+# 4. Build and start all services
+make up
+
+# 5. Open the Setup Wizard in your browser
+#    (Dashboard auto-redirects here on first launch)
+open http://localhost:3005/setup
+
+# 6. Follow the wizard steps, then start the CLI
+make cli-claude    # or: make cli-cursor
+
+# 7. Verify all services are healthy
+make health
+```
+
+The wizard is accessible at http://localhost:3005/setup. On first launch the
+Dashboard automatically redirects there.
+
+---
+
+## Quick Start (Manual)
+
+For users who prefer configuring via `.env` file directly:
+
+```bash
+# 1. Clone the repository
+git clone <repository-url>
+cd groote-ai
+
+# 2. Initialize (creates .env from .env.example)
 make init
 
 # 3. Edit .env with your API keys (minimum: ANTHROPIC_API_KEY or CURSOR_API_KEY)
 nano .env
 
-# 4. Start all services
+# 4. Build and start all services
 make up
 
 # 5. Start the AI agent CLI
@@ -78,7 +118,89 @@ The system is now running at:
 
 ---
 
-## Detailed Setup
+## Setup Wizard Details
+
+The Setup Wizard provides a guided UI for configuring all integrations.
+
+### How It Works
+
+1. **Infrastructure Check** — verifies PostgreSQL and Redis connectivity
+2. **AI Provider** — select your provider (Claude, Cursor, or Both) and configure API keys
+3. **GitHub OAuth** — create a GitHub App (App ID, Client ID, Client Secret, Private Key). Includes step-by-step instructions with links. (optional, skippable)
+4. **Jira OAuth** — create a Jira OAuth 2.0 (3LO) app (Client ID, Client Secret). (optional, skippable)
+5. **Slack OAuth** — create a Slack App (Client ID, Client Secret, Signing Secret). (optional, skippable)
+6. **Sentry** — API auth token, DSN, org slug (optional, skippable)
+7. **Review & Export** — view configuration summary and download in your format
+
+Each OAuth step includes a collapsible instruction panel that guides you through
+creating the app on the external platform, setting permissions, and copying the
+credentials into the form.
+
+### Security
+
+- All sensitive values are **Fernet-encrypted** (AES-128-CBC + HMAC-SHA256) at rest in PostgreSQL
+- The `TOKEN_ENCRYPTION_KEY` env var is the only secret needed in `.env`
+- In cloud deployments, an explicit encryption key is **required** (no auto-generated keys)
+- Key rotation is supported via `TOKEN_ENCRYPTION_KEY_PREVIOUS`
+
+### Export Formats
+
+After completing the wizard, export your configuration for your deployment target:
+
+| Format | Use Case |
+|--------|----------|
+| `.env` | Docker Compose / local development |
+| Kubernetes Secret | K8s deployments (`kubectl apply -f`) |
+| Docker Swarm Secrets | Docker Swarm (`bash create-secrets.sh`) |
+| GitHub Actions | CI/CD secrets reference guide |
+
+### Cloud Deployments
+
+Set `DEPLOYMENT_MODE` in your environment to enable cloud-specific behavior:
+
+| Value | Environment |
+|-------|-------------|
+| `local` | Docker Compose on a local machine (default) |
+| `cloud` | Generic cloud VM |
+| `kubernetes` | Kubernetes cluster |
+| `ecs` | AWS ECS |
+| `cloudrun` | Google Cloud Run |
+
+When running in cloud mode, the wizard auto-selects the Kubernetes Secret export
+format and shows cloud-specific deployment instructions.
+
+### OAuth Connect Flow (Integrations Page)
+
+After the admin completes the Setup Wizard, end users connect their accounts via
+the **Integrations** page at http://localhost:3005/integrations:
+
+1. The Integrations page shows each platform's connection status
+2. Click **CONNECT** on a configured platform (e.g. GitHub)
+3. Browser redirects to the platform's OAuth authorization page
+4. After authorization, browser returns to `/integrations` with a success/error notification
+5. The platform card updates to show **CONNECTED** status
+
+The OAuth flow goes through nginx (`/oauth/`) which proxies to the OAuth Service.
+The callback URL for each platform should be set to:
+
+```
+https://your-domain.com/oauth/callback/github
+https://your-domain.com/oauth/callback/jira
+https://your-domain.com/oauth/callback/slack
+```
+
+### Re-running the Wizard
+
+Access the wizard anytime from **Settings** in the Dashboard sidebar, or navigate
+directly to http://localhost:3005/setup. Use the reset endpoint to start fresh:
+
+```bash
+curl -X POST http://localhost:5000/api/setup/reset
+```
+
+---
+
+## Detailed Manual Setup
 
 ### Step 1: Clone Repository
 
@@ -98,7 +220,7 @@ cp .env.example .env
 
 Edit `.env` with your credentials. Here's what each section needs:
 
-#### 3.1 CLI Provider (Required - choose one)
+#### 3.1 CLI Provider (Required - choose one or both)
 
 ```bash
 # Option A: Claude CLI (recommended)
@@ -108,7 +230,16 @@ ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx
 # Option B: Cursor CLI
 CLI_PROVIDER=cursor
 CURSOR_API_KEY=cur_xxxxxxxxxxxx
+
+# Option C: Both providers
+CLI_PROVIDER=both
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx
+CURSOR_API_KEY=cur_xxxxxxxxxxxx
 ```
+
+The Setup Wizard provides a visual toggle to select your provider(s) and shows
+only the relevant configuration fields. You can scale CLI instances per provider
+from the dashboard.
 
 #### 3.2 Database (use defaults or customize)
 
@@ -120,27 +251,29 @@ POSTGRES_DB=agent_system
 
 #### 3.3 External Services (configure based on your needs)
 
-**GitHub Integration:**
+**GitHub App** (create at [github.com/settings/apps](https://github.com/settings/apps/new)):
 ```bash
-GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+GITHUB_APP_ID=123456
+GITHUB_CLIENT_ID=Iv1.xxxxxxxxxxxx
+GITHUB_CLIENT_SECRET=xxxxxxxxxxxx
+GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."
 GITHUB_WEBHOOK_SECRET=your-webhook-secret
 ```
 
-**Jira Integration:**
+**Jira OAuth 2.0** (create at [developer.atlassian.com](https://developer.atlassian.com/console/myapps/)):
 ```bash
-JIRA_URL=https://yourcompany.atlassian.net
-JIRA_EMAIL=your-email@company.com
-JIRA_API_TOKEN=xxxxxxxxxxxx
-JIRA_WEBHOOK_SECRET=your-webhook-secret
+JIRA_CLIENT_ID=xxxxxxxxxxxx
+JIRA_CLIENT_SECRET=xxxxxxxxxxxx
 ```
 
-**Slack Integration:**
+**Slack App** (create at [api.slack.com/apps](https://api.slack.com/apps)):
 ```bash
-SLACK_BOT_TOKEN=xoxb-xxxxxxxxxxxx
+SLACK_CLIENT_ID=xxxxxxxxxxxx
+SLACK_CLIENT_SECRET=xxxxxxxxxxxx
 SLACK_SIGNING_SECRET=your-signing-secret
 ```
 
-**Sentry Integration:**
+**Sentry** (token-based):
 ```bash
 SENTRY_DSN=https://xxx@sentry.io/xxx
 SENTRY_AUTH_TOKEN=xxxxxxxxxxxx
@@ -167,12 +300,8 @@ make cli-claude
 make cli PROVIDER=claude SCALE=3
 ```
 
-### Step 6: Apply Database Migrations
-
-```bash
-# Run database migrations
-make db-upgrade
-```
+Database tables are created automatically when the Dashboard API starts.
+No manual migration step is needed.
 
 ---
 
@@ -218,25 +347,30 @@ The services start in this order (handled automatically by docker-compose):
 
 To receive events from external services, configure webhooks pointing to your API Gateway:
 
-**GitHub Webhook:**
+**GitHub App:**
 ```
-URL: https://your-domain.com/webhooks/github
-Secret: (value of GITHUB_WEBHOOK_SECRET)
+Webhook URL: https://your-domain.com/webhooks/github
+Webhook Secret: (value of GITHUB_WEBHOOK_SECRET)
+Callback URL: https://your-domain.com/oauth/callback/github
 Events: Issues, Pull requests, Issue comments, Pull request reviews
+Permissions: Repository (R&W), Issues (R&W), Pull Requests (R&W)
 ```
 
-**Jira Webhook:**
+**Jira OAuth App:**
 ```
-URL: https://your-domain.com/webhooks/jira
-Secret: (value of JIRA_WEBHOOK_SECRET)
+Webhook URL: https://your-domain.com/webhooks/jira
+Callback URL: https://your-domain.com/oauth/callback/jira
 Events: Issue created, Issue updated, Comment created
+Scopes: read:jira-work, write:jira-work, read:jira-user, manage:jira-project
 ```
 
-**Slack Events:**
+**Slack App:**
 ```
-URL: https://your-domain.com/webhooks/slack
+Events URL: https://your-domain.com/webhooks/slack
 Signing Secret: (value of SLACK_SIGNING_SECRET)
+Redirect URL: https://your-domain.com/oauth/callback/slack
 Events: app_mention, message.channels
+Scopes: chat:write, commands, app_mentions:read
 ```
 
 **Sentry Webhook:**
@@ -258,7 +392,7 @@ make health
 # Or check individual services
 curl http://localhost:8000/health      # API Gateway
 curl http://localhost:8080/health      # Agent Engine
-curl http://localhost:5000/health      # Dashboard API
+curl http://localhost:5000/api/health  # Dashboard API
 curl http://localhost:8010/health      # OAuth Service
 curl http://localhost:8090/health      # Task Logger
 curl http://localhost:4000/health      # Knowledge Graph
@@ -281,12 +415,6 @@ make logs
 docker-compose logs -f api-gateway
 docker-compose logs -f cli
 docker-compose logs -f dashboard-api
-```
-
-### Check CLI Status
-
-```bash
-make cli-status PROVIDER=claude
 ```
 
 ### Access the Dashboard
