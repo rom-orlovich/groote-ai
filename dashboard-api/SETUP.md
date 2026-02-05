@@ -111,6 +111,16 @@ curl http://localhost:5000/docs
 | `/api/setup/reset` | POST | Reset setup state to start over |
 | `/api/setup/export?format=env` | GET | Export config (env, k8s, docker-secrets, github-actions) |
 | `/api/setup/infrastructure` | GET | Check PostgreSQL and Redis health |
+| `/api/setup/oauth-credentials/{platform}` | GET | Get stored OAuth credentials for a platform (used by oauth-service) |
+
+### OAuth & Integrations
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/oauth/status` | GET | Get OAuth connection status for all platforms |
+| `/api/oauth/status/{platform}` | GET | Get status for a specific platform |
+| `/api/oauth/install/{platform}` | POST | Start OAuth install flow (returns redirect URL) |
+| `/api/oauth/revoke/{platform}` | DELETE | Revoke OAuth connection for a platform |
 
 ### WebSocket
 

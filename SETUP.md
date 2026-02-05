@@ -36,15 +36,17 @@ Complete step-by-step guide to set up and run the Groote AI system.
 
 ### Required Credentials
 
-You need API keys from at least one of these services to use the system:
+You need credentials from at least one of these services to use the system:
 
 | Service | Required For | How to Get |
 |---------|--------------|------------|
 | Anthropic API Key | Claude CLI | [console.anthropic.com](https://console.anthropic.com) |
-| GitHub Token | GitHub integration | [github.com/settings/tokens](https://github.com/settings/tokens) |
-| Jira API Token | Jira integration | [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens) |
-| Slack Bot Token | Slack integration | [api.slack.com/apps](https://api.slack.com/apps) |
+| GitHub App | GitHub integration | [github.com/settings/apps](https://github.com/settings/apps/new) |
+| Jira OAuth App | Jira integration | [developer.atlassian.com](https://developer.atlassian.com/console/myapps/) |
+| Slack App | Slack integration | [api.slack.com/apps](https://api.slack.com/apps) |
 | Sentry Auth Token | Sentry integration | [sentry.io/settings/auth-tokens](https://sentry.io/settings/auth-tokens) |
+
+The Setup Wizard walks you through creating each OAuth app with step-by-step instructions.
 
 ---
 
@@ -124,11 +126,15 @@ The Setup Wizard provides a guided UI for configuring all integrations.
 
 1. **Infrastructure Check** — verifies PostgreSQL and Redis connectivity
 2. **AI Provider** — configure your CLI provider (Claude or Cursor) API key
-3. **GitHub** — token and webhook secret (optional, skippable)
-4. **Jira** — URL, email, API token, webhook secret (optional, skippable)
-5. **Slack** — bot token and signing secret (optional, skippable)
-6. **Sentry** — DSN, auth token, org slug (optional, skippable)
+3. **GitHub OAuth** — create a GitHub App (App ID, Client ID, Client Secret, Private Key). Includes step-by-step instructions with links. (optional, skippable)
+4. **Jira OAuth** — create a Jira OAuth 2.0 (3LO) app (Client ID, Client Secret). (optional, skippable)
+5. **Slack OAuth** — create a Slack App (Client ID, Client Secret, Signing Secret). (optional, skippable)
+6. **Sentry** — API auth token, DSN, org slug (optional, skippable)
 7. **Review & Export** — view configuration summary and download in your format
+
+Each OAuth step includes a collapsible instruction panel that guides you through
+creating the app on the external platform, setting permissions, and copying the
+credentials into the form.
 
 ### Security
 
@@ -162,6 +168,26 @@ Set `DEPLOYMENT_MODE` in your environment to enable cloud-specific behavior:
 
 When running in cloud mode, the wizard auto-selects the Kubernetes Secret export
 format and shows cloud-specific deployment instructions.
+
+### OAuth Connect Flow (Integrations Page)
+
+After the admin completes the Setup Wizard, end users connect their accounts via
+the **Integrations** page at http://localhost:3005/integrations:
+
+1. The Integrations page shows each platform's connection status
+2. Click **CONNECT** on a configured platform (e.g. GitHub)
+3. Browser redirects to the platform's OAuth authorization page
+4. After authorization, browser returns to `/integrations` with a success/error notification
+5. The platform card updates to show **CONNECTED** status
+
+The OAuth flow goes through nginx (`/oauth/`) which proxies to the OAuth Service.
+The callback URL for each platform should be set to:
+
+```
+https://your-domain.com/oauth/callback/github
+https://your-domain.com/oauth/callback/jira
+https://your-domain.com/oauth/callback/slack
+```
 
 ### Re-running the Wizard
 
@@ -216,27 +242,29 @@ POSTGRES_DB=agent_system
 
 #### 3.3 External Services (configure based on your needs)
 
-**GitHub Integration:**
+**GitHub App** (create at [github.com/settings/apps](https://github.com/settings/apps/new)):
 ```bash
-GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+GITHUB_APP_ID=123456
+GITHUB_CLIENT_ID=Iv1.xxxxxxxxxxxx
+GITHUB_CLIENT_SECRET=xxxxxxxxxxxx
+GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."
 GITHUB_WEBHOOK_SECRET=your-webhook-secret
 ```
 
-**Jira Integration:**
+**Jira OAuth 2.0** (create at [developer.atlassian.com](https://developer.atlassian.com/console/myapps/)):
 ```bash
-JIRA_URL=https://yourcompany.atlassian.net
-JIRA_EMAIL=your-email@company.com
-JIRA_API_TOKEN=xxxxxxxxxxxx
-JIRA_WEBHOOK_SECRET=your-webhook-secret
+JIRA_CLIENT_ID=xxxxxxxxxxxx
+JIRA_CLIENT_SECRET=xxxxxxxxxxxx
 ```
 
-**Slack Integration:**
+**Slack App** (create at [api.slack.com/apps](https://api.slack.com/apps)):
 ```bash
-SLACK_BOT_TOKEN=xoxb-xxxxxxxxxxxx
+SLACK_CLIENT_ID=xxxxxxxxxxxx
+SLACK_CLIENT_SECRET=xxxxxxxxxxxx
 SLACK_SIGNING_SECRET=your-signing-secret
 ```
 
-**Sentry Integration:**
+**Sentry** (token-based):
 ```bash
 SENTRY_DSN=https://xxx@sentry.io/xxx
 SENTRY_AUTH_TOKEN=xxxxxxxxxxxx
@@ -310,25 +338,30 @@ The services start in this order (handled automatically by docker-compose):
 
 To receive events from external services, configure webhooks pointing to your API Gateway:
 
-**GitHub Webhook:**
+**GitHub App:**
 ```
-URL: https://your-domain.com/webhooks/github
-Secret: (value of GITHUB_WEBHOOK_SECRET)
+Webhook URL: https://your-domain.com/webhooks/github
+Webhook Secret: (value of GITHUB_WEBHOOK_SECRET)
+Callback URL: https://your-domain.com/oauth/callback/github
 Events: Issues, Pull requests, Issue comments, Pull request reviews
+Permissions: Repository (R&W), Issues (R&W), Pull Requests (R&W)
 ```
 
-**Jira Webhook:**
+**Jira OAuth App:**
 ```
-URL: https://your-domain.com/webhooks/jira
-Secret: (value of JIRA_WEBHOOK_SECRET)
+Webhook URL: https://your-domain.com/webhooks/jira
+Callback URL: https://your-domain.com/oauth/callback/jira
 Events: Issue created, Issue updated, Comment created
+Scopes: read:jira-work, write:jira-work, read:jira-user, manage:jira-project
 ```
 
-**Slack Events:**
+**Slack App:**
 ```
-URL: https://your-domain.com/webhooks/slack
+Events URL: https://your-domain.com/webhooks/slack
 Signing Secret: (value of SLACK_SIGNING_SECRET)
+Redirect URL: https://your-domain.com/oauth/callback/slack
 Events: app_mention, message.channels
+Scopes: chat:write, commands, app_mentions:read
 ```
 
 **Sentry Webhook:**
