@@ -61,6 +61,9 @@ Knowledge Services:
   .\make.ps1 knowledge-logs                   View knowledge service logs
   .\make.ps1 knowledge-build                  Build knowledge services
 
+Networking:
+  .\make.ps1 tunnel                           Start ngrok tunnel (uses PUBLIC_URL from .env)
+
 Environment:
   .\make.ps1 init                             Initialize project
   .\make.ps1 up-full                          Start all services including knowledge
@@ -362,6 +365,31 @@ function Invoke-Clean {
     Write-Status "Done." "Cleaned cache directories"
 }
 
+function Invoke-Tunnel {
+    $envContent = Get-Content .env -Raw
+    $match = [regex]::Match($envContent, '^PUBLIC_URL=(.+)$', [System.Text.RegularExpressions.RegexOptions]::Multiline)
+
+    if (-not $match.Success) {
+        Write-Host "❌ PUBLIC_URL not configured in .env"
+        exit 1
+    }
+
+    $tunnelDomain = $match.Groups[1].Value.Trim('"')
+
+    Write-Host "🌐 Starting ngrok tunnel to $tunnelDomain"
+    Write-Host "   Forwarding to: http://localhost:5000"
+
+    try {
+        $null = & ngrok --version
+    }
+    catch {
+        Write-Host "❌ ngrok not installed. Install it with: choco install ngrok"
+        exit 1
+    }
+
+    & ngrok http --domain $tunnelDomain 5000
+}
+
 switch ($Command) {
     "help"             { Invoke-Help }
     "init"             { Invoke-Init }
@@ -393,6 +421,7 @@ switch ($Command) {
     "knowledge-logs"   { Invoke-KnowledgeLogs }
     "knowledge-build"  { Invoke-KnowledgeBuild }
     "up-full"          { Invoke-UpFull }
+    "tunnel"           { Invoke-Tunnel }
     "clean"            { Invoke-Clean }
     default {
         Write-Host "Unknown command: $Command"

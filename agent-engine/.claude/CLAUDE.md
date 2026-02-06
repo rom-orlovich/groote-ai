@@ -80,3 +80,21 @@ from .factories.task_factory import InvalidTransitionError, VALID_TRANSITIONS
 - NO comments - self-explanatory code only
 - Tests must run fast (< 5 seconds), no real network calls
 - Use async/await for all I/O operations
+
+## Agent Team Patterns
+
+The Brain agent can create agent teams for complex tasks. When working as a teammate within the agent-engine:
+
+### Available Team Strategies
+
+1. **parallel_review**: Multiple reviewers analyze different aspects simultaneously
+2. **decomposed_feature**: Planning → Implementation → Verification pipeline
+3. **competing_hypotheses**: Multiple agents investigate different theories
+4. **cross_layer**: Each agent owns a different module/service layer
+
+### File Ownership Rules
+
+- Each teammate is assigned specific files/directories
+- NEVER edit files outside your assignment
+- If you discover a needed change outside your scope, report it to the lead
+- The lead resolves cross-cutting concerns after teammates complete

@@ -3,7 +3,7 @@
 Tests token storage, retrieval, refresh, and installation management.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -93,7 +93,7 @@ class TestTokenStorage:
     @pytest.mark.asyncio
     async def test_store_token_with_refresh_token(self, token_store):
         """Business requirement: Refresh tokens stored when provided."""
-        expires_at = datetime.utcnow() + timedelta(hours=1)
+        expires_at = datetime.now(UTC) + timedelta(hours=1)
 
         result = await token_store.store_token(
             platform="jira",
@@ -181,10 +181,10 @@ class TestTokenRefresh:
             org_id="org-123",
             access_token="old_token",
             refresh_token="refresh_token",
-            expires_at=datetime.utcnow() - timedelta(hours=1),
+            expires_at=datetime.now(UTC) - timedelta(hours=1),
         )
 
-        new_expires = datetime.utcnow() + timedelta(hours=1)
+        new_expires = datetime.now(UTC) + timedelta(hours=1)
         result = await token_store.refresh_token(
             platform="jira",
             org_id="org-123",
@@ -209,7 +209,7 @@ class TestTokenRefresh:
             platform="jira",
             org_id="org-123",
             new_access_token="new_token",
-            new_expires_at=datetime.utcnow() + timedelta(hours=1),
+            new_expires_at=datetime.now(UTC) + timedelta(hours=1),
         )
 
         result = await token_store.get_token("jira", "org-123")
@@ -265,7 +265,7 @@ class TestTokenExpiration:
     @pytest.mark.asyncio
     async def test_token_with_expiration(self, token_store):
         """Business requirement: Expiration time is stored."""
-        expires_at = datetime.utcnow() + timedelta(hours=1)
+        expires_at = datetime.now(UTC) + timedelta(hours=1)
 
         await token_store.store_token(
             platform="jira",
