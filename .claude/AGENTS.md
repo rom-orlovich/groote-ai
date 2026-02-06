@@ -176,6 +176,33 @@ Local only:         .claude/agent-memory-local/agent-name/  (gitignored)
 
 Use `memory: project` for team coordination and shared learnings.
 
+## Agent Team Design Patterns
+
+When creating agents intended to work as teammates in agent teams:
+
+1. **Clear scope boundaries** — Agent description should state what it owns and what it does not
+2. **Read-only when possible** — Reviewers and planners should use `tools: Read, Glob, Grep` only
+3. **Structured output** — Teams work best when agents produce consistent, parseable output formats
+4. **Memory: project** — All team agents should share project-scoped memory for cross-session learning
+5. **No overlapping file ownership** — Two teammates should never edit the same file
+6. **Team Collaboration section** — Every agent body should include collaboration instructions for team mode
+
+### Team-Aware Agent Template
+
+```yaml
+---
+name: my-teammate
+description: "Use as a teammate for [specific purpose]. [Scope description]."
+model: sonnet
+memory: project
+---
+```
+
+Body should include a `## Team Collaboration` section with:
+- Scope boundaries (what this agent owns vs. doesn't)
+- How to report findings to the team lead
+- What to do when blocked or when cross-cutting issues are found
+
 ## References
 
 - Claude Code official documentation

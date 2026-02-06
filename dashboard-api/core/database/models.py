@@ -40,8 +40,8 @@ class SessionDB(Base):
     session_id = Column(String(255), primary_key=True)
     user_id = Column(String(255), nullable=False, index=True)
     machine_id = Column(String(255), nullable=False)
-    connected_at = Column(DateTime, default=utc_now, nullable=False, index=True)
-    disconnected_at = Column(DateTime, nullable=True, index=True)
+    connected_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+    disconnected_at = Column(DateTime(timezone=True), nullable=True, index=True)
     total_cost_usd = Column(Float, default=0.0, nullable=False)
     total_tasks = Column(Integer, default=0, nullable=False)
     active = Column(Boolean, default=True, nullable=False)  # CLI access active (not rate limited)
@@ -65,9 +65,9 @@ class TaskDB(Base):
 
     # Status
     status = Column(String(50), nullable=False, index=True)
-    created_at = Column(DateTime, default=utc_now, nullable=False)
-    started_at = Column(DateTime, nullable=True)
-    completed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
 
     # Input/Output
     input_message = Column(Text, nullable=False)
@@ -107,7 +107,7 @@ class EntityDB(Base):
     entity_type = Column(String(50), nullable=False, index=True)  # webhook, agent, skill
     config = Column(Text, nullable=False)  # JSON serialized Pydantic model
     is_builtin = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, default=utc_now, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
 class WebhookConfigDB(Base):
@@ -122,9 +122,9 @@ class WebhookConfigDB(Base):
     secret = Column(String(500), nullable=True)
     enabled = Column(Boolean, default=True, nullable=False)
     config_json = Column(Text, nullable=False)
-    created_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False)
     created_by = Column(String(255), nullable=False)
-    updated_at = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime(timezone=True), nullable=True)
 
     commands = relationship(
         "WebhookCommandDB", back_populates="webhook", cascade="all, delete-orphan"
@@ -170,7 +170,7 @@ class WebhookEventDB(Base):
     matched_command = Column(String(255), nullable=True)
     task_id = Column(String(255), nullable=True)
     response_sent = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, default=utc_now, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     webhook = relationship("WebhookConfigDB", back_populates="events")
 
@@ -183,8 +183,8 @@ class ConversationDB(Base):
     conversation_id = Column(String(255), primary_key=True)
     user_id = Column(String(255), nullable=False, index=True)
     title = Column(String(500), nullable=False)
-    created_at = Column(DateTime, default=utc_now, nullable=False)
-    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
     is_archived = Column(Boolean, default=False, nullable=False)
     metadata_json = Column(Text, default="{}", nullable=False)  # JSON for additional metadata
 
@@ -198,8 +198,8 @@ class ConversationDB(Base):
     total_cost_usd = Column(Float, default=0.0, nullable=False)
     total_tasks = Column(Integer, default=0, nullable=False)
     total_duration_seconds = Column(Float, default=0.0, nullable=False)
-    started_at = Column(DateTime, nullable=True)  # Earliest task start time
-    completed_at = Column(DateTime, nullable=True)  # Latest task completion time
+    started_at = Column(DateTime(timezone=True), nullable=True)  # Earliest task start time
+    completed_at = Column(DateTime(timezone=True), nullable=True)  # Latest task completion time
 
     # Relationships
     messages = relationship(
@@ -225,7 +225,7 @@ class ConversationMessageDB(Base):
     role = Column(String(50), nullable=False)  # user, assistant, system
     content = Column(Text, nullable=False)
     task_id = Column(String(255), nullable=True)  # Link to task if this message created a task
-    created_at = Column(DateTime, default=utc_now, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     metadata_json = Column(Text, default="{}", nullable=False)  # JSON for tokens, cost, etc.
 
     # Relationships
@@ -243,9 +243,9 @@ class AccountDB(Base):
     credential_status = Column(
         String(50), default="valid"
     )  # valid, expired, revoked, expiring_soon
-    credential_expires_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=utc_now)
-    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+    credential_expires_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
     metadata_json = Column(Text, default="{}")
 
     # Relationships
@@ -261,10 +261,10 @@ class MachineDB(Base):
     account_id = Column(String(255), ForeignKey("accounts.account_id"), nullable=True)
     display_name = Column(String(255), nullable=True)
     status = Column(String(50), default="offline")  # online, offline, busy, error
-    last_heartbeat = Column(DateTime, nullable=True)
+    last_heartbeat = Column(DateTime(timezone=True), nullable=True)
     container_id = Column(String(255), nullable=True)  # Docker container ID
     host_info = Column(Text, default="{}")  # JSON: hostname, IP, resources
-    created_at = Column(DateTime, default=utc_now)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
     # Relationships
     account = relationship("AccountDB", back_populates="machines")
@@ -281,8 +281,8 @@ class SubagentExecutionDB(Base):
     mode = Column(String(50), nullable=False)  # foreground, background, parallel
     status = Column(String(50), nullable=False)  # running, completed, failed, stopped
     permission_mode = Column(String(50), default="default")  # default, auto-deny, acceptEdits
-    started_at = Column(DateTime, default=utc_now)
-    completed_at = Column(DateTime, nullable=True)
+    started_at = Column(DateTime(timezone=True), default=utc_now)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
     context_tokens = Column(Integer, default=0)
     result_summary = Column(Text, nullable=True)
     error = Column(Text, nullable=True)
@@ -302,7 +302,7 @@ class SkillExecutionDB(Base):
     input_params = Column(Text, default="{}")  # JSON
     output_result = Column(Text, nullable=True)  # JSON
     success = Column(Boolean, default=False)
-    executed_at = Column(DateTime, default=utc_now)
+    executed_at = Column(DateTime(timezone=True), default=utc_now)
     duration_seconds = Column(Float, default=0.0)
 
 
@@ -317,7 +317,7 @@ class AuditLogDB(Base):
     target_type = Column(String(100), nullable=True)  # webhook, subagent, agent, skill
     target_id = Column(String(255), nullable=True)
     details_json = Column(Text, default="{}")  # JSON with action-specific details
-    created_at = Column(DateTime, default=utc_now, index=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, index=True)
 
 
 async def update_conversation_metrics(conversation_id: str, task: TaskDB, db: AsyncSession) -> None:
@@ -347,35 +347,13 @@ async def update_conversation_metrics(conversation_id: str, task: TaskDB, db: As
 
     # Update started_at (earliest task start)
     if task.started_at:
-        # Ensure timezone-aware comparison
-        task_started = task.started_at
-        if task_started.tzinfo is None:
-            task_started = task_started.replace(tzinfo=UTC)
-
-        if conversation.started_at is None:
-            conversation.started_at = task_started
-        else:
-            conv_started = conversation.started_at
-            if conv_started.tzinfo is None:
-                conv_started = conv_started.replace(tzinfo=UTC)
-            if task_started < conv_started:
-                conversation.started_at = task_started
+        if conversation.started_at is None or task.started_at < conversation.started_at:
+            conversation.started_at = task.started_at
 
     # Update completed_at (latest task completion)
     if task.completed_at:
-        # Ensure timezone-aware comparison
-        task_completed = task.completed_at
-        if task_completed.tzinfo is None:
-            task_completed = task_completed.replace(tzinfo=UTC)
-
-        if conversation.completed_at is None:
-            conversation.completed_at = task_completed
-        else:
-            conv_completed = conversation.completed_at
-            if conv_completed.tzinfo is None:
-                conv_completed = conv_completed.replace(tzinfo=UTC)
-            if task_completed > conv_completed:
-                conversation.completed_at = task_completed
+        if conversation.completed_at is None or task.completed_at > conversation.completed_at:
+            conversation.completed_at = task.completed_at
 
     # Update updated_at timestamp
     conversation.updated_at = datetime.now(UTC)

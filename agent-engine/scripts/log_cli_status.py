@@ -7,7 +7,7 @@ Runs at container startup to track CLI health.
 import asyncio
 import os
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 
 import structlog
 
@@ -72,7 +72,7 @@ async def log_status_to_db(provider: str, version: str, status: str):
                     version VARCHAR(100),
                     status VARCHAR(50) NOT NULL,
                     hostname VARCHAR(255),
-                    checked_at TIMESTAMP DEFAULT NOW()
+                    checked_at TIMESTAMPTZ DEFAULT NOW()
                 )
             """)
             )
@@ -87,8 +87,8 @@ async def log_status_to_db(provider: str, version: str, status: str):
                     hostname VARCHAR(255) UNIQUE NOT NULL,
                     container_id VARCHAR(255),
                     active BOOLEAN DEFAULT true,
-                    started_at TIMESTAMP DEFAULT NOW(),
-                    last_heartbeat TIMESTAMP DEFAULT NOW(),
+                    started_at TIMESTAMPTZ DEFAULT NOW(),
+                    last_heartbeat TIMESTAMPTZ DEFAULT NOW(),
                     UNIQUE(hostname)
                 )
             """)
@@ -108,7 +108,7 @@ async def log_status_to_db(provider: str, version: str, status: str):
                     "version": version,
                     "status": status,
                     "hostname": hostname,
-                    "checked_at": datetime.utcnow(),
+                    "checked_at": datetime.now(UTC),
                 },
             )
 

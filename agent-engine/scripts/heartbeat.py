@@ -8,7 +8,7 @@ import asyncio
 import os
 import signal
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 
 import structlog
 from sqlalchemy import text
@@ -39,8 +39,8 @@ async def ensure_table_exists(session):
             hostname VARCHAR(255) UNIQUE NOT NULL,
             container_id VARCHAR(255),
             active BOOLEAN DEFAULT true,
-            started_at TIMESTAMP DEFAULT NOW(),
-            last_heartbeat TIMESTAMP DEFAULT NOW(),
+            started_at TIMESTAMPTZ DEFAULT NOW(),
+            last_heartbeat TIMESTAMPTZ DEFAULT NOW(),
             UNIQUE(hostname)
         )
     """)
@@ -70,7 +70,7 @@ async def update_heartbeat():
                     SET last_heartbeat = :heartbeat
                     WHERE hostname = :hostname AND active = true
                 """),
-                {"heartbeat": datetime.utcnow(), "hostname": hostname},
+                {"heartbeat": datetime.now(UTC), "hostname": hostname},
             )
 
             if result.rowcount == 0:
@@ -115,7 +115,7 @@ async def mark_inactive():
                     SET active = false, last_heartbeat = :heartbeat
                     WHERE hostname = :hostname
                 """),
-                {"heartbeat": datetime.utcnow(), "hostname": hostname},
+                {"heartbeat": datetime.now(UTC), "hostname": hostname},
             )
             await session.commit()
 
