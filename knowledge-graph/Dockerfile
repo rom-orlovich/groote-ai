@@ -32,7 +32,7 @@ COPY --from=gkg-builder /build/.local/bin/gkg /usr/local/bin/gkg
 COPY --from=app-builder /app/target/release/knowledge-graph /app/knowledge-graph
 
 COPY scripts/ /app/scripts/
-RUN chmod +x /app/scripts/*.sh
+RUN sed -i 's/\r$//' /app/scripts/*.sh && chmod +x /app/scripts/*.sh
 
 ENV PORT=4000
 ENV GKG_DATA_DIR=/data/graphs
@@ -46,6 +46,6 @@ VOLUME ["/data"]
 EXPOSE 4000
 
 COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 CMD ["/app/entrypoint.sh"]

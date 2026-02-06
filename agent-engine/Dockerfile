@@ -28,6 +28,9 @@ RUN uv pip install --no-cache-dir --system -r requirements.txt
 
 COPY --chown=agent:agent . .
 
+RUN find . -name "*.sh" -exec sed -i 's/\r$//' {} + && \
+    find . -name "*.sh" -exec chmod +x {} +
+
 ENV PORT=8080
 ENV CLI_PROVIDER=claude
 
