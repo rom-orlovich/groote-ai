@@ -1,9 +1,13 @@
-.PHONY: help init build up down logs test test-all test-api-gateway test-agent-engine test-dashboard test-logger test-services test-cov lint format clean health cli cli-down cli-logs cli-claude cli-cursor db-migrate db-upgrade knowledge-up knowledge-down knowledge-logs knowledge-build up-full
+.PHONY: help init build up down logs test test-all test-api-gateway test-agent-engine test-dashboard test-logger test-services test-cov lint format clean health cli cli-down cli-logs cli-claude cli-cursor db-migrate db-upgrade knowledge-up knowledge-down knowledge-logs knowledge-build up-full fix-line-endings
 
 PROVIDER ?= claude
 SCALE ?= 1
 SERVICE ?=
 DC = docker-compose
+
+ifeq ($(OS),Windows_NT)
+$(error Windows detected. Use PowerShell instead: .\make.ps1 <command>. Run '.\make.ps1 help' for usage.)
+endif
 
 # ============================================
 # HELP
@@ -132,3 +136,11 @@ up-full:
 # ============================================
 clean:
 	@./scripts/utils/clean.sh
+
+# ============================================
+# LINE ENDING FIX (run after clone on Windows)
+# ============================================
+fix-line-endings:
+	@echo "Normalizing line endings to LF..."
+	@git add --renormalize .
+	@echo "Done. Run 'git status' to review changes."
