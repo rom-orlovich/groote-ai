@@ -1,6 +1,8 @@
 import "@testing-library/jest-dom";
 import { vi } from "vitest";
 
+(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
+
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({

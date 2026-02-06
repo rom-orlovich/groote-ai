@@ -56,10 +56,7 @@ export function SetupFeature() {
     );
   }
 
-  if (status?.is_complete) {
-    navigate("/");
-    return null;
-  }
+  const isReconfiguring = status?.is_complete ?? false;
 
   const currentStep = SETUP_STEPS[currentIndex];
 
@@ -117,7 +114,9 @@ export function SetupFeature() {
         )}
 
         <div className="panel animate-in fade-in slide-in-from-right-4 duration-300">
-          {currentStep.id === "welcome" && <WelcomeStep onNext={handleWelcomeNext} />}
+          {currentStep.id === "welcome" && (
+            <WelcomeStep onNext={handleWelcomeNext} isReconfiguring={isReconfiguring} />
+          )}
 
           {currentStep.id === "review" && status && (
             <ReviewStep status={status} onComplete={handleComplete} />

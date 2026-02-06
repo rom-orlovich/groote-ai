@@ -33,28 +33,4 @@ make format                  # Format code
 
 ## Architecture
 
-Microservices: `api-gateway/` (8000), `agent-engine/` (8080-8089), `mcp-servers/` (9001-9004), `api-services/` (3001-3004), `dashboard-api/` (5000). Services communicate via API/Queue only (NO direct imports).
-
-## Environment Variables
-
-```bash
-CLI_PROVIDER=claude                    # or 'cursor'
-POSTGRES_URL=postgresql://agent:agent@postgres:5432/agent_system
-REDIS_URL=redis://redis:6379/0
-GITHUB_TOKEN=ghp_xxx
-JIRA_API_TOKEN=xxx
-SLACK_BOT_TOKEN=xoxb-xxx
-SENTRY_DSN=https://xxx@sentry.io/xxx
-GITHUB_WEBHOOK_SECRET=xxx
-JIRA_WEBHOOK_SECRET=xxx
-SLACK_WEBHOOK_SECRET=xxx
-```
-
-## Health Checks
-
-```bash
-make health                            # All services
-curl http://localhost:8000/health      # API Gateway
-curl http://localhost:8080/health      # Agent Engine
-curl http://localhost:5000/api/health  # Dashboard API
-```
+See `.claude/rules/microservices.md` for full service map, ports, health checks, and environment variables.

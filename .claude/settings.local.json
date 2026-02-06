@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "mcp__plugin_playwright_playwright__*"
+      "mcp__plugin_playwright_playwright__*",
+      "WebSearch",
+      "WebFetch(domain:vitest.dev)",
+      "Write(*)",
+      "Edit(*)",
+      "Read(*)"
     ]
   }
 }

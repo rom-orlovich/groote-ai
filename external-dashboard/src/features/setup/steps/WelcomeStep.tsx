@@ -5,6 +5,7 @@ import type { InfrastructureStatus } from "../types";
 
 interface WelcomeStepProps {
   onNext: () => void;
+  isReconfiguring?: boolean;
 }
 
 function StatusIcon({ healthy }: { healthy: boolean | undefined }) {
@@ -33,7 +34,7 @@ function InfraRow({
   );
 }
 
-export function WelcomeStep({ onNext }: WelcomeStepProps) {
+export function WelcomeStep({ onNext, isReconfiguring = false }: WelcomeStepProps) {
   const { data, isLoading, refetch, isFetching } = useInfrastructure();
 
   useEffect(() => {
@@ -46,10 +47,13 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-heading font-black tracking-wider mb-2">SYSTEM_INIT</h2>
+        <h2 className="text-lg font-heading font-black tracking-wider mb-2">
+          {isReconfiguring ? "RECONFIGURE_SYSTEM" : "SYSTEM_INIT"}
+        </h2>
         <p className="text-[10px] text-gray-500 font-mono leading-relaxed">
-          Configure Groote AI step by step. Each integration can be skipped and configured later.
-          After setup, download the generated .env file and restart services.
+          {isReconfiguring
+            ? "Review and update your existing configuration. Each integration can be modified or skipped."
+            : "Configure Groote AI step by step. Each integration can be skipped and configured later. After setup, download the generated .env file and restart services."}
         </p>
       </div>
 
@@ -104,7 +108,13 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
         disabled={isLoading || !allHealthy}
         className="w-full btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {isLoading ? "CHECKING..." : allHealthy ? "BEGIN_SETUP" : "INFRASTRUCTURE_NOT_READY"}
+        {isLoading
+          ? "CHECKING..."
+          : allHealthy
+            ? isReconfiguring
+              ? "CONTINUE_RECONFIGURE"
+              : "BEGIN_SETUP"
+            : "INFRASTRUCTURE_NOT_READY"}
       </button>
     </div>
   );
