@@ -1,0 +1,61 @@
+# Auto detect text files and ensure LF line endings in the repo
+* text=auto eol=lf
+
+# Shell scripts must always use LF (CRLF breaks #!/bin/bash shebang)
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Docker files must always use LF (CRLF breaks RUN commands and entrypoints)
+Dockerfile text eol=lf
+Dockerfile.* text eol=lf
+*.dockerfile text eol=lf
+docker-compose*.yml text eol=lf
+docker-compose*.yaml text eol=lf
+
+# Makefile must use LF
+Makefile text eol=lf
+
+# Config files
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.cfg text eol=lf
+*.ini text eol=lf
+*.conf text eol=lf
+*.json text eol=lf
+*.env text eol=lf
+.env.* text eol=lf
+.editorconfig text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+
+# Source code
+*.py text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.jsx text eol=lf
+*.rs text eol=lf
+*.go text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.sql text eol=lf
+
+# PowerShell can handle both but keep consistent
+*.ps1 text eol=crlf
+*.psm1 text eol=crlf
+
+# Binary files (never touch line endings)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+*.tgz binary
