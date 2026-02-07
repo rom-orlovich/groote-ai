@@ -56,9 +56,11 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    from .internal_routes import internal_router
     from .routes import router
 
     app.include_router(router)
+    app.include_router(internal_router)
 
     @app.get("/health")
     async def health_check() -> dict[str, str]:

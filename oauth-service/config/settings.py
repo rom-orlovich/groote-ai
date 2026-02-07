@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     github_client_id: str = ""
     github_client_secret: str = ""
     github_private_key: str = ""
+    github_private_key_path: str = ""
     github_webhook_secret: str = ""
 
     slack_client_id: str = ""
@@ -30,6 +31,7 @@ class Settings(BaseSettings):
     jira_client_secret: str = ""
 
     token_encryption_key: str = ""
+    internal_service_key: str = ""
 
 
 @lru_cache

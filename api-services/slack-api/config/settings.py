@@ -8,10 +8,13 @@ class Settings(BaseSettings):
     model_config = ConfigDict(strict=True, env_file=".env", extra="ignore")
 
     port: int = 3003
-    slack_bot_token: str
+    slack_bot_token: str = ""
     slack_api_base_url: str = "https://slack.com/api"
     log_level: str = "INFO"
     request_timeout: int = 30
+    oauth_service_url: str = "http://oauth-service:8010"
+    internal_service_key: str = ""
+    use_oauth: bool = True
 
 
 @lru_cache

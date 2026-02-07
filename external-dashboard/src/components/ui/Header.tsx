@@ -10,7 +10,7 @@ interface HeaderProps {
 
 export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
   const [isDark, setIsDark] = useState(false);
-  const { active: cliActive, isLoading: cliLoading } = useCLIStatus();
+  const { active: cliActive, isLoading: cliLoading, message: cliMessage } = useCLIStatus();
 
   // Connect to WebSocket for real-time CLI status updates
   useWebSocket("dashboard");
@@ -83,7 +83,9 @@ export function Header({ onToggleSidebar, isSidebarOpen }: HeaderProps) {
           ) : (
             <>
               <XCircle size={12} className="text-red-500" />
-              <span className="dark:text-gray-400">CLI: INACTIVE</span>
+              <span className="dark:text-gray-400" title={cliMessage ?? undefined}>
+                CLI: INACTIVE
+              </span>
             </>
           )}
         </div>

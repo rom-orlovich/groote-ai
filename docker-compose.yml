@@ -130,6 +130,9 @@ services:
     environment:
       - PORT=3001
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - OAUTH_SERVICE_URL=http://oauth-service:8010
+      - INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY:-}
+      - USE_OAUTH=${USE_OAUTH:-true}
     networks:
       - agent-network
     restart: unless-stopped
@@ -143,6 +146,9 @@ services:
       - JIRA_URL=${JIRA_URL:-}
       - JIRA_EMAIL=${JIRA_EMAIL:-}
       - JIRA_API_TOKEN=${JIRA_API_TOKEN:-}
+      - OAUTH_SERVICE_URL=http://oauth-service:8010
+      - INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY:-}
+      - USE_OAUTH=${USE_OAUTH:-true}
     networks:
       - agent-network
     restart: unless-stopped
@@ -154,6 +160,9 @@ services:
     environment:
       - PORT=3003
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+      - OAUTH_SERVICE_URL=http://oauth-service:8010
+      - INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY:-}
+      - USE_OAUTH=${USE_OAUTH:-true}
     networks:
       - agent-network
     restart: unless-stopped
@@ -297,7 +306,7 @@ services:
       - GITHUB_APP_NAME=${GITHUB_APP_NAME:-}
       - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
-      - GITHUB_PRIVATE_KEY=${GITHUB_PRIVATE_KEY:-}
+      - GITHUB_PRIVATE_KEY_PATH=${GITHUB_PRIVATE_KEY_PATH:-}
       - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-}
       - SLACK_CLIENT_ID=${SLACK_CLIENT_ID:-}
       - SLACK_CLIENT_SECRET=${SLACK_CLIENT_SECRET:-}
@@ -306,6 +315,9 @@ services:
       - JIRA_CLIENT_ID=${JIRA_CLIENT_ID:-}
       - JIRA_CLIENT_SECRET=${JIRA_CLIENT_SECRET:-}
       - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY:-}
+      - INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY:-}
+    volumes:
+      - ${GITHUB_PRIVATE_KEY_FILE:-/dev/null}:/secrets/github-private-key.pem:ro
     depends_on:
       postgres:
         condition: service_healthy

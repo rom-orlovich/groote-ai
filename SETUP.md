@@ -252,13 +252,8 @@ POSTGRES_DB=agent_system
 #### 3.3 External Services (configure based on your needs)
 
 **GitHub App** (create at [github.com/settings/apps](https://github.com/settings/apps/new)):
-```bash
-GITHUB_APP_ID=123456
-GITHUB_CLIENT_ID=Iv1.xxxxxxxxxxxx
-GITHUB_CLIENT_SECRET=xxxxxxxxxxxx
-GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."
-GITHUB_WEBHOOK_SECRET=your-webhook-secret
-```
+
+See [oauth-service/SETUP.md](oauth-service/SETUP.md#github-app-recommended) for full step-by-step instructions including private key setup.
 
 **Jira OAuth 2.0** (create at [developer.atlassian.com](https://developer.atlassian.com/console/myapps/)):
 ```bash
@@ -477,6 +472,10 @@ docker-compose logs cli | grep "Connected to Redis"
 make cli-down PROVIDER=claude
 make cli-claude
 ```
+
+#### GitHub connection fails with "callback_failed"
+
+See [oauth-service/SETUP.md](oauth-service/SETUP.md#troubleshooting) for detailed troubleshooting.
 
 #### Webhook signature validation fails
 

@@ -52,13 +52,29 @@ class TaskWorker:
         try:
             task = json.loads(task_data)
             task_id = task.get("task_id", "unknown")
+            session_id = task.get("session_id")
+            conversation_id = task.get("conversation_id")
             logger.info("task_started", task_id=task_id)
+
+            await self._publish_task_event(task_id, "task:started", {
+                "task_id": task_id,
+                "session_id": session_id,
+                "conversation_id": conversation_id,
+            })
 
             await self._update_task_status(task_id, "in_progress")
             result = await self._execute_task(task)
             await self._update_task_status(task_id, "completed", result)
 
-            conversation_id = task.get("conversation_id")
+            await self._publish_task_event(task_id, "task:completed", {
+                "task_id": task_id,
+                "session_id": session_id,
+                "conversation_id": conversation_id,
+                "cost_usd": result.get("cost_usd"),
+                "input_tokens": result.get("input_tokens"),
+                "output_tokens": result.get("output_tokens"),
+            })
+
             if conversation_id and result.get("output"):
                 await self._post_assistant_message(
                     conversation_id, result["output"], task_id
@@ -69,6 +85,10 @@ class TaskWorker:
             logger.exception("task_failed", error=str(e))
             if "task_id" in locals():
                 await self._update_task_status(task_id, "failed", {"error": str(e)})
+                await self._publish_task_event(task_id, "task:failed", {
+                    "task_id": task_id,
+                    "error": str(e),
+                })
 
     async def _execute_task(self, task: dict[str, Any]) -> dict[str, Any]:
         from pathlib import Path
@@ -141,6 +161,21 @@ class TaskWorker:
             await self._redis.hset(f"task:{task_id}", mapping={"data": json.dumps(update)})
             await self._redis.publish(f"task:{task_id}:status", json.dumps(update))
 
+    async def _publish_task_event(
+        self, task_id: str, event_type: str, data: dict[str, Any]
+    ) -> None:
+        import json
+        from datetime import UTC, datetime
+
+        if self._redis:
+            event = {
+                "type": event_type,
+                "timestamp": datetime.now(UTC).isoformat(),
+                "task_id": task_id,
+                "data": json.dumps(data),
+            }
+            await self._redis.xadd("task_events", event)
+
     async def stop(self) -> None:
         self._running = False
         if self._redis:
@@ -207,6 +242,47 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health_check():
         return {"status": "healthy", "service": "agent-engine"}
+
+    @app.get("/health/auth")
+    async def auth_health_check():
+        import json as _json
+        from datetime import UTC, datetime
+        from pathlib import Path
+
+        settings = get_settings()
+        provider = settings.cli_provider
+        result: dict[str, str | bool] = {
+            "provider": provider,
+            "authenticated": False,
+        }
+
+        if provider == "claude":
+            creds_path = Path.home() / ".claude" / ".credentials.json"
+            if not creds_path.exists():
+                result["message"] = "No credentials file found"
+                return result
+            try:
+                creds_data = _json.loads(creds_path.read_text())
+                oauth = creds_data.get("claudeAiOauth", creds_data)
+                expires_at = oauth.get("expiresAt") or oauth.get("expires_at", 0)
+                now_ms = int(datetime.now(UTC).timestamp() * 1000)
+                if now_ms >= expires_at:
+                    result["message"] = "OAuth token expired"
+                    return result
+                result["authenticated"] = True
+                result["message"] = "Token valid"
+            except Exception as e:
+                result["message"] = f"Credentials read error: {e}"
+                return result
+        elif provider == "cursor":
+            import os
+
+            if os.environ.get("CURSOR_API_KEY"):
+                result["authenticated"] = True
+                result["message"] = "API key configured"
+            else:
+                result["message"] = "No CURSOR_API_KEY set"
+        return result
 
     @app.get("/health/detailed")
     async def detailed_health_check():

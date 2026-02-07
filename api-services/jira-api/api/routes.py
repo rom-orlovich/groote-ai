@@ -2,17 +2,29 @@ from typing import Annotated, Any
 
 from client import JiraClient
 from config import Settings, get_settings
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict
+from token_provider import TokenProvider
 
 router = APIRouter(prefix="/api/v1", tags=["jira"])
 
 
-def get_jira_client(settings: Annotated[Settings, Depends(get_settings)]) -> JiraClient:
+async def get_jira_client(
+    request: Request,
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> JiraClient:
+    token_provider: TokenProvider = request.app.state.token_provider
+    result = await token_provider.get_token()
+    if result.auth_mode == "bearer":
+        return JiraClient(
+            base_url=result.base_url,
+            oauth_token=result.token,
+            timeout=settings.request_timeout,
+        )
     return JiraClient(
-        base_url=settings.jira_url,
-        email=settings.jira_email,
-        api_token=settings.jira_api_token,
+        base_url=result.base_url,
+        email=token_provider.static_email,
+        api_token=result.token,
         timeout=settings.request_timeout,
     )
 

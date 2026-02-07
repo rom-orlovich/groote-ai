@@ -656,8 +656,17 @@ class CLIStatusUpdateMessage(WebSocketMessage):
     """CLI status update event."""
 
     type: Literal["cli_status_update"] = "cli_status_update"
-    session_id: str | None = None  # None means broadcast to all
+    session_id: str | None = None
     active: bool
+
+
+class TaskStatusMessage(WebSocketMessage):
+    """Task status change event broadcast to all clients."""
+
+    type: Literal["task_status"] = "task_status"
+    task_id: str
+    status: str
+    conversation_id: str | None = None
 
 
 # Union type for all WebSocket messages
@@ -671,6 +680,7 @@ WSMessage = (
     | TaskStopMessage
     | ChatMessage
     | CLIStatusUpdateMessage
+    | TaskStatusMessage
 )
 
 

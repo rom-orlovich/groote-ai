@@ -30,16 +30,32 @@ curl http://localhost:8010/health
 ### GitHub App (Recommended)
 
 1. GitHub Settings → Developer settings → GitHub Apps → New GitHub App
-2. Set callback URL: `http://localhost:8010/oauth/callback/github`
-3. Download private key, copy App ID and Webhook Secret → add to `.env`:
+2. Set callback URL: `{PUBLIC_URL}/oauth/callback/github`
+3. Set permissions: Repository (R&W), Issues (R&W), Pull Requests (R&W)
+4. On the app page, scroll to **Private keys** → click **Generate a private key**
+5. A `.pem` file will download to your computer
+6. Place the `.pem` file in the `secrets/` directory:
+   ```bash
+   mkdir -p secrets
+   cp ~/Downloads/<app-name>.<date>.private-key.pem secrets/github-private-key.pem
+   ```
+7. Add to the root `.env`:
    ```bash
    GITHUB_APP_ID=123456
    GITHUB_APP_NAME=your-app
    GITHUB_CLIENT_ID=Iv1.xxx
    GITHUB_CLIENT_SECRET=xxx
-   GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
    GITHUB_WEBHOOK_SECRET=xxx
+   GITHUB_PRIVATE_KEY_PATH=/secrets/github-private-key.pem
+   GITHUB_PRIVATE_KEY_FILE=./secrets/github-private-key.pem
    ```
+
+> **Why two variables?**
+> - `GITHUB_PRIVATE_KEY_FILE` — host path used by Docker Compose to mount the file into the container
+> - `GITHUB_PRIVATE_KEY_PATH` — container path where the app reads the key
+>
+> PEM private keys are multiline and cannot be stored directly in `.env` files.
+> The `secrets/` directory is already in `.gitignore`.
 
 ### Slack
 
@@ -101,6 +117,13 @@ curl http://localhost:8010/oauth/token/github?org_id=your_org_id
 ## Troubleshooting
 
 **Database issues**: `docker-compose logs postgres`
+
+**GitHub "callback_failed"**: Check logs for the actual error:
+```bash
+docker logs groote-ai-oauth-service-1 2>&1 | grep "oauth_callback_error"
+```
+- `"Could not parse the provided public key"` → the `.pem` file is not mounted. Verify `GITHUB_PRIVATE_KEY_FILE` points to your `.pem` file and run `docker exec groote-ai-oauth-service-1 ls -la /secrets/github-private-key.pem`
+- `"decryption_failed"` in dashboard-api logs → `TOKEN_ENCRYPTION_KEY` changed. Re-enter credentials in the Setup Wizard at `/setup`
 
 **Callback errors**: Verify URLs match exactly in OAuth app settings and `BASE_URL`
 

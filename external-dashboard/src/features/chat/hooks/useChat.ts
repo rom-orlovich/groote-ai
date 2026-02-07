@@ -32,6 +32,7 @@ interface MessageApiItem {
 export function useChat() {
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
 
   const { data: conversations, isLoading: isConvLoading } = useQuery<Conversation[]>({
     queryKey: ["conversations"],
@@ -81,14 +82,14 @@ export function useChat() {
       return data;
     },
     onSuccess: (data) => {
-      // If a new conversation was created, select it
+      if (data.data?.task_id) {
+        setPendingTaskId(data.data.task_id);
+      }
       if (data.data?.conversation_id) {
         if (!selectedId) {
           setSelectedId(data.data.conversation_id);
         }
-        // Invalidate conversations list to show new conversation
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
-        // Invalidate messages for the conversation (new or existing)
         queryClient.invalidateQueries({ queryKey: ["messages", data.data.conversation_id] });
       }
     },
@@ -131,6 +132,9 @@ export function useChat() {
     conversations,
     messages,
     isLoading: isConvLoading || isMsgLoading,
+    isSending: sendMutation.isPending,
+    pendingTaskId,
+    clearPendingTask: () => setPendingTaskId(null),
     selectedId,
     selectedConversation: conversations?.find((c) => c.id === selectedId),
     setSelectedConversation: (conv: Conversation) => setSelectedId(conv.id),

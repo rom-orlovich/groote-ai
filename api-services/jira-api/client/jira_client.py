@@ -8,14 +8,24 @@ logger = structlog.get_logger(__name__)
 
 
 class JiraClient:
-    def __init__(self, base_url: str, email: str, api_token: str, timeout: int = 30):
+    def __init__(
+        self,
+        base_url: str,
+        email: str = "",
+        api_token: str = "",
+        oauth_token: str = "",
+        timeout: int = 30,
+    ):
         self._base_url = base_url.rstrip("/")
         self._email = email
         self._api_token = api_token
+        self._oauth_token = oauth_token
         self._timeout = timeout
         self._client: httpx.AsyncClient | None = None
 
     def _get_auth_header(self) -> str:
+        if self._oauth_token:
+            return f"Bearer {self._oauth_token}"
         credentials = f"{self._email}:{self._api_token}"
         encoded = base64.b64encode(credentials.encode()).decode()
         return f"Basic {encoded}"

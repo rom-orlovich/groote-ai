@@ -3,8 +3,10 @@ from contextlib import asynccontextmanager
 import httpx
 import structlog
 from client.slack_client import SlackAPIError
+from config import get_settings
 from fastapi import FastAPI
 from middleware import AuthMiddleware, error_handler
+from token_provider import TokenProvider
 
 from .routes import router
 
@@ -13,7 +15,14 @@ logger = structlog.get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("slack_api_starting")
+    settings = get_settings()
+    app.state.token_provider = TokenProvider(
+        oauth_service_url=settings.oauth_service_url,
+        internal_service_key=settings.internal_service_key,
+        static_token=settings.slack_bot_token,
+        use_oauth=settings.use_oauth,
+    )
+    logger.info("slack_api_starting", use_oauth=settings.use_oauth)
     yield
     logger.info("slack_api_shutting_down")
 

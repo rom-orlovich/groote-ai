@@ -8,11 +8,14 @@ class Settings(BaseSettings):
     model_config = ConfigDict(strict=True, env_file=".env", extra="ignore")
 
     port: int = 3002
-    jira_url: str
-    jira_email: str
-    jira_api_token: str
+    jira_url: str = ""
+    jira_email: str = ""
+    jira_api_token: str = ""
     log_level: str = "INFO"
     request_timeout: int = 30
+    oauth_service_url: str = "http://oauth-service:8010"
+    internal_service_key: str = ""
+    use_oauth: bool = True
 
 
 @lru_cache
