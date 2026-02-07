@@ -28,6 +28,17 @@ RUN uv pip install --no-cache-dir --system -r requirements.txt
 
 COPY --chown=agent:agent . .
 
+RUN cp -r .claude/agents /home/agent/.claude/agents && \
+    cp -r .claude/skills /home/agent/.claude/skills && \
+    cp .claude/CLAUDE.md /home/agent/.claude/CLAUDE.md && \
+    cp .claude/mcp.json /home/agent/.claude/mcp.json && \
+    mkdir -p /home/agent/.cursor && \
+    cp -r .claude/agents /home/agent/.cursor/agents && \
+    cp -r .claude/skills /home/agent/.cursor/skills && \
+    cp .claude/CLAUDE.md /home/agent/.cursor/CLAUDE.md && \
+    cp .claude/mcp.json /home/agent/.cursor/mcp.json && \
+    chown -R agent:agent /home/agent/.claude /home/agent/.cursor
+
 RUN find . -name "*.sh" -exec sed -i 's/\r$//' {} + && \
     find . -name "*.sh" -exec chmod +x {} +
 

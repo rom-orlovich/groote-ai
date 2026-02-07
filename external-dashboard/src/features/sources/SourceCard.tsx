@@ -69,17 +69,19 @@ export function SourceCard({
   return (
     <div
       className={`border p-4 transition-all ${
-        source.enabled ? "border-gray-200 bg-white" : "border-gray-100 bg-gray-50 opacity-60"
+        source.enabled
+          ? "border-panel-border bg-panel-bg"
+          : "border-panel-border/50 bg-panel-bg/50 opacity-60"
       }`}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className={`p-2 border border-gray-200 ${colorClass}`}>
+          <div className={`p-2 border border-panel-border ${colorClass} dark:text-text-main`}>
             <Icon size={20} />
           </div>
           <div>
-            <div className="font-heading text-sm">{source.name}</div>
-            <div className="text-[10px] text-gray-400 uppercase">{source.source_type}</div>
+            <div className="font-heading text-sm text-text-main">{source.name}</div>
+            <div className="text-[10px] text-app-muted uppercase">{source.source_type}</div>
           </div>
         </div>
 
@@ -97,15 +99,17 @@ export function SourceCard({
       </div>
 
       {!source.oauth_connected && (
-        <div className="mb-3 p-2 bg-amber-50 border border-amber-200 text-[10px]">
-          <div className="flex items-center gap-1 text-amber-700 mb-1">
+        <div className="mb-3 p-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[10px]">
+          <div className="flex items-center gap-1 text-amber-700 dark:text-amber-400 mb-1">
             <AlertTriangle size={10} />
             <span className="font-heading">OAUTH_NOT_CONNECTED</span>
           </div>
-          <p className="text-amber-600 mb-2">Connect {source.oauth_platform} to enable syncing.</p>
+          <p className="text-amber-600 dark:text-amber-400 mb-2">
+            Connect {source.oauth_platform} to enable syncing.
+          </p>
           <Link
             to="/integrations"
-            className="inline-flex items-center gap-1 text-amber-700 hover:text-amber-900 font-heading"
+            className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 font-heading"
           >
             <Link2 size={10} />
             GO_TO_INTEGRATIONS
@@ -113,7 +117,7 @@ export function SourceCard({
         </div>
       )}
 
-      <div className="space-y-2 mb-4 text-[10px] text-gray-500">
+      <div className="space-y-2 mb-4 text-[10px] text-app-muted">
         <div className="flex justify-between">
           <span>Last Sync:</span>
           <span className="font-mono">{formatDate(source.last_sync_at)}</span>
@@ -153,7 +157,7 @@ export function SourceCard({
           type="button"
           onClick={onSync}
           disabled={isSyncing || !source.enabled || !source.oauth_connected}
-          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 border border-gray-200 hover:bg-gray-50 text-[10px] font-heading disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 border border-panel-border hover:bg-panel-border/20 text-text-main text-[10px] font-heading disabled:opacity-50 disabled:cursor-not-allowed"
           title={!source.oauth_connected ? "OAuth not connected" : undefined}
         >
           <RefreshCw size={12} className={isSyncing ? "animate-spin" : ""} />
@@ -166,8 +170,8 @@ export function SourceCard({
           disabled={isUpdating || (!source.enabled && !source.oauth_connected)}
           className={`flex items-center justify-center gap-1 px-2 py-1.5 border text-[10px] font-heading disabled:opacity-50 ${
             source.enabled
-              ? "border-orange-200 text-orange-600 hover:bg-orange-50"
-              : "border-green-200 text-green-600 hover:bg-green-50"
+              ? "border-orange-200 dark:border-orange-800 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30"
+              : "border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30"
           }`}
           title={
             !source.oauth_connected && !source.enabled
@@ -184,7 +188,7 @@ export function SourceCard({
           type="button"
           onClick={onDelete}
           disabled={isDeleting}
-          className="flex items-center justify-center gap-1 px-2 py-1.5 border border-red-200 text-red-600 hover:bg-red-50 text-[10px] font-heading disabled:opacity-50"
+          className="flex items-center justify-center gap-1 px-2 py-1.5 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-[10px] font-heading disabled:opacity-50"
           title="Delete source"
         >
           <Trash2 size={12} />

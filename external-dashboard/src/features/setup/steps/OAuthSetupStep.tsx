@@ -1,16 +1,10 @@
-import {
-  CheckCircle,
-  ChevronDown,
-  ChevronUp,
-  ExternalLink,
-  Eye,
-  EyeOff,
-  Loader2,
-  XCircle,
-} from "lucide-react";
-import { useState } from "react";
-import { useSaveStep, useValidateService } from "../hooks/useSetup";
+import { CheckCircle, Eye, EyeOff, Loader2, XCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useSaveStep, useStepConfig, useValidateService } from "../hooks/useSetup";
 import type { StepDefinition, ValidateResponse } from "../types";
+import { InstructionList } from "./InstructionList";
+
+const SENSITIVE_PLACEHOLDER = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
 
 interface OAuthSetupStepProps {
   step: StepDefinition;
@@ -22,10 +16,33 @@ export function OAuthSetupStep({ step, onNext, onSkip }: OAuthSetupStepProps) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [validation, setValidation] = useState<ValidateResponse | null>(null);
-  const [instructionsOpen, setInstructionsOpen] = useState(true);
+  const isInitialized = useRef(false);
 
+  const { data: savedConfig, isLoading: isLoadingConfig } = useStepConfig(step.id);
   const saveStep = useSaveStep();
   const validateService = useValidateService();
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset state when step changes
+  useEffect(() => {
+    isInitialized.current = false;
+    setValues({});
+    setValidation(null);
+  }, [step.id]);
+
+  useEffect(() => {
+    if (savedConfig && !isInitialized.current) {
+      const initialValues: Record<string, string> = {};
+      for (const config of savedConfig) {
+        if (config.is_sensitive && config.value) {
+          initialValues[config.key] = SENSITIVE_PLACEHOLDER;
+        } else {
+          initialValues[config.key] = config.value;
+        }
+      }
+      setValues(initialValues);
+      isInitialized.current = true;
+    }
+  }, [savedConfig]);
 
   const updateValue = (key: string, value: string) => {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -41,8 +58,12 @@ export function OAuthSetupStep({ step, onNext, onSkip }: OAuthSetupStepProps) {
 
   const handleValidate = () => {
     if (!step.validationService) return;
+    const credentials: Record<string, string> = {};
+    for (const [key, val] of Object.entries(values)) {
+      if (val !== SENSITIVE_PLACEHOLDER) credentials[key] = val;
+    }
     validateService.mutate(
-      { service: step.validationService, credentials: values },
+      { service: step.validationService, credentials },
       { onSuccess: (result) => setValidation(result) },
     );
   };
@@ -53,7 +74,7 @@ export function OAuthSetupStep({ step, onNext, onSkip }: OAuthSetupStepProps) {
         step: step.id,
         data: {
           configs: step.fields
-            .filter((f) => values[f.key]?.trim())
+            .filter((f) => values[f.key]?.trim() && values[f.key] !== SENSITIVE_PLACEHOLDER)
             .map((f) => ({
               key: f.key,
               value: values[f.key],
@@ -74,6 +95,14 @@ export function OAuthSetupStep({ step, onNext, onSkip }: OAuthSetupStepProps) {
     );
   };
 
+  if (isLoadingConfig) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 size={20} className="animate-spin text-orange-500" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -82,42 +111,17 @@ export function OAuthSetupStep({ step, onNext, onSkip }: OAuthSetupStepProps) {
       </div>
 
       {step.instructions && step.instructions.length > 0 && (
-        <div className="border border-gray-200 dark:border-gray-700">
-          <button
-            type="button"
-            onClick={() => setInstructionsOpen(!instructionsOpen)}
-            className="w-full flex items-center justify-between p-3 text-[10px] font-heading text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            <span>SETUP_INSTRUCTIONS</span>
-            {instructionsOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-          </button>
-          {instructionsOpen && (
-            <div className="px-3 pb-3 space-y-3">
-              {step.instructions.map((instruction) => (
-                <div key={instruction.step} className="flex gap-3">
-                  <span className="text-orange-500 font-heading text-[11px] mt-0.5">
-                    {String(instruction.step).padStart(2, "0")}
-                  </span>
-                  <div className="flex-1">
-                    <div className="text-[11px] font-heading mb-0.5">{instruction.title}</div>
-                    <p className="text-[10px] text-gray-500 font-mono leading-relaxed">
-                      {instruction.description.replace("{origin}", window.location.origin)}
-                    </p>
-                    {instruction.link && (
-                      <a
-                        href={instruction.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[10px] text-orange-500 hover:text-orange-600 font-mono mt-1"
-                      >
-                        Open <ExternalLink size={10} />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        <InstructionList instructions={step.instructions} />
+      )}
+
+      {step.webhookMode === "auto" && (
+        <div className="flex items-center gap-2 px-3 py-2 text-[10px] font-heading border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30">
+          WEBHOOKS_AUTO_CONFIGURED — Webhooks are configured automatically when users connect
+        </div>
+      )}
+      {step.webhookMode === "manual" && (
+        <div className="flex items-center gap-2 px-3 py-2 text-[10px] font-heading border border-yellow-200 dark:border-yellow-800 text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/30">
+          MANUAL_WEBHOOK_REQUIRED — Webhook must be configured manually in provider dashboard
         </div>
       )}
 

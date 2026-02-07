@@ -1,5 +1,5 @@
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SETUP_STEPS } from "./constants";
 import { useSaveStep, useSetupStatus } from "./hooks/useSetup";
@@ -14,11 +14,13 @@ function StepIndicator({
   currentIndex,
   completedSteps,
   skippedSteps,
+  onStepClick,
 }: {
   steps: typeof SETUP_STEPS;
   currentIndex: number;
   completedSteps: string[];
   skippedSteps: string[];
+  onStepClick: (index: number) => void;
 }) {
   return (
     <div className="flex items-center gap-1 mb-8">
@@ -33,9 +35,17 @@ function StepIndicator({
         if (isCurrent) bgClass = "bg-orange-500";
 
         return (
-          <div key={step.id} className="flex items-center gap-1 flex-1">
-            <div className={`h-1 flex-1 rounded-full transition-colors ${bgClass}`} />
-          </div>
+          <button
+            key={step.id}
+            type="button"
+            onClick={() => onStepClick(idx)}
+            title={step.title}
+            className="flex items-center gap-1 flex-1 cursor-pointer group"
+          >
+            <div
+              className={`h-1 flex-1 rounded-full transition-colors ${bgClass} group-hover:opacity-80 group-hover:h-1.5`}
+            />
+          </button>
         );
       })}
     </div>
@@ -45,8 +55,17 @@ function StepIndicator({
 export function SetupFeature() {
   const { data: status, isLoading } = useSetupStatus();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const initializedRef = useRef(false);
   const navigate = useNavigate();
   const saveStep = useSaveStep();
+
+  useEffect(() => {
+    if (status && !initializedRef.current) {
+      initializedRef.current = true;
+      const idx = SETUP_STEPS.findIndex((s) => s.id === status.current_step);
+      if (idx >= 0) setCurrentIndex(idx);
+    }
+  }, [status]);
 
   if (isLoading) {
     return (
@@ -101,6 +120,7 @@ export function SetupFeature() {
           currentIndex={currentIndex}
           completedSteps={status?.completed_steps || []}
           skippedSteps={status?.skipped_steps || []}
+          onStepClick={setCurrentIndex}
         />
 
         {currentIndex > 0 && (

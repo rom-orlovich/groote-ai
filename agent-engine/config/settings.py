@@ -22,17 +22,13 @@ class Settings(BaseSettings):
     task_timeout_seconds: int = 3600
     log_level: str = "INFO"
     internal_dashboard_api_url: str = "http://internal-dashboard-api:5000"
+    dashboard_api_url: str = "http://dashboard-api:5000"
 
     knowledge_services_enabled: bool = False
     knowledge_graph_url: str = "http://gkg-service:4000"
     llamaindex_url: str = "http://llamaindex-service:8100"
     knowledge_timeout_seconds: float = 10.0
     knowledge_retry_count: int = 2
-
-    claude_model_complex: str = "opus"
-    claude_model_execution: str = "sonnet"
-    cursor_model_complex: str = "claude-sonnet-4.5"
-    cursor_model_execution: str = "composer-1"
 
     @property
     def redis_url(self) -> str:

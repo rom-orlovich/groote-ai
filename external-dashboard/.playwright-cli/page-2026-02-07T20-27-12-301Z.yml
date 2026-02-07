@@ -1,0 +1,124 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e9]:
+        - generic [ref=e10]: CLAUDE_MACHINE
+        - generic [ref=e11]: CORE_SYSTEM_ACCESS
+    - generic [ref=e12]:
+      - button "TOGGLE_PHASE_MODE" [ref=e13]:
+        - img [ref=e14]
+      - generic [ref=e16]:
+        - img [ref=e93]
+        - generic [ref=e19]: "CLI: ACTIVE"
+      - generic [ref=e20]:
+        - generic [ref=e23]: "CORE_NODE: ONLINE"
+        - generic [ref=e25]:
+          - img [ref=e26]
+          - generic [ref=e29]: GEN_6_ARC
+  - generic [ref=e30]:
+    - complementary [ref=e31]:
+      - navigation [ref=e32]:
+        - link "01_OVERVIEW" [ref=e33] [cursor=pointer]:
+          - /url: /
+          - img [ref=e34]
+          - generic [ref=e39]: 01_OVERVIEW
+        - link "02_ANALYTICS" [ref=e40] [cursor=pointer]:
+          - /url: /analytics
+          - img [ref=e41]
+          - generic [ref=e43]: 02_ANALYTICS
+        - link "03_LEDGER" [ref=e44] [cursor=pointer]:
+          - /url: /ledger
+          - img [ref=e45]
+          - generic [ref=e49]: 03_LEDGER
+        - link "04_SOURCES" [ref=e50] [cursor=pointer]:
+          - /url: /sources
+          - img [ref=e51]
+          - generic [ref=e53]: 04_SOURCES
+        - link "05_WEBHOOKS" [ref=e54] [cursor=pointer]:
+          - /url: /webhooks
+          - img [ref=e55]
+          - generic [ref=e59]: 05_WEBHOOKS
+        - link "06_COMMS" [ref=e60] [cursor=pointer]:
+          - /url: /chat
+          - img [ref=e61]
+          - generic [ref=e63]: 06_COMMS
+        - link "07_REGISTRY" [ref=e64] [cursor=pointer]:
+          - /url: /registry
+          - img [ref=e65]
+          - generic [ref=e69]: 07_REGISTRY
+        - link "08_INTEGRATIONS" [ref=e70] [cursor=pointer]:
+          - /url: /integrations
+          - img [ref=e71]
+          - generic [ref=e74]: 08_INTEGRATIONS
+        - link "09_SETUP" [ref=e75] [cursor=pointer]:
+          - /url: /setup
+          - img [ref=e76]
+          - generic [ref=e79]: 09_SETUP
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - generic [ref=e83]: SYSTEM_PULSE
+          - generic [ref=e84]: ACTIVE
+        - img [ref=e88]
+    - main [ref=e90]:
+      - generic [ref=e96]:
+        - text: INTEGRATIONS
+        - generic [ref=e97]:
+          - generic [ref=e98]:
+            - generic [ref=e99]:
+              - generic [ref=e100]: CONNECTED
+              - generic [ref=e101]: "0"
+            - generic [ref=e102]:
+              - generic [ref=e103]: CONFIGURED
+              - generic [ref=e104]: "4"
+            - generic [ref=e105]:
+              - generic [ref=e106]: TOTAL
+              - generic [ref=e107]: "4"
+          - button [ref=e108]:
+            - img [ref=e109]
+        - paragraph [ref=e114]: Connect your external services to enable webhook integrations and automated workflows. OAuth connections allow the agent to interact with these services on your behalf.
+        - generic [ref=e115]:
+          - generic [ref=e116]:
+            - generic [ref=e117]:
+              - generic [ref=e118]:
+                - img [ref=e120]
+                - generic [ref=e123]:
+                  - heading "GitHub" [level=3] [ref=e124]
+                  - paragraph [ref=e125]: Connect to GitHub for repository access
+              - generic [ref=e126]:
+                - img [ref=e127]
+                - text: DISCONNECTED
+            - button "CONNECT" [ref=e131]
+          - generic [ref=e132]:
+            - generic [ref=e133]:
+              - generic [ref=e134]:
+                - img [ref=e136]
+                - generic [ref=e139]:
+                  - heading "Jira" [level=3] [ref=e140]
+                  - paragraph [ref=e141]: Connect to Jira for issue tracking
+              - generic [ref=e142]:
+                - img [ref=e143]
+                - text: DISCONNECTED
+            - button "CONNECT" [ref=e147]
+          - generic [ref=e148]:
+            - generic [ref=e149]:
+              - generic [ref=e150]:
+                - img [ref=e152]
+                - generic [ref=e154]:
+                  - heading "Slack" [level=3] [ref=e155]
+                  - paragraph [ref=e156]: Connect to Slack for notifications
+              - generic [ref=e157]:
+                - img [ref=e158]
+                - text: DISCONNECTED
+            - button "CONNECT" [ref=e162]
+          - generic [ref=e163]:
+            - generic [ref=e164]:
+              - generic [ref=e165]:
+                - img [ref=e167]
+                - generic [ref=e169]:
+                  - heading "Sentry" [level=3] [ref=e170]
+                  - paragraph [ref=e171]: Connect to Sentry for error tracking
+              - generic [ref=e172]:
+                - img [ref=e173]
+                - text: DISCONNECTED
+            - button "CONNECT" [ref=e177]

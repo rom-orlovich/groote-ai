@@ -9,6 +9,7 @@ interface CallbackNotification {
   platform: string;
   success: boolean;
   error?: string;
+  webhookStatus?: "ok" | "failed";
 }
 
 export function IntegrationsFeature() {
@@ -33,13 +34,20 @@ export function IntegrationsFeature() {
 
     const success = params.get("success") === "true";
     const callbackError = params.get("error");
+    const webhook = params.get("webhook") as "ok" | "failed" | null;
 
-    setNotification({ platform, success, error: callbackError ?? undefined });
+    setNotification({
+      platform,
+      success,
+      error: callbackError ?? undefined,
+      webhookStatus: webhook ?? undefined,
+    });
 
     const url = new URL(window.location.href);
     url.searchParams.delete("oauth_callback");
     url.searchParams.delete("success");
     url.searchParams.delete("error");
+    url.searchParams.delete("webhook");
     window.history.replaceState({}, "", url.pathname);
 
     refetch();
@@ -90,7 +98,7 @@ export function IntegrationsFeature() {
           {notification.success ? <CheckCircle size={14} /> : <XCircle size={14} />}
           <span>
             {notification.success
-              ? `${notification.platform.toUpperCase()} connected successfully`
+              ? `${notification.platform.toUpperCase()} connected successfully${notification.webhookStatus === "ok" ? " - webhook configured" : notification.webhookStatus === "failed" ? " - webhook setup failed" : ""}`
               : `${notification.platform.toUpperCase()} connection failed${notification.error ? `: ${notification.error}` : ""}`}
           </span>
         </div>

@@ -40,6 +40,10 @@ class Installation(Base):
     permissions: Mapped[dict | None] = mapped_column(JSON)
     metadata_json: Mapped[dict | None] = mapped_column(JSON)
     installed_by: Mapped[str | None] = mapped_column(String(255))
+    webhook_registered: Mapped[bool] = mapped_column(default=False)
+    webhook_url: Mapped[str | None] = mapped_column(String(512))
+    webhook_external_id: Mapped[str | None] = mapped_column(String(255))
+    webhook_error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )

@@ -29,6 +29,9 @@ make cli PROVIDER=claude SCALE=3  # Scale CLI instances
 make test                    # Run all tests
 make lint                    # Lint code
 make format                  # Format code
+make tunnel-zrok             # Start zrok tunnel (permanent public URL)
+make tunnel                  # Start ngrok tunnel (alternative)
+make tunnel-setup            # First-time zrok setup
 ```
 
 ## Architecture

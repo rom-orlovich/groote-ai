@@ -82,6 +82,13 @@ class RedisClient:
         await self._client.rpush("task_queue", task_id)
         logger.debug("Task pushed to queue", task_id=task_id)
 
+    async def push_agent_task(self, task_data: dict) -> None:
+        """Push full task data to agent engine queue."""
+        if not self._client:
+            raise RuntimeError("Redis not connected")
+        await self._client.lpush("agent:tasks", json.dumps(task_data))
+        logger.debug("Agent task pushed", task_id=task_data.get("task_id"))
+
     async def pop_task(self, timeout: int = 30) -> str | None:
         """Pop task from queue (blocking)."""
         if not self._client:

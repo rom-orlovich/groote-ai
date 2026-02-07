@@ -10,6 +10,7 @@ from providers.jira import JiraOAuthProvider
 from providers.slack import SlackOAuthProvider
 from services.installation_service import InstallationService
 from services.token_service import TokenService
+from services.webhook_service import WebhookRegistrationService
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .server import get_session
@@ -24,6 +25,30 @@ PROVIDERS = {
 }
 
 
+def validate_platform_credentials(platform: str, settings: Settings) -> tuple[bool, str]:
+    required_fields: dict[str, list[tuple[str, str]]] = {
+        "github": [
+            ("client_id", settings.github_client_id),
+            ("client_secret", settings.github_client_secret),
+            ("private_key", settings.github_private_key),
+            ("app_id", settings.github_app_id),
+        ],
+        "jira": [
+            ("client_id", settings.jira_client_id),
+            ("client_secret", settings.jira_client_secret),
+        ],
+        "slack": [
+            ("client_id", settings.slack_client_id),
+            ("client_secret", settings.slack_client_secret),
+        ],
+    }
+
+    missing = [name for name, value in required_fields.get(platform, []) if not value]
+    if missing:
+        return False, f"Missing credentials: {', '.join(missing).upper()}"
+    return True, ""
+
+
 @router.get("/install/{platform}")
 async def start_installation(
     platform: str,
@@ -32,6 +57,13 @@ async def start_installation(
 ) -> RedirectResponse:
     if platform not in PROVIDERS:
         raise HTTPException(status_code=400, detail=f"Unknown platform: {platform}")
+
+    valid, error = validate_platform_credentials(platform, settings)
+    if not valid:
+        raise HTTPException(
+            status_code=503,
+            detail=f"OAuth not configured for {platform}. {error}. Complete setup wizard first.",
+        )
 
     provider = PROVIDERS[platform](settings)
     installation_service = InstallationService(session)
@@ -57,9 +89,10 @@ async def start_installation(
 @router.get("/callback/{platform}")
 async def oauth_callback(
     platform: str,
-    code: str = Query(...),
-    state: str = Query(...),
+    code: str | None = Query(None),
+    state: str | None = Query(None),
     installation_id: str | None = Query(None),
+    setup_action: str | None = Query(None),
     session: AsyncSession = Depends(get_session),
     settings: Settings = Depends(get_settings),
 ) -> RedirectResponse:
@@ -70,25 +103,29 @@ async def oauth_callback(
         )
 
     try:
-        installation_service = InstallationService(session)
-        oauth_state = await installation_service.validate_oauth_state(state)
-
-        if not oauth_state:
-            return RedirectResponse(
-                url=f"{frontend_base}/integrations?oauth_callback={platform}&error=invalid_state"
-            )
-
         provider = PROVIDERS[platform](settings)
-
-        if platform == "jira" and oauth_state.code_verifier:
-            provider._code_verifiers[state] = oauth_state.code_verifier
+        installation_service = InstallationService(session)
 
         if platform == "github" and installation_id:
             info = await provider.get_installation_by_id(installation_id)
             tokens = await provider.get_installation_token(installation_id)
-        else:
+        elif code and state:
+            oauth_state = await installation_service.validate_oauth_state(state)
+
+            if not oauth_state:
+                return RedirectResponse(
+                    url=f"{frontend_base}/integrations?oauth_callback={platform}&error=invalid_state"
+                )
+
+            if platform == "jira" and oauth_state.code_verifier:
+                provider._code_verifiers[state] = oauth_state.code_verifier
+
             tokens = await provider.exchange_code(code, state)
             info = await provider.get_installation_info(tokens)
+        else:
+            return RedirectResponse(
+                url=f"{frontend_base}/integrations?oauth_callback={platform}&error=missing_params"
+            )
 
         installation = await installation_service.create_installation(
             platform=platform,
@@ -103,8 +140,39 @@ async def oauth_callback(
             installation_id=str(installation.id),
         )
 
+        webhook_param = ""
+        try:
+            webhook_service = WebhookRegistrationService(settings)
+            if platform == "github":
+                result = await webhook_service.configure_github_app_webhook()
+            elif platform == "jira":
+                cloud_id = info.external_org_id
+                result = await webhook_service.register_jira_webhook(
+                    access_token=tokens.access_token,
+                    cloud_id=cloud_id,
+                )
+            else:
+                result = None
+
+            if result:
+                await installation_service.update_webhook_status(
+                    installation_id=installation.id,
+                    webhook_registered=result.success,
+                    webhook_url=result.webhook_url,
+                    webhook_external_id=result.external_id,
+                    webhook_error=result.error,
+                )
+                webhook_param = "&webhook=ok" if result.success else "&webhook=failed"
+        except Exception as webhook_err:
+            logger.error(
+                "webhook_registration_error",
+                platform=platform,
+                error=str(webhook_err),
+            )
+            webhook_param = "&webhook=failed"
+
         return RedirectResponse(
-            url=f"{frontend_base}/integrations?oauth_callback={platform}&success=true"
+            url=f"{frontend_base}/integrations?oauth_callback={platform}&success=true{webhook_param}"
         )
     except Exception as e:
         logger.error("oauth_callback_error", platform=platform, error=str(e))

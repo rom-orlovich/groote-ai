@@ -156,12 +156,16 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white border border-gray-200 w-full max-w-lg mx-4">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="font-heading text-sm">
+      <div className="bg-modal-bg border border-modal-border w-full max-w-lg mx-4">
+        <div className="flex items-center justify-between p-4 border-b border-modal-border">
+          <h2 className="font-heading text-sm text-text-main">
             {step === "select" ? "ADD_DATA_SOURCE" : "CONFIGURE_SOURCE"}
           </h2>
-          <button type="button" onClick={handleClose} className="p-1 hover:bg-gray-100">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="p-1 hover:bg-panel-border/30 text-text-main"
+          >
             <X size={16} />
           </button>
         </div>
@@ -169,12 +173,12 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
         <div className="p-4">
           {step === "select" && (
             <div className="grid gap-3">
-              <p className="text-[10px] text-gray-500 mb-2">
+              <p className="text-[10px] text-app-muted mb-2">
                 Select the type of data source you want to add. Each source will be indexed and made
                 searchable for the AI agent.
               </p>
               {isLoadingTypes ? (
-                <div className="text-center py-4 text-[10px] text-gray-500">
+                <div className="text-center py-4 text-[10px] text-app-muted">
                   Loading source types...
                 </div>
               ) : (
@@ -187,25 +191,27 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
                       onClick={() => handleTypeSelect(typeInfo)}
                       className={`flex items-center gap-3 p-3 border text-left transition-colors ${
                         typeInfo.oauth_connected
-                          ? "border-gray-200 hover:border-gray-400 hover:bg-gray-50"
-                          : "border-amber-200 bg-amber-50/50"
+                          ? "border-panel-border hover:border-primary/50 hover:bg-panel-border/20"
+                          : "border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/30"
                       }`}
                     >
-                      <div className="p-2 border border-gray-200">
+                      <div className="p-2 border border-panel-border text-text-main">
                         <Icon size={20} />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-heading text-sm">{typeInfo.name}</span>
+                          <span className="font-heading text-sm text-text-main">
+                            {typeInfo.name}
+                          </span>
                           {typeInfo.oauth_connected ? (
                             <CheckCircle size={12} className="text-green-500" />
                           ) : (
                             <AlertTriangle size={12} className="text-amber-500" />
                           )}
                         </div>
-                        <div className="text-[10px] text-gray-500">{typeInfo.description}</div>
+                        <div className="text-[10px] text-app-muted">{typeInfo.description}</div>
                         {!typeInfo.oauth_connected && (
-                          <div className="text-[10px] text-amber-600 mt-1">
+                          <div className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
                             OAuth not connected -
                             <Link
                               to="/integrations"
@@ -228,18 +234,18 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
           {step === "configure" && selectedType && (
             <div className="space-y-4">
               {selectedTypeInfo && !selectedTypeInfo.oauth_connected && (
-                <div className="p-3 bg-amber-50 border border-amber-200 text-[10px]">
-                  <div className="flex items-center gap-1 text-amber-700 mb-1">
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[10px]">
+                  <div className="flex items-center gap-1 text-amber-700 dark:text-amber-400 mb-1">
                     <AlertTriangle size={12} />
                     <span className="font-heading">OAUTH_NOT_CONNECTED</span>
                   </div>
-                  <p className="text-amber-600 mb-2">
+                  <p className="text-amber-600 dark:text-amber-400 mb-2">
                     You can configure this source, but it will be created as disabled. Connect{" "}
                     {selectedTypeInfo.oauth_platform} OAuth to enable syncing.
                   </p>
                   <Link
                     to="/integrations"
-                    className="inline-flex items-center gap-1 text-amber-700 hover:text-amber-900 font-heading"
+                    className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 font-heading"
                   >
                     <Link2 size={10} />
                     GO_TO_INTEGRATIONS
@@ -248,13 +254,13 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
               )}
 
               <div>
-                <label className="block text-[10px] font-heading text-gray-500 mb-1">
+                <label className="block text-[10px] font-heading text-app-muted mb-1">
                   SOURCE_NAME
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 text-sm focus:outline-none focus:border-gray-400 mt-1"
+                    className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm focus:outline-none focus:border-primary mt-1"
                     placeholder="Enter source name"
                   />
                 </label>
@@ -263,7 +269,7 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
               {selectedType === "github" && (
                 <>
                   <div>
-                    <label className="block text-[10px] font-heading text-gray-500 mb-1">
+                    <label className="block text-[10px] font-heading text-app-muted mb-1">
                       INCLUDE_PATTERNS (comma-separated)
                       <input
                         type="text"
@@ -274,13 +280,13 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
                             include_patterns: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
                         placeholder="owner/repo, owner/repo-*"
                       />
                     </label>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-heading text-gray-500 mb-1">
+                    <label className="block text-[10px] font-heading text-app-muted mb-1">
                       BRANCHES (comma-separated)
                       <input
                         type="text"
@@ -291,13 +297,13 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
                             branches: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
                         placeholder="main, master, develop"
                       />
                     </label>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-heading text-gray-500 mb-1">
+                    <label className="block text-[10px] font-heading text-app-muted mb-1">
                       FILE_PATTERNS (comma-separated)
                       <input
                         type="text"
@@ -308,7 +314,7 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
                             file_patterns: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
                         placeholder="**/*.py, **/*.ts"
                       />
                     </label>
@@ -319,19 +325,19 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
               {selectedType === "jira" && (
                 <>
                   <div>
-                    <label className="block text-[10px] font-heading text-gray-500 mb-1">
+                    <label className="block text-[10px] font-heading text-app-muted mb-1">
                       JQL_FILTER (optional)
                       <input
                         type="text"
                         value={jiraConfig.jql}
                         onChange={(e) => setJiraConfig({ ...jiraConfig, jql: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
                         placeholder="project = PROJ AND status != Done"
                       />
                     </label>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-heading text-gray-500 mb-1">
+                    <label className="block text-[10px] font-heading text-app-muted mb-1">
                       ISSUE_TYPES (comma-separated)
                       <input
                         type="text"
@@ -342,13 +348,13 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
                             issue_types: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
                         placeholder="Bug, Story, Task"
                       />
                     </label>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-heading text-gray-500 mb-1">
+                    <label className="block text-[10px] font-heading text-app-muted mb-1">
                       MAX_RESULTS
                       <input
                         type="number"
@@ -359,7 +365,7 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
                             max_results: parseInt(e.target.value, 10) || 1000,
                           })
                         }
-                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
                       />
                     </label>
                   </div>
@@ -369,7 +375,7 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
               {selectedType === "confluence" && (
                 <>
                   <div>
-                    <label className="block text-[10px] font-heading text-gray-500 mb-1">
+                    <label className="block text-[10px] font-heading text-app-muted mb-1">
                       SPACES (comma-separated, leave empty for all)
                       <input
                         type="text"
@@ -380,13 +386,13 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
                             spaces: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
                         placeholder="ENG, DOCS, WIKI"
                       />
                     </label>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-heading text-gray-500 mb-1">
+                    <label className="block text-[10px] font-heading text-app-muted mb-1">
                       CONTENT_TYPES (comma-separated)
                       <input
                         type="text"
@@ -397,7 +403,7 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
                             content_types: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 border border-gray-200 text-sm font-mono focus:outline-none focus:border-gray-400 mt-1"
+                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
                         placeholder="page, blogpost"
                       />
                     </label>
@@ -409,7 +415,7 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
                 <button
                   type="button"
                   onClick={() => setStep("select")}
-                  className="flex-1 px-4 py-2 border border-gray-200 hover:bg-gray-50 text-[10px] font-heading"
+                  className="flex-1 px-4 py-2 border border-panel-border hover:bg-panel-border/20 text-[10px] font-heading text-text-main"
                 >
                   BACK
                 </button>
@@ -417,7 +423,7 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
                   type="button"
                   onClick={handleSubmit}
                   disabled={isSubmitting || !name}
-                  className="flex-1 px-4 py-2 bg-black text-white hover:bg-gray-800 text-[10px] font-heading disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2 bg-cta text-white hover:opacity-90 text-[10px] font-heading disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? "CREATING..." : "CREATE_SOURCE"}
                 </button>

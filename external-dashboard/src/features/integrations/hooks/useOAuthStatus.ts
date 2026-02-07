@@ -11,6 +11,9 @@ export interface OAuthStatus {
   description: string;
   installed_at: string | null;
   scopes: string[] | null;
+  webhook_registered?: boolean;
+  webhook_url?: string | null;
+  webhook_error?: string | null;
 }
 
 export interface OAuthStatusResponse {

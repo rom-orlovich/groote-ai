@@ -106,6 +106,28 @@ class InstallationService:
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
+    async def update_webhook_status(
+        self,
+        installation_id: Any,
+        webhook_registered: bool,
+        webhook_url: str | None = None,
+        webhook_external_id: str | None = None,
+        webhook_error: str | None = None,
+    ) -> None:
+        installation = await self.get_installation_by_id(installation_id)
+        if not installation:
+            return
+        installation.webhook_registered = webhook_registered
+        installation.webhook_url = webhook_url
+        installation.webhook_external_id = webhook_external_id
+        installation.webhook_error = webhook_error
+        await self.session.commit()
+        logger.info(
+            "webhook_status_updated",
+            installation_id=str(installation_id),
+            webhook_registered=webhook_registered,
+        )
+
     async def list_installations(self, platform: str | None = None) -> list[dict[str, Any]]:
         query = select(Installation).where(Installation.status == InstallationStatus.ACTIVE.value)
         if platform:
@@ -124,6 +146,9 @@ class InstallationService:
                 "scopes": inst.scopes,
                 "created_at": inst.created_at.isoformat(),
                 "last_used_at": inst.last_used_at.isoformat() if inst.last_used_at else None,
+                "webhook_registered": inst.webhook_registered,
+                "webhook_url": inst.webhook_url,
+                "webhook_error": inst.webhook_error,
             }
             for inst in installations
         ]

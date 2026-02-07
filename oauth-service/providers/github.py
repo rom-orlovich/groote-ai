@@ -16,8 +16,21 @@ class GitHubOAuthProvider(OAuthProvider):
         self.app_name = settings.github_app_name
         self.client_id = settings.github_client_id
         self.client_secret = settings.github_client_secret
-        self.private_key = settings.github_private_key
+        self.private_key = settings.github_private_key.replace("\\n", "\n")
         self.redirect_uri = f"{settings.base_url}/oauth/callback/github"
+
+        missing = [
+            name
+            for name, val in [
+                ("app_id", self.app_id),
+                ("client_id", self.client_id),
+                ("client_secret", self.client_secret),
+                ("private_key", self.private_key),
+            ]
+            if not val
+        ]
+        if missing:
+            logger.warning("oauth_provider_missing_credentials", platform="github", missing=missing)
 
     def get_authorization_url(self, state: str) -> str:
         return f"https://github.com/apps/{self.app_name}/installations/new?state={state}"

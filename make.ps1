@@ -62,7 +62,9 @@ Knowledge Services:
   .\make.ps1 knowledge-build                  Build knowledge services
 
 Networking:
-  .\make.ps1 tunnel                           Start ngrok tunnel (uses PUBLIC_URL from .env)
+  .\make.ps1 tunnel-zrok                      Start zrok tunnel (permanent public URL)
+  .\make.ps1 tunnel-setup                     First-time zrok setup (install + account)
+  .\make.ps1 tunnel                           Start ngrok tunnel (alternative)
 
 Environment:
   .\make.ps1 init                             Initialize project
@@ -370,24 +372,32 @@ function Invoke-Tunnel {
     $match = [regex]::Match($envContent, '^PUBLIC_URL=(.+)$', [System.Text.RegularExpressions.RegexOptions]::Multiline)
 
     if (-not $match.Success) {
-        Write-Host "❌ PUBLIC_URL not configured in .env"
+        Write-Host "Error: PUBLIC_URL not configured in .env"
         exit 1
     }
 
     $tunnelDomain = $match.Groups[1].Value.Trim('"')
 
-    Write-Host "🌐 Starting ngrok tunnel to $tunnelDomain"
-    Write-Host "   Forwarding to: http://localhost:5000"
+    Write-Host "Starting ngrok tunnel to $tunnelDomain"
+    Write-Host "   Forwarding to: http://localhost:3005"
 
     try {
         $null = & ngrok --version
     }
     catch {
-        Write-Host "❌ ngrok not installed. Install it with: choco install ngrok"
+        Write-Host "Error: ngrok not installed. Install it with: choco install ngrok"
         exit 1
     }
 
-    & ngrok http --domain $tunnelDomain 5000
+    & ngrok http --domain $tunnelDomain 3005
+}
+
+function Invoke-TunnelZrok {
+    & powershell -ExecutionPolicy Bypass -File ".\scripts\zrok\tunnel.ps1"
+}
+
+function Invoke-TunnelSetup {
+    & powershell -ExecutionPolicy Bypass -File ".\scripts\zrok\setup.ps1"
 }
 
 switch ($Command) {
@@ -422,6 +432,8 @@ switch ($Command) {
     "knowledge-build"  { Invoke-KnowledgeBuild }
     "up-full"          { Invoke-UpFull }
     "tunnel"           { Invoke-Tunnel }
+    "tunnel-zrok"      { Invoke-TunnelZrok }
+    "tunnel-setup"     { Invoke-TunnelSetup }
     "clean"            { Invoke-Clean }
     default {
         Write-Host "Unknown command: $Command"

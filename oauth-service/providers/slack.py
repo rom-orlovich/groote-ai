@@ -12,6 +12,7 @@ DEFAULT_SCOPES = [
     "app_mentions:read",
     "users:read",
     "reactions:write",
+    "team:read",
 ]
 
 
@@ -21,6 +22,12 @@ class SlackOAuthProvider(OAuthProvider):
         self.client_secret = settings.slack_client_secret
         self.redirect_uri = f"{settings.base_url}/oauth/callback/slack"
         self.scopes = DEFAULT_SCOPES
+
+        missing = [
+            name for name, val in [("client_id", self.client_id), ("client_secret", self.client_secret)] if not val
+        ]
+        if missing:
+            logger.warning("oauth_provider_missing_credentials", platform="slack", missing=missing)
 
     def get_authorization_url(self, state: str) -> str:
         scope_str = ",".join(self.scopes)

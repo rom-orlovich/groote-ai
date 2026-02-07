@@ -1,8 +1,10 @@
 import asyncio
+import time
 from collections.abc import Callable, Coroutine
 from typing import Any
 
 import httpx
+import jwt
 import structlog
 from pydantic import BaseModel, ConfigDict
 
@@ -56,7 +58,8 @@ class ValidationResult(BaseModel):
 async def validate_github_oauth(
     app_id: str,
     client_id: str,
-    client_secret: str,
+    _client_secret: str,
+    private_key: str,
 ) -> ValidationResult:
     if not app_id.strip():
         return ValidationResult(
@@ -64,14 +67,31 @@ async def validate_github_oauth(
             success=False,
             message="App ID is required",
         )
+    if not private_key.strip():
+        return ValidationResult(
+            service="github",
+            success=False,
+            message="Private Key is required to authenticate as a GitHub App",
+        )
 
     async def _attempt() -> ValidationResult:
+        try:
+            now = int(time.time())
+            payload = {"iat": now - 60, "exp": now + (10 * 60), "iss": app_id.strip()}
+            token = jwt.encode(payload, private_key, algorithm="RS256")
+        except (jwt.PyJWTError, ValueError) as e:
+            return ValidationResult(
+                service="github",
+                success=False,
+                message=f"Invalid Private Key: {e!s}",
+            )
+
         try:
             async with httpx.AsyncClient(timeout=VALIDATION_TIMEOUT) as http:
                 response = await http.get(
                     "https://api.github.com/app",
                     headers={
-                        "Authorization": f"Bearer {client_secret[:20]}",
+                        "Authorization": f"Bearer {token}",
                         "Accept": "application/vnd.github.v3+json",
                     },
                 )
@@ -112,24 +132,39 @@ async def validate_jira_oauth(
             success=False,
             message="Client ID is required",
         )
+    if not client_secret.strip():
+        return ValidationResult(
+            service="jira",
+            success=False,
+            message="Client Secret is required",
+        )
 
     async def _attempt() -> ValidationResult:
         try:
             async with httpx.AsyncClient(timeout=VALIDATION_TIMEOUT) as http:
-                response = await http.get(
-                    "https://auth.atlassian.com/.well-known/openid-configuration",
+                response = await http.post(
+                    "https://auth.atlassian.com/oauth/token",
+                    json={
+                        "grant_type": "authorization_code",
+                        "client_id": client_id,
+                        "client_secret": client_secret,
+                        "code": "validation_check",
+                        "redirect_uri": "https://localhost",
+                    },
                 )
-                if response.status_code == 200:
+                body = response.json()
+                error = body.get("error", "")
+                if error == "invalid_client":
                     return ValidationResult(
                         service="jira",
-                        success=True,
-                        message="Jira OAuth credentials saved",
-                        details={"client_id": client_id, "has_secret": str(bool(client_secret))},
+                        success=False,
+                        message="Invalid Client ID or Client Secret",
                     )
                 return ValidationResult(
                     service="jira",
-                    success=False,
-                    message=f"Atlassian auth endpoint error (HTTP {response.status_code})",
+                    success=True,
+                    message="Jira OAuth credentials are valid",
+                    details={"client_id": client_id},
                 )
         except httpx.RequestError as e:
             return ValidationResult(
@@ -151,24 +186,43 @@ async def validate_slack_oauth(
             success=False,
             message="Client ID is required",
         )
+    if not client_secret.strip():
+        return ValidationResult(
+            service="slack",
+            success=False,
+            message="Client Secret is required",
+        )
 
     async def _attempt() -> ValidationResult:
         try:
             async with httpx.AsyncClient(timeout=VALIDATION_TIMEOUT) as http:
                 response = await http.post(
-                    "https://slack.com/api/api.test",
+                    "https://slack.com/api/oauth.v2.access",
+                    data={
+                        "client_id": client_id,
+                        "client_secret": client_secret,
+                        "code": "validation_check",
+                    },
                 )
-                if response.status_code == 200:
+                body = response.json()
+                error = body.get("error", "")
+                if error == "invalid_client_id":
                     return ValidationResult(
                         service="slack",
-                        success=True,
-                        message="Slack OAuth credentials saved",
-                        details={"client_id": client_id, "has_secret": str(bool(client_secret))},
+                        success=False,
+                        message="Invalid Client ID",
+                    )
+                if error == "bad_client_secret":
+                    return ValidationResult(
+                        service="slack",
+                        success=False,
+                        message="Invalid Client Secret",
                     )
                 return ValidationResult(
                     service="slack",
-                    success=False,
-                    message=f"Slack API error (HTTP {response.status_code})",
+                    success=True,
+                    message="Slack OAuth credentials are valid",
+                    details={"client_id": client_id},
                 )
         except httpx.RequestError as e:
             return ValidationResult(

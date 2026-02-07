@@ -1123,6 +1123,7 @@ KNOWLEDGE_SERVICES_ENABLED=true docker-compose up -d
 
 ## Related Documentation
 
+- [TUNNEL_SETUP.md](./TUNNEL_SETUP.md) - Configure public URLs for webhooks & OAuth
 - [SETUP-KNOWLEDGE.md](./SETUP-KNOWLEDGE.md) - Knowledge layer setup guide
 - [CLAUDE.md](../.claude/CLAUDE.md) - Development rules and conventions
 - [README.md](../README.md) - Project overview and quick start

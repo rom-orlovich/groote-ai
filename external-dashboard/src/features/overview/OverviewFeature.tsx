@@ -37,7 +37,7 @@ export function OverviewFeature() {
         <button
           type="button"
           onClick={() => refetch()}
-          className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 text-[10px] font-heading font-bold hover:bg-white hover:text-primary transition-all uppercase tracking-widest shadow-sm"
+          className="flex items-center gap-2 px-3 py-1.5 border border-panel-border text-[10px] font-heading font-bold hover:bg-panel-bg hover:text-primary transition-all uppercase tracking-widest shadow-sm text-text-main"
         >
           <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} />
           REFRESH
@@ -174,18 +174,18 @@ export function OverviewFeature() {
 
       {selectedTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[2px] animate-in fade-in duration-200">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-md mx-4 overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200 ring-1 ring-black/5">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50/80">
+          <div className="bg-modal-bg rounded-lg shadow-2xl w-full max-w-md mx-4 overflow-hidden border border-modal-border animate-in zoom-in-95 duration-200 ring-1 ring-black/5">
+            <div className="flex items-center justify-between p-4 border-b border-modal-border bg-background-app/80">
               <div className="flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${getStatusColor(selectedTask.status)}`} />
-                <h3 className="font-heading font-bold text-xs uppercase tracking-wider">
+                <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-text-main">
                   TASK_DETAILS
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedTask(null)}
-                className="p-1 hover:bg-gray-200 rounded text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-1 hover:bg-panel-border/30 rounded text-app-muted hover:text-text-main transition-colors"
               >
                 <X size={16} />
               </button>
@@ -193,32 +193,32 @@ export function OverviewFeature() {
 
             <div className="p-6 space-y-6">
               <div className="space-y-1">
-                <div className="text-[10px] text-gray-400 font-heading">TASK_ID</div>
-                <div className="font-mono text-sm font-bold text-gray-900 group flex items-center gap-2">
+                <div className="text-[10px] text-app-muted font-heading">TASK_ID</div>
+                <div className="font-mono text-sm font-bold text-text-main group flex items-center gap-2">
                   {selectedTask.id}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-1">
-                  <div className="text-[10px] text-gray-400 font-heading">AGENT_NAME</div>
+                  <div className="text-[10px] text-app-muted font-heading">AGENT_NAME</div>
                   <div className="font-heading text-xs font-bold">{selectedTask.name}</div>
                 </div>
                 <div className="space-y-1">
-                  <div className="text-[10px] text-gray-400 font-heading">STATUS</div>
+                  <div className="text-[10px] text-app-muted font-heading">STATUS</div>
                   <div className="font-heading text-xs font-bold uppercase">
                     {selectedTask.status}
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <div className="text-[10px] text-gray-400 font-heading">COST</div>
+                  <div className="text-[10px] text-app-muted font-heading">COST</div>
                   <div className="font-mono text-xs font-bold text-cta">
                     ${selectedTask.cost.toFixed(4)}
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <div className="text-[10px] text-gray-400 font-heading">STARTED</div>
-                  <div className="font-mono text-xs text-gray-500">
+                  <div className="text-[10px] text-app-muted font-heading">STARTED</div>
+                  <div className="font-mono text-xs text-app-muted">
                     {new Date(selectedTask.timestamp).toLocaleString()}
                   </div>
                 </div>
@@ -258,11 +258,11 @@ export function OverviewFeature() {
               </div>
             </div>
 
-            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
+            <div className="p-4 bg-background-app/50 border-t border-modal-border flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setSelectedTask(null)}
-                className="px-4 py-2 bg-white border border-gray-200 text-[10px] font-heading font-bold hover:bg-gray-50 transition-colors rounded shadow-sm hover:shadow"
+                className="px-4 py-2 bg-panel-bg border border-input-border text-[10px] font-heading font-bold hover:bg-background-app text-text-main transition-colors rounded shadow-sm hover:shadow"
               >
                 CLOSE_PANEL
               </button>

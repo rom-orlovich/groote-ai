@@ -1,4 +1,4 @@
-.PHONY: help init build up down logs test test-all test-api-gateway test-agent-engine test-dashboard test-logger test-services test-cov lint format clean health cli cli-down cli-logs cli-claude cli-cursor db-migrate db-upgrade knowledge-up knowledge-down knowledge-logs knowledge-build up-full fix-line-endings tunnel
+.PHONY: help init build up down logs test test-all test-api-gateway test-agent-engine test-dashboard test-logger test-services test-cov lint format clean health cli cli-down cli-logs cli-claude cli-cursor db-migrate db-upgrade knowledge-up knowledge-down knowledge-logs knowledge-build up-full fix-line-endings tunnel tunnel-zrok tunnel-setup
 
 PROVIDER ?= claude
 SCALE ?= 1
@@ -138,10 +138,16 @@ clean:
 	@./scripts/utils/clean.sh
 
 # ============================================
-# NGROK TUNNEL
+# TUNNELS (Public URL for webhooks & OAuth)
 # ============================================
 tunnel:
 	@./scripts/ngrok/tunnel.sh
+
+tunnel-zrok:
+	@./scripts/zrok/tunnel.sh
+
+tunnel-setup:
+	@./scripts/zrok/setup.sh
 
 # ============================================
 # LINE ENDING FIX (run after clone on Windows)

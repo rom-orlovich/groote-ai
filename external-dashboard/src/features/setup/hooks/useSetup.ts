@@ -4,6 +4,7 @@ import type {
   SaveStepRequest,
   SaveStepResponse,
   SetupStatus,
+  StepConfigItem,
   ValidateResponse,
 } from "../types";
 
@@ -53,6 +54,12 @@ async function completeSetup(): Promise<SetupStatus> {
 async function resetSetup(): Promise<SetupStatus> {
   const res = await fetch(`${API_BASE}/api/setup/reset`, { method: "POST" });
   if (!res.ok) throw new Error("Failed to reset setup");
+  return res.json();
+}
+
+async function fetchStepConfig(stepId: string): Promise<StepConfigItem[]> {
+  const res = await fetch(`${API_BASE}/api/setup/steps/${stepId}/config`);
+  if (!res.ok) throw new Error("Failed to fetch step config");
   return res.json();
 }
 
@@ -117,6 +124,14 @@ export function useResetSetup() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["setup-status"] });
     },
+  });
+}
+
+export function useStepConfig(stepId: string) {
+  return useQuery({
+    queryKey: ["step-config", stepId],
+    queryFn: () => fetchStepConfig(stepId),
+    staleTime: 0,
   });
 }
 

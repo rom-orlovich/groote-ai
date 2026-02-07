@@ -58,6 +58,12 @@ class TaskWorker:
             result = await self._execute_task(task)
             await self._update_task_status(task_id, "completed", result)
 
+            conversation_id = task.get("conversation_id")
+            if conversation_id and result.get("output"):
+                await self._post_assistant_message(
+                    conversation_id, result["output"], task_id
+                )
+
             logger.info("task_completed", task_id=task_id)
         except Exception as e:
             logger.exception("task_failed", error=str(e))
@@ -70,11 +76,9 @@ class TaskWorker:
         from cli.factory import run_cli
 
         prompt = task.get("prompt", "")
-        repo_path = task.get("repo_path", "/app/repos/default")
+        repo_path = task.get("repo_path", "/app")
         task_id = task.get("task_id", "unknown")
-        agent_type = task.get("agent_type", "")
 
-        model = self._get_model_for_task(agent_type)
         output_queue: asyncio.Queue[str | None] = asyncio.Queue()
 
         try:
@@ -84,39 +88,46 @@ class TaskWorker:
                 output_queue=output_queue,
                 task_id=task_id,
                 timeout_seconds=self._settings.task_timeout_seconds,
-                model=model,
             )
 
             return {
-                "stdout": result.stdout,
-                "stderr": result.stderr,
-                "return_code": result.return_code,
+                "output": result.clean_output or result.output,
+                "cost_usd": result.cost_usd,
+                "input_tokens": result.input_tokens,
+                "output_tokens": result.output_tokens,
+                "success": result.success,
+                "error": result.error,
             }
         except TimeoutError:
             return {"error": "Task timed out", "return_code": -1}
 
-    def _get_model_for_task(self, agent_type: str) -> str | None:
-        is_complex_task = agent_type.lower() in (
-            "planning",
-            "consultation",
-            "question_asking",
-            "brain",
-        )
+    async def _post_assistant_message(
+        self, conversation_id: str, content: str, task_id: str
+    ) -> None:
+        import httpx
 
-        if self._settings.cli_provider == "cursor":
-            return (
-                self._settings.cursor_model_complex
-                if is_complex_task
-                else self._settings.cursor_model_execution
+        dashboard_url = self._settings.dashboard_api_url
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                await client.post(
+                    f"{dashboard_url}/api/conversations/{conversation_id}/messages",
+                    json={
+                        "role": "assistant",
+                        "content": content,
+                        "task_id": task_id,
+                    },
+                )
+            logger.info(
+                "assistant_message_posted",
+                conversation_id=conversation_id,
+                task_id=task_id,
             )
-        elif self._settings.cli_provider == "claude":
-            return (
-                self._settings.claude_model_complex
-                if is_complex_task
-                else self._settings.claude_model_execution
+        except Exception as e:
+            logger.error(
+                "failed_to_post_assistant_message",
+                conversation_id=conversation_id,
+                error=str(e),
             )
-
-        return None
 
     async def _update_task_status(
         self, task_id: str, status: str, result: dict[str, Any] | None = None

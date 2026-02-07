@@ -81,4 +81,5 @@ export interface StepDefinition {
   oauthPlatform?: string;
   instructions?: InstructionStep[];
   providerGroups?: ProviderFieldGroup[];
+  webhookMode?: "auto" | "manual";
 }
