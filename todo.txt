@@ -1,0 +1,2 @@
+check the converasiton work propeorply
+check the intergration work with all th e services ad platrfrom also for the knowlage layer adn the api
