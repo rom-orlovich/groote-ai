@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Simple startup script: test CLI then run main app."""
+"""Startup script: setup config, test CLI, then run main app."""
 
 import os
 import shutil
@@ -61,7 +61,7 @@ def install_cursor_cli():
 
 
 def run_cli_test():
-    print("Testing CLI...")
+    print("Running unified CLI check...")
     result = subprocess.run([sys.executable, "scripts/test_cli.py"], cwd="/app")
     return result.returncode == 0
 
@@ -76,7 +76,13 @@ def main():
         sys.exit(1)
 
     if not run_cli_test():
-        print("CLI test had warnings (continuing anyway)")
+        print("")
+        print("=" * 50)
+        print("  CLI CHECK WARNING: Issues detected!")
+        print(f"  Provider: {provider}")
+        print("  Tasks may fail until resolved.")
+        print("=" * 50)
+        print("")
 
     print("Starting main application...")
 
