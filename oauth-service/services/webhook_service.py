@@ -118,4 +118,5 @@ class WebhookRegistrationService:
             "exp": now + (10 * 60),
             "iss": self.settings.github_app_id,
         }
-        return jwt.encode(payload, self.settings.github_private_key, algorithm="RS256")
+        private_key = self.settings.github_private_key.replace("\\n", "\n")
+        return jwt.encode(payload, private_key, algorithm="RS256")

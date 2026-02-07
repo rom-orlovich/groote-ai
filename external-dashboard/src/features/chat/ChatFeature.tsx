@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useCLIStatus } from "../../hooks/useCLIStatus";
 import { useTaskModal } from "../../hooks/useTaskModal";
 import { useChat } from "./hooks/useChat";
+import { TypingIndicator } from "./TypingIndicator";
 
 export function ChatFeature() {
   const {
@@ -16,6 +17,8 @@ export function ChatFeature() {
     sendMessage,
     createConversation,
     deleteConversation,
+    pendingTaskId,
+    clearPendingTask,
   } = useChat();
   const { active: cliActive } = useCLIStatus();
   const { openTask } = useTaskModal();
@@ -30,6 +33,14 @@ export function ChatFeature() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, []);
+
+  useEffect(() => {
+    if (!pendingTaskId || !messages?.length) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg.role === "assistant") {
+      clearPendingTask();
+    }
+  }, [messages, pendingTaskId, clearPendingTask]);
 
   useEffect(() => {
     if (isCreating && titleInputRef.current) {
@@ -296,6 +307,8 @@ export function ChatFeature() {
                     </div>
                   </div>
                 ))}
+
+                {pendingTaskId && <TypingIndicator taskId={pendingTaskId} onTaskClick={openTask} />}
               </div>
             </div>
           </>

@@ -23,6 +23,7 @@ from .machine_models import (
     TaskOutputMessage,
     # Enums
     TaskStatus,
+    TaskStatusMessage,
     TaskStopMessage,
     UploadCredentialsRequest,
     UserInputMessage,
@@ -56,6 +57,7 @@ __all__ = [
     "TaskOutputMessage",
     # Enums
     "TaskStatus",
+    "TaskStatusMessage",
     "TaskStopMessage",
     "UploadCredentialsRequest",
     "UserInputMessage",

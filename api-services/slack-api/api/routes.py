@@ -2,17 +2,21 @@ from typing import Annotated, Any
 
 from client import SlackClient
 from config import Settings, get_settings
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, ConfigDict
+from token_provider import TokenProvider
 
 router = APIRouter(prefix="/api/v1", tags=["slack"])
 
 
-def get_slack_client(
+async def get_slack_client(
+    request: Request,
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> SlackClient:
+    token_provider: TokenProvider = request.app.state.token_provider
+    token = await token_provider.get_token()
     return SlackClient(
-        bot_token=settings.slack_bot_token,
+        bot_token=token,
         base_url=settings.slack_api_base_url,
         timeout=settings.request_timeout,
     )

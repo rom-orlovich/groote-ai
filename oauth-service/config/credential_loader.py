@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import httpx
 import structlog
 
@@ -37,6 +39,23 @@ async def load_credentials_for_platform(
     return {}
 
 
+def _load_private_key_from_file(settings: Settings) -> str | None:
+    path = settings.github_private_key_path
+    if not path:
+        return None
+    key_file = Path(path)
+    if not key_file.exists():
+        logger.warning("private_key_file_not_found", path=path)
+        return None
+    content = key_file.read_text().strip()
+    logger.info("private_key_loaded_from_file", path=path)
+    return content
+
+
+def _is_valid_pem_key(value: str) -> bool:
+    return "BEGIN" in value and "END" in value and len(value) > 100
+
+
 def apply_credentials_to_settings(
     settings: Settings,
     platform: str,
@@ -74,6 +93,18 @@ def apply_credentials_to_settings(
             applied.append(attr_name)
         elif current:
             skipped.append(attr_name)
+
+    if platform == "github":
+        file_key = _load_private_key_from_file(settings)
+        if file_key:
+            object.__setattr__(settings, "github_private_key", file_key)
+            applied.append("github_private_key(file)")
+        elif not _is_valid_pem_key(settings.github_private_key):
+            db_key = creds.get("GITHUB_PRIVATE_KEY", "")
+            if _is_valid_pem_key(db_key):
+                object.__setattr__(settings, "github_private_key", db_key)
+                applied.append("github_private_key(db_override)")
+                logger.info("private_key_env_invalid_using_db")
 
     if applied:
         logger.info("credentials_applied", platform=platform, fields=applied)

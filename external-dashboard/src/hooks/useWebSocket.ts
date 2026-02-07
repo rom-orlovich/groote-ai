@@ -36,6 +36,14 @@ export function useWebSocket(sessionId: string = "dashboard") {
           if (message.type === "cli_status_update") {
             queryClient.invalidateQueries({ queryKey: ["cli-status"] });
           }
+
+          if (message.type === "task_status") {
+            const status = message.status as string;
+            if (status === "completed" || status === "failed") {
+              queryClient.invalidateQueries({ queryKey: ["messages"] });
+              queryClient.invalidateQueries({ queryKey: ["conversations"] });
+            }
+          }
         } catch (error) {
           console.error("Failed to parse WebSocket message", error);
         }

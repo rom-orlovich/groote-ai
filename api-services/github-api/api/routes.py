@@ -2,17 +2,21 @@ from typing import Annotated
 
 from client import GitHubClient
 from config import Settings, get_settings
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, ConfigDict
+from token_provider import TokenProvider
 
 router = APIRouter(prefix="/api/v1", tags=["github"])
 
 
-def get_github_client(
+async def get_github_client(
+    request: Request,
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> GitHubClient:
+    token_provider: TokenProvider = request.app.state.token_provider
+    token = await token_provider.get_token()
     return GitHubClient(
-        token=settings.github_token,
+        token=token,
         base_url=settings.github_api_base_url,
         timeout=settings.request_timeout,
     )

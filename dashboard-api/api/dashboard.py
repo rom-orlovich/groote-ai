@@ -11,12 +11,13 @@ from core.database import get_session as get_db_session
 from core.database.models import SessionDB, TaskDB, WebhookConfigDB, WebhookEventDB
 from core.database.redis_client import redis_client
 from core.webhook_configs import WEBHOOK_CONFIGS
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, BackgroundTasks
 from pydantic import BaseModel
 from shared import (
     AgentType,
     APIResponse,
     TaskStatus,
+    TaskStatusMessage,
 )
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -246,6 +247,7 @@ async def stop_task(task_id: str, db: AsyncSession = Depends(get_db_session)):
 @router.post("/chat")
 async def chat_with_brain(
     request: ChatRequest,
+    raw_request: Request,
     session_id: str = Query(...),
     conversation_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db_session),
@@ -442,6 +444,24 @@ async def chat_with_brain(
     })
     await redis_client.push_task(task_id)
     await redis_client.add_session_task(session_id, task_id)
+
+    ws_hub = raw_request.app.state.ws_hub
+    await ws_hub.broadcast(TaskStatusMessage(
+        task_id=task_id,
+        status="queued",
+        conversation_id=conversation_id,
+    ))
+
+    await redis_client.publish_task_event(
+        "task:created",
+        {
+            "task_id": task_id,
+            "session_id": session_id,
+            "conversation_id": conversation_id,
+            "source": "dashboard",
+        },
+        task_id=task_id,
+    )
 
     logger.info(
         "Chat message queued",

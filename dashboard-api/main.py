@@ -1,4 +1,6 @@
-from contextlib import asynccontextmanager
+import asyncio
+import json
+from contextlib import asynccontextmanager, suppress
 
 import structlog
 import uvicorn
@@ -24,6 +26,40 @@ logger = structlog.get_logger()
 settings = Settings()
 
 
+async def _task_status_listener(app: FastAPI) -> None:
+    import redis.asyncio as aioredis
+
+    from shared import TaskStatusMessage
+
+    try:
+        sub_client = aioredis.from_url(
+            settings.redis_url, encoding="utf-8", decode_responses=True
+        )
+        pubsub = sub_client.pubsub()
+        await pubsub.psubscribe("task:*:status")
+        logger.info("task_status_listener_started")
+
+        async for message in pubsub.listen():
+            if message["type"] != "pmessage":
+                continue
+            try:
+                channel = message["channel"]
+                task_id = channel.split(":")[1]
+                data = json.loads(message["data"])
+                status = data.get("status", "unknown")
+
+                await app.state.ws_hub.broadcast(TaskStatusMessage(
+                    task_id=task_id,
+                    status=status,
+                ))
+            except Exception as e:
+                logger.warning("task_status_broadcast_error", error=str(e))
+    except asyncio.CancelledError:
+        logger.info("task_status_listener_stopped")
+    except Exception as e:
+        logger.error("task_status_listener_fatal", error=str(e))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from core.websocket_hub import WebSocketHub
@@ -32,9 +68,17 @@ async def lifespan(app: FastAPI):
     await init_db()
     await redis_client.connect()
     app.state.ws_hub = WebSocketHub()
+
+    listener_task = asyncio.create_task(_task_status_listener(app))
+
     logger.info("dashboard_started")
     yield
     logger.info("dashboard_shutting_down")
+
+    listener_task.cancel()
+    with suppress(asyncio.CancelledError):
+        await listener_task
+
     await redis_client.disconnect()
     await shutdown_db()
     logger.info("dashboard_stopped")

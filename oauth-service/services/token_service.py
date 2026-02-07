@@ -80,6 +80,35 @@ class TokenService:
         )
         return tokens.access_token
 
+    async def get_any_active_token(
+        self,
+        platform: str,
+    ) -> tuple[str | None, Installation | None]:
+        query = select(Installation).where(
+            Installation.platform == platform,
+            Installation.status == InstallationStatus.ACTIVE.value,
+        ).order_by(Installation.last_used_at.desc().nullslast())
+
+        result = await self.session.execute(query)
+        installation = result.scalar_one_or_none()
+
+        if not installation:
+            return None, None
+
+        if self._is_token_expired(installation):
+            if platform == Platform.GITHUB.value and installation.external_install_id:
+                token = await self.get_github_installation_token(
+                    installation.external_install_id
+                )
+                return token, installation
+            new_token = await self._refresh_token(installation)
+            if new_token:
+                return new_token, installation
+            return None, None
+
+        await self._update_last_used(installation)
+        return installation.access_token, installation
+
     async def get_all_installations(self, platform: str) -> list[Installation]:
         query = select(Installation).where(
             Installation.platform == platform,

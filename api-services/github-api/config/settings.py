@@ -8,10 +8,13 @@ class Settings(BaseSettings):
     model_config = ConfigDict(strict=True, env_file=".env", extra="ignore")
 
     port: int = 3001
-    github_token: str
+    github_token: str = ""
     github_api_base_url: str = "https://api.github.com"
     log_level: str = "INFO"
     request_timeout: int = 30
+    oauth_service_url: str = "http://oauth-service:8010"
+    internal_service_key: str = ""
+    use_oauth: bool = True
 
 
 @lru_cache
