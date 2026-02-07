@@ -56,14 +56,14 @@
   --color-background-app: #020617;
   --color-text-main: #f1f5f9;
   --color-panel-bg: #020617;
-  --color-panel-border: #1e293b;
+  --color-panel-border: #334155;
   --color-sidebar-bg: rgba(2, 6, 23, 0.5);
 
   --color-input-bg: #0f172a;
-  --color-input-border: #1e293b;
+  --color-input-border: #334155;
   --color-input-text: #f1f5f9;
-  --color-modal-bg: #020617;
-  --color-modal-border: #1e293b;
+  --color-modal-bg: #0f172a;
+  --color-modal-border: #334155;
 }
 
 @layer base {

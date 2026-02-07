@@ -1,142 +1,52 @@
-"""Tests for CLI provider selection business logic.
+"""Tests that each agent .md file has a model defined in its frontmatter.
 
-Tests how agent types map to CLI providers and models.
+Claude Code natively reads the model: field from .claude/agents/*.md
+frontmatter when spawning subagents. These tests verify the frontmatter
+is correctly configured so the CLI handles model selection automatically.
 """
 
-from unittest.mock import MagicMock
+import re
+from pathlib import Path
 
-COMPLEX_AGENTS = ["planning", "consultation", "question_asking", "brain"]
-EXECUTION_AGENTS = ["executor", "github-issue-handler", "jira-code-plan"]
+AGENTS_DIR = Path(__file__).resolve().parent.parent / ".claude" / "agents"
 
-
-def get_model_for_agent(
-    agent_type: str,
-    cli_provider: str = "claude",
-    settings: MagicMock | None = None,
-) -> str:
-    """Get the appropriate model for an agent type."""
-    if settings is None:
-        settings = MagicMock()
-        settings.cli_provider = cli_provider
-        settings.claude_model_complex = "opus"
-        settings.claude_model_execution = "sonnet"
-        settings.cursor_model_complex = "claude-sonnet-4.5"
-        settings.cursor_model_execution = "composer-1"
-
-    is_complex_task = agent_type.lower() in COMPLEX_AGENTS
-
-    if settings.cli_provider == "cursor":
-        return settings.cursor_model_complex if is_complex_task else settings.cursor_model_execution
-    elif settings.cli_provider == "claude":
-        return settings.claude_model_complex if is_complex_task else settings.claude_model_execution
-
-    return "sonnet"
+EXPECTED_MODELS = {
+    "brain": "opus",
+    "planning": "opus",
+    "github-pr-review": "opus",
+    "verifier": "opus",
+    "executor": "sonnet",
+    "github-issue-handler": "sonnet",
+    "jira-code-plan": "sonnet",
+    "slack-inquiry": "sonnet",
+    "service-integrator": "sonnet",
+}
 
 
-class TestModelSelection:
-    """Tests for model selection based on agent type."""
-
-    def test_complex_agents_use_opus_model(self, mock_engine_settings):
-        """Business requirement: Quality over speed for planning."""
-        mock_engine_settings.cli_provider = "claude"
-
-        for agent in COMPLEX_AGENTS:
-            model = get_model_for_agent(agent, settings=mock_engine_settings)
-            assert model == "opus", f"{agent} should use Opus"
-
-    def test_execution_agents_use_sonnet_model(self, mock_engine_settings):
-        """Business requirement: Speed for implementation."""
-        mock_engine_settings.cli_provider = "claude"
-
-        for agent in EXECUTION_AGENTS:
-            model = get_model_for_agent(agent, settings=mock_engine_settings)
-            assert model == "sonnet", f"{agent} should use Sonnet"
-
-    def test_cursor_complex_agents_use_pro_model(self, mock_engine_settings):
-        """Business requirement: Cursor uses appropriate complex model."""
-        mock_engine_settings.cli_provider = "cursor"
-        mock_engine_settings.cursor_model_complex = "claude-sonnet-4.5"
-
-        for agent in COMPLEX_AGENTS:
-            model = get_model_for_agent(agent, settings=mock_engine_settings)
-            assert model == "claude-sonnet-4.5", f"{agent} should use Cursor complex model"
-
-    def test_cursor_execution_agents_use_standard_model(self, mock_engine_settings):
-        """Business requirement: Cursor uses appropriate execution model."""
-        mock_engine_settings.cli_provider = "cursor"
-        mock_engine_settings.cursor_model_execution = "composer-1"
-
-        for agent in EXECUTION_AGENTS:
-            model = get_model_for_agent(agent, settings=mock_engine_settings)
-            assert model == "composer-1", f"{agent} should use Cursor execution model"
+def _parse_frontmatter_model(agent_file: Path) -> str | None:
+    content = agent_file.read_text()
+    if not content.startswith("---"):
+        return None
+    end = content.index("---", 3)
+    frontmatter = content[3:end]
+    match = re.search(r"^model:\s*(.+)$", frontmatter, re.MULTILINE)
+    return match.group(1).strip() if match else None
 
 
-class TestProviderSelection:
-    """Tests for CLI provider selection."""
+class TestAgentFrontmatter:
 
-    def test_provider_selection_claude(self, mock_engine_settings):
-        """Business requirement: Claude provider uses Claude models."""
-        mock_engine_settings.cli_provider = "claude"
+    def test_each_agent_has_expected_model(self):
+        for agent_name, expected_model in EXPECTED_MODELS.items():
+            agent_file = AGENTS_DIR / f"{agent_name}.md"
+            assert agent_file.exists(), f"{agent_name}.md not found"
+            model = _parse_frontmatter_model(agent_file)
+            assert model == expected_model, (
+                f"{agent_name} should use {expected_model}, got {model}"
+            )
 
-        model = get_model_for_agent("executor", settings=mock_engine_settings)
-        assert model in ["sonnet", "opus"]
-
-    def test_provider_selection_cursor(self, mock_engine_settings):
-        """Business requirement: Cursor provider uses Cursor models."""
-        mock_engine_settings.cli_provider = "cursor"
-
-        model = get_model_for_agent("executor", settings=mock_engine_settings)
-        assert model in ["claude-sonnet-4.5", "composer-1"]
-
-    def test_unknown_provider_uses_default(self, mock_engine_settings):
-        """Business requirement: Unknown provider falls back to default."""
-        mock_engine_settings.cli_provider = "unknown"
-
-        model = get_model_for_agent("executor", settings=mock_engine_settings)
-        assert model == "sonnet"
-
-
-class TestAgentTypeClassification:
-    """Tests for agent type classification."""
-
-    def test_planning_is_complex(self):
-        """Planning agent requires high-quality model."""
-        assert "planning" in COMPLEX_AGENTS
-
-    def test_brain_is_complex(self):
-        """Brain agent requires high-quality model."""
-        assert "brain" in COMPLEX_AGENTS
-
-    def test_executor_is_execution(self):
-        """Executor agent uses fast model."""
-        assert "executor" in EXECUTION_AGENTS
-
-    def test_github_issue_handler_is_execution(self):
-        """GitHub issue handler uses fast model."""
-        assert "github-issue-handler" in EXECUTION_AGENTS
-
-    def test_case_insensitive_matching(self, mock_engine_settings):
-        """Agent type matching is case-insensitive."""
-        mock_engine_settings.cli_provider = "claude"
-
-        model1 = get_model_for_agent("PLANNING", settings=mock_engine_settings)
-        model2 = get_model_for_agent("planning", settings=mock_engine_settings)
-        model3 = get_model_for_agent("Planning", settings=mock_engine_settings)
-
-        assert model1 == model2 == model3 == "opus"
-
-
-class TestAgentToModelMapping:
-    """Tests for complete agent-to-model mapping."""
-
-    def test_agent_type_determines_model(self, mock_engine_settings):
-        """Business requirement: Complex tasks get best model."""
-        mock_engine_settings.cli_provider = "claude"
-
-        for agent in COMPLEX_AGENTS:
-            model = get_model_for_agent(agent, settings=mock_engine_settings)
-            assert model in ["opus", "claude-opus-4"], f"{agent} should use Opus"
-
-        for agent in EXECUTION_AGENTS:
-            model = get_model_for_agent(agent, settings=mock_engine_settings)
-            assert model in ["sonnet", "claude-sonnet-4"], f"{agent} should use Sonnet"
+    def test_all_agent_files_have_model(self):
+        for agent_file in AGENTS_DIR.glob("*.md"):
+            model = _parse_frontmatter_model(agent_file)
+            assert model is not None, (
+                f"{agent_file.name} is missing 'model:' in frontmatter"
+            )

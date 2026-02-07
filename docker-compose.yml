@@ -67,7 +67,8 @@ services:
       - CURSOR_API_KEY=${CURSOR_API_KEY:-}
     volumes:
       - agent_data:/data
-      - ~/.anthropic:/root/.anthropic:ro
+      - ~/.claude/.credentials.json:/home/agent/.claude/.credentials.json:ro
+      - ~/.claude/.claude.json:/home/agent/.claude/.claude.json:ro
     depends_on:
       redis:
         condition: service_healthy
@@ -178,9 +179,17 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - DATABASE_URL=postgresql+asyncpg://agent:${POSTGRES_PASSWORD:-agent}@postgres:5432/agent_system
       - AGENT_ENGINE_URL=http://agent-engine:8080
-      - CORS_ORIGINS=http://localhost:3005,http://external-dashboard:80
+      - CORS_ORIGINS=http://localhost:3005,http://external-dashboard:80,${PUBLIC_URL:-}
       - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY:-}
       - DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-local}
+      - OAUTH_SERVICE_URL=http://oauth-service:8010
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - JIRA_CLIENT_ID=${JIRA_CLIENT_ID:-}
+      - JIRA_CLIENT_SECRET=${JIRA_CLIENT_SECRET:-}
+      - SLACK_CLIENT_ID=${SLACK_CLIENT_ID:-}
+      - SLACK_CLIENT_SECRET=${SLACK_CLIENT_SECRET:-}
+      - SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN:-}
     depends_on:
       redis:
         condition: service_healthy
@@ -281,7 +290,8 @@ services:
       - "8010:8010"
     environment:
       - PORT=8010
-      - BASE_URL=${OAUTH_BASE_URL:-http://localhost:8010}
+      - BASE_URL=${PUBLIC_URL:-http://localhost:3005}
+      - FRONTEND_URL=${PUBLIC_URL:-http://localhost:3005}
       - DATABASE_URL=postgresql+asyncpg://agent:${POSTGRES_PASSWORD:-agent}@postgres:5432/agent_system
       - GITHUB_APP_ID=${GITHUB_APP_ID:-}
       - GITHUB_APP_NAME=${GITHUB_APP_NAME:-}

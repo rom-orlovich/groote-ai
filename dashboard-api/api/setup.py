@@ -12,6 +12,7 @@ from core.setup.service import (
     generate_github_actions_env,
     generate_k8s_secret,
     get_all_configs,
+    get_config,
     get_configs_by_category,
     get_setup_state,
     reset_setup,
@@ -151,35 +152,62 @@ async def get_step_config(
     return await get_configs_by_category(db, step)
 
 
+async def _resolve_credential(
+    db: AsyncSession,
+    creds: dict[str, str],
+    key: str,
+) -> str:
+    if key in creds and creds[key]:
+        return creds[key]
+    return await get_config(db, key) or ""
+
+
 @router.post("/setup/validate/{service}")
 async def validate_service(
     service: Literal["github_oauth", "jira_oauth", "slack_oauth", "sentry", "anthropic", "cursor"],
     request: ValidateRequest,
+    db: AsyncSession = Depends(get_session),
 ) -> ValidateResponse:
     creds = request.credentials
 
     if service == "github_oauth":
         result = await validate_github_oauth(
-            creds.get("GITHUB_APP_ID", ""),
-            creds.get("GITHUB_CLIENT_ID", ""),
-            creds.get("GITHUB_CLIENT_SECRET", ""),
+            await _resolve_credential(db, creds, "GITHUB_APP_ID"),
+            await _resolve_credential(db, creds, "GITHUB_CLIENT_ID"),
+            await _resolve_credential(db, creds, "GITHUB_CLIENT_SECRET"),
+            await _resolve_credential(db, creds, "GITHUB_PRIVATE_KEY"),
         )
+        if result.success and result.details and result.details.get("slug"):
+            await save_config(
+                db=db,
+                key="GITHUB_APP_NAME",
+                value=result.details["slug"],
+                category="github_oauth",
+                display_name="App Name (Slug)",
+                is_sensitive=False,
+            )
     elif service == "jira_oauth":
         result = await validate_jira_oauth(
-            creds.get("JIRA_CLIENT_ID", ""),
-            creds.get("JIRA_CLIENT_SECRET", ""),
+            await _resolve_credential(db, creds, "JIRA_CLIENT_ID"),
+            await _resolve_credential(db, creds, "JIRA_CLIENT_SECRET"),
         )
     elif service == "slack_oauth":
         result = await validate_slack_oauth(
-            creds.get("SLACK_CLIENT_ID", ""),
-            creds.get("SLACK_CLIENT_SECRET", ""),
+            await _resolve_credential(db, creds, "SLACK_CLIENT_ID"),
+            await _resolve_credential(db, creds, "SLACK_CLIENT_SECRET"),
         )
     elif service == "sentry":
-        result = await validate_sentry(creds.get("SENTRY_AUTH_TOKEN", ""))
+        result = await validate_sentry(
+            await _resolve_credential(db, creds, "SENTRY_AUTH_TOKEN"),
+        )
     elif service == "anthropic":
-        result = await validate_anthropic(creds.get("ANTHROPIC_API_KEY", ""))
+        result = await validate_anthropic(
+            await _resolve_credential(db, creds, "ANTHROPIC_API_KEY"),
+        )
     elif service == "cursor":
-        result = await validate_cursor(creds.get("CURSOR_API_KEY", ""))
+        result = await validate_cursor(
+            await _resolve_credential(db, creds, "CURSOR_API_KEY"),
+        )
     else:
         raise HTTPException(status_code=400, detail=f"Unknown service: {service}")
 
@@ -259,6 +287,7 @@ async def export_config(
 PLATFORM_CREDENTIAL_KEYS: dict[str, list[str]] = {
     "github": [
         "GITHUB_APP_ID",
+        "GITHUB_APP_NAME",
         "GITHUB_CLIENT_ID",
         "GITHUB_CLIENT_SECRET",
         "GITHUB_PRIVATE_KEY",

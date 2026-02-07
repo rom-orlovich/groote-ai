@@ -27,9 +27,5 @@ def mock_engine_settings():
     settings.cli_provider = "claude"
     settings.max_concurrent_tasks = 5
     settings.task_timeout_seconds = 3600
-    settings.claude_model_complex = "opus"
-    settings.claude_model_execution = "sonnet"
-    settings.cursor_model_complex = "claude-sonnet-4.5"
-    settings.cursor_model_execution = "composer-1"
     settings.port = 8080
     return settings

@@ -93,6 +93,19 @@ async def log_status_to_db(provider: str, version: str, status: str):
                 )
             """)
             )
+            await session.execute(
+                text("""
+                ALTER TABLE cli_instances
+                    ALTER COLUMN started_at TYPE TIMESTAMPTZ,
+                    ALTER COLUMN last_heartbeat TYPE TIMESTAMPTZ
+            """)
+            )
+            await session.execute(
+                text("""
+                ALTER TABLE cli_health
+                    ALTER COLUMN checked_at TYPE TIMESTAMPTZ
+            """)
+            )
 
             hostname = os.environ.get("HOSTNAME", "unknown")
             container_id = hostname  # Docker sets HOSTNAME to container ID

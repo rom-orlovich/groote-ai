@@ -89,34 +89,49 @@ export const SETUP_STEPS: StepDefinition[] = [
     stepType: "oauth_setup",
     oauthPlatform: "github",
     validationService: "github_oauth",
+    webhookMode: "auto",
     instructions: [
       {
         step: 1,
-        title: "Go to GitHub Settings",
-        description:
-          "Navigate to GitHub > Settings > Developer settings > GitHub Apps > New GitHub App",
+        title: "Create a New GitHub App",
+        description: "Go to GitHub > Settings > Developer settings > GitHub Apps > New GitHub App",
         link: "https://github.com/settings/apps/new",
       },
       {
         step: 2,
         title: "Fill App Details",
         description:
-          "Name: your-org-groote, Homepage URL: your domain, Callback URL: {origin}/oauth/callback/github",
+          "GitHub App name: your-org-groote | Homepage URL: {origin} | Callback URL: {origin}/oauth/callback/github",
       },
       {
         step: 3,
-        title: "Set Permissions",
-        description: "Repository: Read & Write, Issues: Read & Write, Pull Requests: Read & Write",
+        title: "Configure Webhook",
+        description:
+          "Enable Active webhook. Set a Webhook secret (save it for the field below). Subscribe to events: Issues, Pull requests, Push, Issue comments, Pull request reviews. The webhook URL will be auto-configured when users connect",
       },
       {
         step: 4,
-        title: "Generate Private Key",
-        description: "After creation, generate a private key and paste it below",
+        title: "Set Permissions",
+        description:
+          "Under Permissions > Repository: Contents (Read & Write), Issues (Read & Write), Pull requests (Read & Write), Metadata (Read-only). Under Permissions > Organization: Members (Read-only)",
       },
       {
         step: 5,
+        title: "Create App & Generate Private Key",
+        description:
+          "Click Create GitHub App. Then on the app page, scroll to Private keys and click Generate a private key. A .pem file will download - paste its contents below",
+      },
+      {
+        step: 6,
         title: "Copy Credentials",
-        description: "Copy the App ID, Client ID, and Client Secret into the fields below",
+        description:
+          "From the app settings page, copy: App ID (top of page), Client ID, and generate a Client Secret",
+      },
+      {
+        step: 7,
+        title: "Install the App",
+        description:
+          "Go to Install App in the sidebar and install it on your organization or account. Select the repositories you want Groote to access",
       },
     ],
     fields: [
@@ -162,35 +177,45 @@ export const SETUP_STEPS: StepDefinition[] = [
   },
   {
     id: "jira_oauth",
-    title: "JIRA",
-    description: "Create a Jira OAuth app for project management",
+    title: "ATLASSIAN",
+    description: "Create an Atlassian OAuth app for Jira and Confluence",
     icon: "ClipboardList",
     skippable: true,
     stepType: "oauth_setup",
     oauthPlatform: "jira",
     validationService: "jira_oauth",
+    webhookMode: "auto",
     instructions: [
       {
         step: 1,
-        title: "Go to Atlassian Developer Console",
-        description: "Create a new OAuth 2.0 (3LO) app",
+        title: "Create an Atlassian App",
+        description:
+          "Go to Atlassian Developer Console. Click Create > OAuth 2.0 integration. Enter a name (e.g. groote-atlassian) and accept the terms",
         link: "https://developer.atlassian.com/console/myapps/",
       },
       {
         step: 2,
-        title: "Configure OAuth 2.0",
-        description: "Add callback URL: {origin}/oauth/callback/jira",
+        title: "Enable OAuth 2.0 (3LO)",
+        description:
+          "In the app sidebar, go to Authorization. Click Configure next to OAuth 2.0 (3LO). Set Callback URL: {origin}/oauth/callback/jira",
       },
       {
         step: 3,
-        title: "Set Scopes",
+        title: "Add Jira API Permissions",
         description:
-          "Add scopes: read:jira-work, write:jira-work, read:jira-user, manage:jira-project",
+          "Go to Permissions in the sidebar. Under Jira API, click Add and enable: read:jira-work, write:jira-work, read:jira-user, manage:jira-webhook",
       },
       {
         step: 4,
+        title: "Add Confluence API Permissions",
+        description:
+          "Under Confluence API, click Add and enable: read:confluence-content.all, read:confluence-space.summary, read:confluence-props, write:confluence-content, write:confluence-file",
+      },
+      {
+        step: 5,
         title: "Copy Credentials",
-        description: "Copy the Client ID and Secret from the app settings",
+        description:
+          "Go to Settings in the sidebar. Copy the Client ID and Secret. If no secret exists, click Create Secret to generate one",
       },
     ],
     fields: [
@@ -219,23 +244,44 @@ export const SETUP_STEPS: StepDefinition[] = [
     stepType: "oauth_setup",
     oauthPlatform: "slack",
     validationService: "slack_oauth",
+    webhookMode: "manual",
     instructions: [
       {
         step: 1,
         title: "Create a Slack App",
-        description: "Go to api.slack.com/apps and click Create New App",
+        description:
+          "Go to Slack API and click Create New App. Choose From scratch. Enter an app name (e.g. Groote AI) and select your workspace",
         link: "https://api.slack.com/apps",
       },
       {
         step: 2,
-        title: "Configure OAuth & Permissions",
+        title: "Set OAuth Redirect URL",
         description:
-          "Add redirect URL: {origin}/oauth/callback/slack. Add scopes: chat:write, commands, app_mentions:read",
+          "Go to OAuth & Permissions in the sidebar. Under Redirect URLs, click Add New Redirect URL and enter: {origin}/oauth/callback/slack",
       },
       {
         step: 3,
+        title: "Add Bot Token Scopes",
+        description:
+          "On the same OAuth & Permissions page, scroll to Scopes > Bot Token Scopes. Add: chat:write, commands, app_mentions:read, channels:read, groups:read",
+      },
+      {
+        step: 4,
+        title: "Enable Event Subscriptions",
+        description:
+          "Go to Event Subscriptions in the sidebar. Toggle Enable Events to On. Set Request URL: {origin}/api/webhooks/slack. Under Subscribe to bot events, add: app_mention, message.channels",
+      },
+      {
+        step: 5,
         title: "Copy Credentials",
-        description: "Copy Client ID and Client Secret from Basic Information page",
+        description:
+          "Go to Basic Information in the sidebar. Copy Client ID, Client Secret, and Signing Secret from the App Credentials section",
+      },
+      {
+        step: 6,
+        title: "Install to Workspace",
+        description:
+          "Go to Install App in the sidebar. Click Install to Workspace and authorize the app. The bot will appear in your workspace",
       },
     ],
     fields: [
@@ -269,7 +315,36 @@ export const SETUP_STEPS: StepDefinition[] = [
     description: "Connect Sentry for error tracking and alerts",
     icon: "AlertTriangle",
     skippable: true,
+    stepType: "service",
     validationService: "sentry",
+    instructions: [
+      {
+        step: 1,
+        title: "Create a Sentry Project",
+        description:
+          "Log in to Sentry. Go to Projects > Create Project. Choose your platform (e.g. Python/Node.js) and name it (e.g. groote-ai)",
+        link: "https://sentry.io/organizations/",
+      },
+      {
+        step: 2,
+        title: "Get Your Auth Token",
+        description:
+          "Go to Settings > Auth Tokens. Click Create New Token. Select scopes: project:read, org:read, event:read. Copy the token",
+        link: "https://sentry.io/settings/auth-tokens/",
+      },
+      {
+        step: 3,
+        title: "Get the DSN",
+        description:
+          "Go to your project Settings > Client Keys (DSN). Copy the DSN URL (looks like https://xxx@xxx.ingest.sentry.io/xxx)",
+      },
+      {
+        step: 4,
+        title: "Find Your Organization Slug",
+        description:
+          "Your org slug is in the Sentry URL: sentry.io/organizations/{your-org-slug}/. Copy just the slug part",
+      },
+    ],
     fields: [
       {
         key: "SENTRY_AUTH_TOKEN",

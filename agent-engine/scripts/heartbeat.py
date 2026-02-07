@@ -45,6 +45,13 @@ async def ensure_table_exists(session):
         )
     """)
     )
+    await session.execute(
+        text("""
+        ALTER TABLE cli_instances
+            ALTER COLUMN started_at TYPE TIMESTAMPTZ,
+            ALTER COLUMN last_heartbeat TYPE TIMESTAMPTZ
+    """)
+    )
     await session.commit()
 
 

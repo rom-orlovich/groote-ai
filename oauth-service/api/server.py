@@ -2,6 +2,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import structlog
+from config.credential_loader import apply_credentials_to_settings, load_credentials_for_platform
 from config.settings import get_settings
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -10,6 +11,8 @@ logger = structlog.get_logger(__name__)
 
 engine = None
 async_session_factory = None
+
+PLATFORMS = ["github", "jira", "slack"]
 
 
 @asynccontextmanager
@@ -21,6 +24,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     async_session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
     logger.info("database_connected", url=settings.database_url[:30] + "...")
+
+    for platform in PLATFORMS:
+        try:
+            creds = await load_credentials_for_platform(platform, settings)
+            if creds:
+                apply_credentials_to_settings(settings, platform, creds)
+                logger.info("credentials_loaded", platform=platform, fields=list(creds.keys()))
+        except Exception as e:
+            logger.warning("credential_load_failed", platform=platform, error=str(e))
+
     yield
 
     await engine.dispose()

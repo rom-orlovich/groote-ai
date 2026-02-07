@@ -1,7 +1,10 @@
 import { CheckCircle, Eye, EyeOff, Loader2, XCircle } from "lucide-react";
-import { useState } from "react";
-import { useSaveStep, useValidateService } from "../hooks/useSetup";
+import { useEffect, useRef, useState } from "react";
+import { useSaveStep, useStepConfig, useValidateService } from "../hooks/useSetup";
 import type { StepDefinition, ValidateResponse } from "../types";
+import { InstructionList } from "./InstructionList";
+
+const SENSITIVE_PLACEHOLDER = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
 
 interface ServiceStepProps {
   step: StepDefinition;
@@ -13,9 +16,33 @@ export function ServiceStep({ step, onNext, onSkip }: ServiceStepProps) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [validation, setValidation] = useState<ValidateResponse | null>(null);
+  const isInitialized = useRef(false);
 
+  const { data: savedConfig, isLoading: isLoadingConfig } = useStepConfig(step.id);
   const saveStep = useSaveStep();
   const validateService = useValidateService();
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset state when step changes
+  useEffect(() => {
+    isInitialized.current = false;
+    setValues({});
+    setValidation(null);
+  }, [step.id]);
+
+  useEffect(() => {
+    if (savedConfig && !isInitialized.current) {
+      const initialValues: Record<string, string> = {};
+      for (const config of savedConfig) {
+        if (config.is_sensitive && config.value) {
+          initialValues[config.key] = SENSITIVE_PLACEHOLDER;
+        } else {
+          initialValues[config.key] = config.value;
+        }
+      }
+      setValues(initialValues);
+      isInitialized.current = true;
+    }
+  }, [savedConfig]);
 
   const updateValue = (key: string, value: string) => {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -31,8 +58,12 @@ export function ServiceStep({ step, onNext, onSkip }: ServiceStepProps) {
 
   const handleValidate = () => {
     if (!step.validationService) return;
+    const credentials: Record<string, string> = {};
+    for (const [key, val] of Object.entries(values)) {
+      if (val !== SENSITIVE_PLACEHOLDER) credentials[key] = val;
+    }
     validateService.mutate(
-      { service: step.validationService, credentials: values },
+      { service: step.validationService, credentials },
       { onSuccess: (result) => setValidation(result) },
     );
   };
@@ -43,7 +74,7 @@ export function ServiceStep({ step, onNext, onSkip }: ServiceStepProps) {
         step: step.id,
         data: {
           configs: step.fields
-            .filter((f) => values[f.key]?.trim())
+            .filter((f) => values[f.key]?.trim() && values[f.key] !== SENSITIVE_PLACEHOLDER)
             .map((f) => ({
               key: f.key,
               value: values[f.key],
@@ -64,12 +95,24 @@ export function ServiceStep({ step, onNext, onSkip }: ServiceStepProps) {
     );
   };
 
+  if (isLoadingConfig) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 size={20} className="animate-spin text-orange-500" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-heading font-black tracking-wider mb-2">{step.title}</h2>
         <p className="text-[10px] text-gray-500 font-mono">{step.description}</p>
       </div>
+
+      {step.instructions && step.instructions.length > 0 && (
+        <InstructionList instructions={step.instructions} />
+      )}
 
       <div className="space-y-4">
         {step.fields.map((field) => (

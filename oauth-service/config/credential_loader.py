@@ -20,12 +20,13 @@ async def load_credentials_for_platform(
             response = await client.get(url)
             if response.status_code == 200:
                 creds = response.json()
-                logger.info(
-                    "credentials_loaded",
-                    platform=platform,
-                    key_count=len(creds),
-                )
+                logger.info("credentials_fetched", platform=platform, count=len(creds))
                 return creds
+            logger.warning(
+                "credentials_fetch_failed",
+                platform=platform,
+                status=response.status_code,
+            )
     except httpx.RequestError as e:
         logger.warning(
             "credential_load_failed",
@@ -44,6 +45,7 @@ def apply_credentials_to_settings(
     field_map: dict[str, dict[str, str]] = {
         "github": {
             "GITHUB_APP_ID": "github_app_id",
+            "GITHUB_APP_NAME": "github_app_name",
             "GITHUB_CLIENT_ID": "github_client_id",
             "GITHUB_CLIENT_SECRET": "github_client_secret",
             "GITHUB_PRIVATE_KEY": "github_private_key",
@@ -61,7 +63,19 @@ def apply_credentials_to_settings(
     }
 
     mapping = field_map.get(platform, {})
+    applied = []
+    skipped = []
+
     for env_key, attr_name in mapping.items():
         value = creds.get(env_key, "")
-        if value and not getattr(settings, attr_name, ""):
+        current = getattr(settings, attr_name, "")
+        if value and not current:
             object.__setattr__(settings, attr_name, value)
+            applied.append(attr_name)
+        elif current:
+            skipped.append(attr_name)
+
+    if applied:
+        logger.info("credentials_applied", platform=platform, fields=applied)
+    if skipped:
+        logger.debug("credentials_skipped_env_set", platform=platform, fields=skipped)

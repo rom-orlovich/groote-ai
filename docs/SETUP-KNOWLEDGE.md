@@ -317,6 +317,6 @@ make down
 
 ## Related Documentation
 
-- [Main Setup Guide](../SETUP.md)
+- [Tunnel Setup Guide](TUNNEL_SETUP.md) - Configure public URLs for webhooks & OAuth
 - [Architecture](ARCHITECTURE.md)
 - [MCP Servers Setup](../mcp-servers/SETUP.md)

@@ -161,9 +161,9 @@ class IndexingJobResponse(BaseModel):
 
 
 async def get_db_session():
-    from core.database.session import async_session_maker
+    from core.database import async_session_factory
 
-    async with async_session_maker() as session:
+    async with async_session_factory() as session:
         yield session
 
 

@@ -35,9 +35,36 @@ GET http://localhost:8090/health      # Task Logger
 
 Or use `make health` to check all services at once.
 
+## Public URL Gateway
+
+All services are accessible through a single URL via the nginx reverse proxy on port 3005:
+
+```
+PUBLIC_URL (ngrok/production) -> port 3005 -> nginx
+  /              -> External Dashboard (React SPA)
+  /api/*         -> Dashboard API (port 5000)
+  /oauth/*       -> OAuth Service (port 8010)
+  /webhooks/*    -> API Gateway (port 8000)
+  /ws            -> Dashboard API WebSocket (port 5000)
+```
+
+Set `PUBLIC_URL` in `.env` to expose all services through one domain:
+```bash
+# Option 1: zrok (recommended - free permanent URL)
+PUBLIC_URL=https://your-tunnel-url-here
+make tunnel-zrok   # Starts zrok tunnel to port 3005
+
+# Option 2: ngrok (alternative)
+PUBLIC_URL=https://your-domain.ngrok-free.app
+make tunnel        # Starts ngrok tunnel to port 3005
+```
+
+OAuth callbacks, webhook URLs, and frontend all use this single URL automatically.
+
 ## Environment Variables
 
 All secrets configured via `.env` file (created by `make init`):
+- `PUBLIC_URL` - Single public gateway URL (ngrok/production domain)
 - `CLI_PROVIDER` - `claude` or `cursor`
 - `POSTGRES_URL` - PostgreSQL connection string
 - `REDIS_URL` - Redis connection string

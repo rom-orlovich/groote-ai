@@ -15,6 +15,7 @@ DEFAULT_SCOPES = [
     "read:jira-work",
     "write:jira-work",
     "read:jira-user",
+    "manage:jira-webhook",
     "offline_access",
 ]
 
@@ -27,6 +28,12 @@ class JiraOAuthProvider(OAuthProvider):
         self.scopes = DEFAULT_SCOPES
         self._code_verifiers: dict[str, str] = {}
 
+        missing = [
+            name for name, val in [("client_id", self.client_id), ("client_secret", self.client_secret)] if not val
+        ]
+        if missing:
+            logger.warning("oauth_provider_missing_credentials", platform="jira", missing=missing)
+
     def _generate_code_verifier(self) -> str:
         return secrets.token_urlsafe(32)
 
@@ -35,7 +42,7 @@ class JiraOAuthProvider(OAuthProvider):
         return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
 
     def get_authorization_url(self, state: str) -> str:
-        code_verifier = self._generate_code_verifier()
+        code_verifier = self._code_verifiers.get(state) or self._generate_code_verifier()
         self._code_verifiers[state] = code_verifier
         code_challenge = self._generate_code_challenge(code_verifier)
         scope_str = " ".join(self.scopes)

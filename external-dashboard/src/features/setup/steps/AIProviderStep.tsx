@@ -1,7 +1,9 @@
 import { CheckCircle, Eye, EyeOff, Loader2, XCircle } from "lucide-react";
-import { useState } from "react";
-import { useSaveStep, useValidateService } from "../hooks/useSetup";
+import { useEffect, useRef, useState } from "react";
+import { useSaveStep, useStepConfig, useValidateService } from "../hooks/useSetup";
 import type { ProviderMode, ServiceField, StepDefinition, ValidateResponse } from "../types";
+
+const SENSITIVE_PLACEHOLDER = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
 
 interface AIProviderStepProps {
   step: StepDefinition;
@@ -32,9 +34,32 @@ export function AIProviderStep({ step, onNext }: AIProviderStepProps) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [validation, setValidation] = useState<Record<string, ValidateResponse>>({});
+  const isInitialized = useRef(false);
 
+  const { data: savedConfig, isLoading: isLoadingConfig } = useStepConfig(step.id);
   const saveStep = useSaveStep();
   const validateService = useValidateService();
+
+  useEffect(() => {
+    if (savedConfig && !isInitialized.current) {
+      const initialValues: Record<string, string> = {};
+      let savedProvider: ProviderMode | null = null;
+      for (const config of savedConfig) {
+        if (config.key === "CLI_PROVIDER") {
+          savedProvider = config.value as ProviderMode;
+          continue;
+        }
+        if (config.is_sensitive && config.value) {
+          initialValues[config.key] = SENSITIVE_PLACEHOLDER;
+        } else {
+          initialValues[config.key] = config.value;
+        }
+      }
+      if (savedProvider) setMode(savedProvider);
+      setValues(initialValues);
+      isInitialized.current = true;
+    }
+  }, [savedConfig]);
 
   const activeFields = getActiveFields(step, mode);
   const validationServices = getValidationServices(step, mode);
@@ -49,9 +74,13 @@ export function AIProviderStep({ step, onNext }: AIProviderStepProps) {
   };
 
   const handleValidate = () => {
+    const credentials: Record<string, string> = {};
+    for (const [key, val] of Object.entries(values)) {
+      if (val !== SENSITIVE_PLACEHOLDER) credentials[key] = val;
+    }
     for (const svc of validationServices) {
       validateService.mutate(
-        { service: svc, credentials: values },
+        { service: svc, credentials },
         { onSuccess: (result) => setValidation((prev) => ({ ...prev, [svc]: result })) },
       );
     }
@@ -59,7 +88,7 @@ export function AIProviderStep({ step, onNext }: AIProviderStepProps) {
 
   const handleSave = () => {
     const configs = activeFields
-      .filter((f) => values[f.key]?.trim())
+      .filter((f) => values[f.key]?.trim() && values[f.key] !== SENSITIVE_PLACEHOLDER)
       .map((f) => ({
         key: f.key,
         value: values[f.key],
@@ -81,6 +110,14 @@ export function AIProviderStep({ step, onNext }: AIProviderStepProps) {
   };
 
   const validationResults = Object.values(validation);
+
+  if (isLoadingConfig) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 size={20} className="animate-spin text-orange-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

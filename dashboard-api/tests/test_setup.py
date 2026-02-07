@@ -232,6 +232,8 @@ class TestRetryLogic:
 
 
 class TestGitHubOAuthValidator:
+    FAKE_PEM = "-----BEGIN RSA PRIVATE KEY-----\nfake\n-----END RSA PRIVATE KEY-----"
+
     @pytest.mark.asyncio
     async def test_valid_github_app_credentials(self):
         mock_response = MagicMock()
@@ -247,8 +249,11 @@ class TestGitHubOAuthValidator:
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("core.setup.validators.httpx.AsyncClient", return_value=mock_client):
-            result = await validate_github_oauth("12345", "Iv1.abc", "secret123")
+        with (
+            patch("core.setup.validators.jwt.encode", return_value="fake-jwt"),
+            patch("core.setup.validators.httpx.AsyncClient", return_value=mock_client),
+        ):
+            result = await validate_github_oauth("12345", "Iv1.abc", "secret123", self.FAKE_PEM)
 
         assert result.success is True
         assert result.service == "github"
@@ -264,17 +269,26 @@ class TestGitHubOAuthValidator:
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("core.setup.validators.httpx.AsyncClient", return_value=mock_client):
-            result = await validate_github_oauth("12345", "Iv1.abc", "bad-secret")
+        with (
+            patch("core.setup.validators.jwt.encode", return_value="fake-jwt"),
+            patch("core.setup.validators.httpx.AsyncClient", return_value=mock_client),
+        ):
+            result = await validate_github_oauth("12345", "Iv1.abc", "secret", self.FAKE_PEM)
 
         assert result.success is False
         assert "401" in result.message
 
     @pytest.mark.asyncio
     async def test_github_oauth_missing_app_id(self):
-        result = await validate_github_oauth("", "Iv1.abc", "secret")
+        result = await validate_github_oauth("", "Iv1.abc", "secret", self.FAKE_PEM)
         assert result.success is False
         assert "App ID" in result.message
+
+    @pytest.mark.asyncio
+    async def test_github_oauth_missing_private_key(self):
+        result = await validate_github_oauth("12345", "Iv1.abc", "secret", "")
+        assert result.success is False
+        assert "Private Key" in result.message
 
 
 class TestJiraOAuthValidator:
@@ -282,9 +296,10 @@ class TestJiraOAuthValidator:
     async def test_valid_jira_oauth_credentials(self):
         mock_response = MagicMock()
         mock_response.status_code = 200
+        mock_response.json.return_value = {"error": "invalid_grant"}
 
         mock_client = AsyncMock()
-        mock_client.get.return_value = mock_response
+        mock_client.post.return_value = mock_response
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
 
@@ -295,10 +310,33 @@ class TestJiraOAuthValidator:
         assert result.service == "jira"
 
     @pytest.mark.asyncio
+    async def test_invalid_jira_oauth_client(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"error": "invalid_client"}
+
+        mock_client = AsyncMock()
+        mock_client.post.return_value = mock_response
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+
+        with patch("core.setup.validators.httpx.AsyncClient", return_value=mock_client):
+            result = await validate_jira_oauth("bad-id", "bad-secret")
+
+        assert result.success is False
+        assert "Invalid" in result.message
+
+    @pytest.mark.asyncio
     async def test_jira_oauth_empty_client_id(self):
         result = await validate_jira_oauth("", "secret")
         assert result.success is False
         assert "Client ID" in result.message
+
+    @pytest.mark.asyncio
+    async def test_jira_oauth_empty_secret(self):
+        result = await validate_jira_oauth("jira-client-id", "")
+        assert result.success is False
+        assert "Client Secret" in result.message
 
 
 class TestSlackOAuthValidator:
@@ -306,6 +344,7 @@ class TestSlackOAuthValidator:
     async def test_valid_slack_oauth_credentials(self):
         mock_response = MagicMock()
         mock_response.status_code = 200
+        mock_response.json.return_value = {"error": "invalid_code"}
 
         mock_client = AsyncMock()
         mock_client.post.return_value = mock_response
@@ -319,10 +358,50 @@ class TestSlackOAuthValidator:
         assert result.service == "slack"
 
     @pytest.mark.asyncio
+    async def test_invalid_slack_client_id(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"error": "invalid_client_id"}
+
+        mock_client = AsyncMock()
+        mock_client.post.return_value = mock_response
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+
+        with patch("core.setup.validators.httpx.AsyncClient", return_value=mock_client):
+            result = await validate_slack_oauth("bad-id", "slack-secret")
+
+        assert result.success is False
+        assert "Client ID" in result.message
+
+    @pytest.mark.asyncio
+    async def test_invalid_slack_client_secret(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"error": "bad_client_secret"}
+
+        mock_client = AsyncMock()
+        mock_client.post.return_value = mock_response
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+
+        with patch("core.setup.validators.httpx.AsyncClient", return_value=mock_client):
+            result = await validate_slack_oauth("slack-client-id", "bad-secret")
+
+        assert result.success is False
+        assert "Client Secret" in result.message
+
+    @pytest.mark.asyncio
     async def test_slack_oauth_empty_client_id(self):
         result = await validate_slack_oauth("", "secret")
         assert result.success is False
         assert "Client ID" in result.message
+
+    @pytest.mark.asyncio
+    async def test_slack_oauth_empty_secret(self):
+        result = await validate_slack_oauth("slack-client-id", "")
+        assert result.success is False
+        assert "Client Secret" in result.message
 
 
 class TestValidatorMapIncludesOAuth:

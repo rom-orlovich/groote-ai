@@ -5,6 +5,7 @@ import uvicorn
 from api import (
     analytics,
     conversations,
+    credentials,
     dashboard,
     oauth_status,
     setup,
@@ -14,6 +15,7 @@ from api import (
 )
 from core.config import Settings
 from core.database import init_db, shutdown_db
+from core.database.redis_client import redis_client
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -24,11 +26,16 @@ settings = Settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from core.websocket_hub import WebSocketHub
+
     logger.info("dashboard_starting")
     await init_db()
+    await redis_client.connect()
+    app.state.ws_hub = WebSocketHub()
     logger.info("dashboard_started")
     yield
     logger.info("dashboard_shutting_down")
+    await redis_client.disconnect()
     await shutdown_db()
     logger.info("dashboard_stopped")
 
@@ -54,6 +61,7 @@ app.include_router(conversations.router, prefix="/api", tags=["conversations"])
 app.include_router(webhook_status.router, prefix="/api", tags=["webhooks"])
 app.include_router(oauth_status.router, prefix="/api", tags=["oauth"])
 app.include_router(setup.router, prefix="/api", tags=["setup"])
+app.include_router(credentials.router, prefix="/api", tags=["credentials"])
 app.include_router(sources.router, tags=["sources"])
 app.include_router(websocket.router, tags=["websocket"])
 
