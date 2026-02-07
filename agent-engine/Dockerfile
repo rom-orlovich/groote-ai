@@ -21,6 +21,11 @@ RUN mkdir -p /home/agent/.claude /home/agent/.local/bin /app/repos \
 
 ENV PATH="/home/agent/.local/bin:${PATH}"
 
+# Install Cursor CLI
+RUN export HOME=/home/agent \
+    && curl https://cursor.com/install -fsS | bash \
+    && chown -R agent:agent /home/agent/.local /home/agent/.local/share
+
 RUN pip install uv
 
 COPY requirements.txt .
