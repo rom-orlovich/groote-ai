@@ -2,10 +2,13 @@
 
 DC="docker-compose"
 
+AGENT_PORT=$(docker port groote-ai-cli-1 8080 2>/dev/null | head -1 | cut -d: -f2)
+AGENT_PORT=${AGENT_PORT:-8080}
+
 echo "Service Health:"
 
 curl -sf http://localhost:8000/health >/dev/null 2>&1 && echo "  ✅ API Gateway (8000)" || echo "  ❌ API Gateway (8000)"
-curl -sf http://localhost:8080/health >/dev/null 2>&1 && echo "  ✅ Agent Engine (8080)" || echo "  ❌ Agent Engine (8080)"
+curl -sf http://localhost:${AGENT_PORT}/health >/dev/null 2>&1 && echo "  ✅ Agent Engine (${AGENT_PORT})" || echo "  ❌ Agent Engine (${AGENT_PORT})"
 curl -sf http://localhost:5000/api/health >/dev/null 2>&1 && echo "  ✅ Dashboard API (5000)" || echo "  ❌ Dashboard API (5000)"
 curl -sf http://localhost:8010/health >/dev/null 2>&1 && echo "  ✅ OAuth Service (8010)" || echo "  ❌ OAuth Service (8010)"
 curl -sf http://localhost:8001/api/v1/heartbeat >/dev/null 2>&1 && echo "  ✅ ChromaDB (8001)" || echo "  ❌ ChromaDB (8001)"
@@ -15,7 +18,7 @@ $DC exec -T postgres pg_isready -U agent >/dev/null 2>&1 && echo "  ✅ PostgreS
 
 echo ""
 echo "CLI Auth:"
-AUTH_JSON=$(curl -sf http://localhost:8080/health/auth 2>/dev/null)
+AUTH_JSON=$(curl -sf http://localhost:${AGENT_PORT}/health/auth 2>/dev/null)
 if [ -n "$AUTH_JSON" ]; then
   AUTH_OK=$(echo "$AUTH_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin).get('authenticated',False))" 2>/dev/null)
   AUTH_MSG=$(echo "$AUTH_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin).get('message',''))" 2>/dev/null)
