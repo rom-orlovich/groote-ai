@@ -54,7 +54,7 @@ services:
   cli:
     build: ./agent-engine
     ports:
-      - "8080-8089:8080"
+      - "9100-9109:9100"
     environment:
       - CLI_PROVIDER=${CLI_PROVIDER:-claude}
       - MAX_CONCURRENT_TASKS=${MAX_CONCURRENT_TASKS:-5}
@@ -187,7 +187,7 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379/0
       - DATABASE_URL=postgresql+asyncpg://agent:${POSTGRES_PASSWORD:-agent}@postgres:5432/agent_system
-      - AGENT_ENGINE_URL=http://agent-engine:8080
+      - AGENT_ENGINE_URL=http://agent-engine:9100
       - CORS_ORIGINS=http://localhost:3005,http://external-dashboard:80,${PUBLIC_URL:-}
       - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY:-}
       - DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-local}
