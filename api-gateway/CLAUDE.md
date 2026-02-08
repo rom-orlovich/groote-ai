@@ -1,13 +1,12 @@
 # API Gateway
 
-Central webhook reception (port 8000). Receives webhooks from GitHub, Jira, Slack, Sentry, validates signatures, and enqueues tasks to Redis.
+Central webhook reception (port 8000). Receives webhooks from GitHub, Jira, Slack, validates signatures, and enqueues tasks to Redis.
 
 ## Webhook Endpoints
 
 - `/webhooks/github` - GitHub events (PR, issues, comments)
 - `/webhooks/jira` - Jira events (ticket assignment, status)
 - `/webhooks/slack` - Slack events (mentions, commands)
-- `/webhooks/sentry` - Sentry alerts
 - `/health` - Health check
 
 ## Processing Flow
@@ -24,7 +23,7 @@ Central webhook reception (port 8000). Receives webhooks from GitHub, Jira, Slac
 api-gateway/
 ├── main.py              # FastAPI app entry point
 ├── routes/              # Route registration
-├── webhooks/            # Webhook handlers (github/, jira/, slack/, sentry/)
+├── webhooks/            # Webhook handlers (github/, jira/, slack/)
 ├── middleware/          # Error handling
 ├── config/              # Settings
 └── tests/               # Co-located tests
@@ -55,7 +54,6 @@ from .fixtures import (
     github_issue_opened_payload,
     jira_issue_created_payload,
     slack_app_mention_payload,
-    sentry_issue_created_payload,
 )
 ```
 

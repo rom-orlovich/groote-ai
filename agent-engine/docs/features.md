@@ -110,7 +110,6 @@ Complete routing table mapping sources and event types to agents.
 | github | pull_request | github-pr-review |
 | jira | issue_created | jira-code-plan |
 | slack | app_mention | slack-inquiry |
-| sentry | new_error | sentry-error-handler |
 | internal | discovery | planning |
 | internal | implementation | executor |
 
@@ -130,7 +129,6 @@ Connects to MCP servers for external service access during agent execution.
 - GitHub MCP: Repository and issue operations
 - Jira MCP: Ticket and project operations
 - Slack MCP: Channel and message operations
-- Sentry MCP: Error and event operations
 
 ## API Endpoints
 

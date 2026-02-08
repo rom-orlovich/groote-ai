@@ -50,7 +50,7 @@ Immediately add a reaction to show the message was received:
 | "What's the status of X?", "Is X deployed?" | Status check | Check task/deployment status |
 | "Can you X?", "Please X", "Run X" | Action request | Delegate or execute |
 | "Why is X broken?", "X is throwing errors" | Debug inquiry | Investigate and report |
-| Links to GitHub/Jira/Sentry | Reference lookup | Fetch details and summarize |
+| Links to GitHub/Jira | Reference lookup | Fetch details and summarize |
 
 ### 4. Execute Based on Intent
 

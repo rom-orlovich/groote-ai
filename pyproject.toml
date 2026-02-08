@@ -37,7 +37,6 @@ testpaths = [
     "api-services/github-api/tests",
     "api-services/jira-api/tests",
     "api-services/slack-api/tests",
-    "api-services/sentry-api/tests",
 ]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
@@ -96,7 +95,6 @@ module = [
     "jwt.*",
     "jira.*",
     "slack_sdk.*",
-    "sentry_sdk.*",
     "yaml.*",
     "chromadb.*",
     "llama_index.*",
@@ -139,6 +137,7 @@ ignore = [
     "E501",    # line too long (handled by formatter)
     "PLR0913", # too many arguments
     "PLR2004", # magic value comparison
+    "PLR0911", # too many return statements (validation functions need multiple paths)
     "PLR0912", # too many branches (complex functions are acceptable)
     "PLR0915", # too many statements (complex functions are acceptable)
     "B008",    # function call in argument defaults (FastAPI Depends pattern)

@@ -135,14 +135,6 @@ jira:transition_issue
 3. Post review comments: `jira:add_jira_comment`
 4. Update status based on review outcome
 
-### Workflow 4: Sentry Issue Analysis
-
-1. Receive Jira issue linked to Sentry
-2. Extract Sentry issue ID from Jira ticket
-3. Get Sentry issue details (use Sentry MCP tools)
-4. Analyze error
-5. Post analysis comment: `jira:add_jira_comment`
-
 ## Markdown to ADF Conversion
 
 **Important:** MCP server automatically converts markdown to ADF format.
@@ -184,7 +176,7 @@ jira:transition_issue
 3. **Post responses** after every task completion
 4. **Include issue key** in all comments
 5. **Update status** when appropriate (In Progress, Done, etc.)
-6. **Link to related resources** - GitHub PRs, Sentry issues, etc.
+6. **Link to related resources** - GitHub PRs, etc.
 7. **Keep comments structured** - Use headers, lists, code blocks
 8. **Mark as automated** - Include "_Automated by Claude Agent_"
 9. **Use templates** from [templates.md](templates.md) for consistent formatting

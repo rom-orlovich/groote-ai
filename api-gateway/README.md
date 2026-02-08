@@ -4,12 +4,12 @@
 
 ## Purpose
 
-The API Gateway receives webhooks from GitHub, Jira, Slack, and Sentry, validates signatures, extracts routing metadata, and enqueues tasks to Redis for processing by agent-engine.
+The API Gateway receives webhooks from GitHub, Jira, Slack, validates signatures, extracts routing metadata, and enqueues tasks to Redis for processing by agent-engine.
 
 ## Architecture
 
 ```
-External Service (GitHub/Jira/Slack/Sentry)
+External Service (GitHub/Jira/Slack)
          │
          ▼
 ┌─────────────────────────────────────┐
@@ -65,8 +65,7 @@ api-gateway/
 │   │   ├── events.py         # Event type routing
 │   │   └── models.py         # Pydantic models
 │   ├── jira/                 # Jira webhook handler
-│   ├── slack/                # Slack webhook handler
-│   └── sentry/               # Sentry webhook handler
+│   └── slack/                # Slack webhook handler
 ├── middleware/
 │   └── error_handler.py      # WebhookValidationError class
 ├── config/
@@ -75,8 +74,7 @@ api-gateway/
     ├── fixtures/              # Webhook payload fixtures
     │   ├── github_payloads.py
     │   ├── jira_payloads.py
-    │   ├── slack_payloads.py
-    │   └── sentry_payloads.py
+    │   └── slack_payloads.py
     ├── conftest.py            # Shared fixtures
     └── test_*.py              # Test files
 ```
@@ -103,7 +101,6 @@ from .fixtures import (
     github_issue_opened_payload,
     jira_issue_created_payload,
     slack_app_mention_payload,
-    sentry_issue_created_payload,
 )
 ```
 
@@ -143,7 +140,6 @@ from .fixtures import (
 | `/webhooks/github` | POST   | `202 Accepted` or `200 OK` |
 | `/webhooks/jira`   | POST   | `202 Accepted` or `200 OK` |
 | `/webhooks/slack`  | POST   | `200 OK` (all responses)   |
-| `/webhooks/sentry` | POST   | `202 Accepted` or `200 OK` |
 | `/health`          | GET    | `200 OK`                   |
 
 ## Environment Variables
@@ -154,7 +150,6 @@ REDIS_URL=redis://redis:6379/0
 GITHUB_WEBHOOK_SECRET=xxx
 JIRA_WEBHOOK_SECRET=xxx
 SLACK_WEBHOOK_SECRET=xxx
-SENTRY_WEBHOOK_SECRET=xxx
 ```
 
 ## Webhook Processing
@@ -185,13 +180,6 @@ SENTRY_WEBHOOK_SECRET=xxx
 4. Skip if from bot → Return `200 OK`
 5. Create task → Queue to Redis → Return `200 OK`
 
-### Sentry Flow
-
-1. Receive POST → Validate signature (middleware)
-2. Parse alert data
-3. Skip if unsupported → Return `200 OK`
-4. Create task → Queue to Redis → Return `202 Accepted`
-
 ## Error Handling
 
 **Middleware-based** (no separate error handler):
@@ -207,7 +195,7 @@ All errors logged with structured logging.
 ```python
 {
     "task_id": "uuid",
-    "source": "github" | "jira" | "slack" | "sentry",
+    "source": "github" | "jira" | "slack",
     "event_type": "issue_comment" | "pull_request" | ...,
     "prompt": "User's request text",
     "source_metadata": {

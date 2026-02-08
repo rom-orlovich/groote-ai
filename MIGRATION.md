@@ -8,7 +8,6 @@ The system has been restructured to separate **admin system configuration** from
 
 - **Admin Setup Service** (port 8015): System OAuth app credentials configuration (admin-only)
 - **User Settings in Dashboard**: User-scoped AI provider and agent scaling configuration
-- **Removed**: Sentry integration and setup wizard
 
 ## What Changed
 
@@ -80,15 +79,6 @@ ALTER TABLE setup_config ADD COLUMN scope VARCHAR(20) DEFAULT 'admin';
 - `scope=admin`: OAuth app credentials (admin-only)
 - `scope=system`: Infrastructure config (public URL, encryption keys)
 
-### 5. Removed Integrations
-
-**Sentry** has been completely removed:
-- ❌ `mcp-servers/sentry-mcp/` - Deleted
-- ❌ `api-services/sentry-api/` - Deleted
-- ❌ `api-gateway/webhooks/sentry/` - Deleted
-- ❌ Sentry setup step - Removed
-- ❌ Sentry references in docker-compose - Removed
-
 ## Migration Steps
 
 ### For Existing Deployments
@@ -119,15 +109,7 @@ ALTER TABLE setup_config ADD COLUMN scope VARCHAR(20) DEFAULT 'admin';
    ADMIN_SETUP_TOKEN=your-secure-admin-token-here
    ```
 
-4. **Remove Sentry env vars** (optional, they're ignored):
-   ```bash
-   # Remove these from .env
-   SENTRY_DSN=...
-   SENTRY_AUTH_TOKEN=...
-   SENTRY_ORG_SLUG=...
-   ```
-
-5. **Rebuild and restart**:
+4. **Rebuild and restart**:
    ```bash
    docker-compose up --build
    ```
@@ -166,8 +148,6 @@ DELETE /api/user-settings/{category}/{key}    # Delete setting
 
 ```
 GET /setup                      # Setup wizard (removed)
-GET /api/setup/steps/sentry     # Sentry setup (removed)
-POST /webhooks/sentry           # Sentry webhook (removed)
 ```
 
 ## User Flows
@@ -205,7 +185,6 @@ POST /webhooks/sentry           # Sentry webhook (removed)
 ## Backward Compatibility
 
 - Old `/setup` bookmarks will 404 (no redirect)
-- Sentry setup config can be safely left in database (will be ignored)
 - All existing data is preserved
 - No breaking changes to task processing
 

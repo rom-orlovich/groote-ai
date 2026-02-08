@@ -54,11 +54,12 @@ async def validate_github(configs: dict[str, str]) -> dict[str, str | bool]:
     if not app_id:
         return {"valid": False, "message": "GitHub App ID is required"}
     try:
-        import jwt
         import time
 
+        import jwt
+
         try:
-            with open(private_key_path, "r") as f:
+            with open(private_key_path) as f:
                 private_key = f.read()
         except FileNotFoundError as e:
             logger.error("github_key_file_not_found", path=private_key_path, error=str(e))
@@ -79,13 +80,18 @@ async def validate_github(configs: dict[str, str]) -> dict[str, str | bool]:
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 "https://api.github.com/app",
-                headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/vnd.github+json",
+                },
                 timeout=10.0,
             )
             logger.info("github_api_response", status=response.status_code)
             if response.status_code == 200:
                 return {"valid": True, "message": "GitHub App verified"}
-            logger.error("github_validation_failed", status=response.status_code, body=response.text[:200])
+            logger.error(
+                "github_validation_failed", status=response.status_code, body=response.text[:200]
+            )
             return {
                 "valid": False,
                 "message": f"GitHub API returned {response.status_code}",

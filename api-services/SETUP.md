@@ -11,7 +11,6 @@ API Services are REST API wrappers that securely hold credentials for external s
 | GitHub API | 3001 | GitHub API wrapper |
 | Jira API | 3002 | Jira API wrapper |
 | Slack API | 3003 | Slack API wrapper |
-| Sentry API | 3004 | Sentry API wrapper |
 
 ## Architecture
 
@@ -55,15 +54,6 @@ PORT=3003
 SLACK_BOT_TOKEN=xoxb-xxxxxxxxxxxx
 ```
 
-### Sentry API
-
-```bash
-PORT=3004
-SENTRY_DSN=https://xxx@sentry.io/xxx
-SENTRY_AUTH_TOKEN=xxxxxxxxxxxx
-SENTRY_ORG_SLUG=your-org-slug
-```
-
 ## Start Services
 
 ### With Docker Compose (Recommended)
@@ -76,7 +66,6 @@ make up
 docker-compose up -d github-api
 docker-compose up -d jira-api
 docker-compose up -d slack-api
-docker-compose up -d sentry-api
 ```
 
 ## Verify Installation
@@ -90,9 +79,6 @@ curl http://localhost:3002/health
 
 # Slack API
 curl http://localhost:3003/health
-
-# Sentry API
-curl http://localhost:3004/health
 ```
 
 ## Getting API Credentials
@@ -129,18 +115,6 @@ curl http://localhost:3004/health
    - `users:read`
 5. Install app to workspace
 6. Copy the "Bot User OAuth Token" (starts with `xoxb-`)
-
-### Sentry Auth Token
-
-1. Go to [sentry.io/settings/auth-tokens](https://sentry.io/settings/auth-tokens)
-2. Click "Create New Token"
-3. Select scopes:
-   - `project:read`
-   - `project:write`
-   - `event:read`
-   - `issue:read`
-   - `issue:write`
-4. Copy the token
 
 ## Individual Service Setup
 
@@ -194,24 +168,6 @@ export SLACK_BOT_TOKEN=xoxb-xxxxxxxxxxxx
 uvicorn main:app --host 0.0.0.0 --port 3003 --reload
 ```
 
-### Sentry API
-
-```bash
-cd api-services/sentry-api
-
-# Install dependencies
-uv pip install -r requirements.txt
-
-# Set environment
-export PORT=3004
-export SENTRY_DSN=https://xxx@sentry.io/xxx
-export SENTRY_AUTH_TOKEN=xxxxxxxxxxxx
-export SENTRY_ORG_SLUG=your-org-slug
-
-# Run
-uvicorn main:app --host 0.0.0.0 --port 3004 --reload
-```
-
 ## API Endpoints
 
 Each API service provides similar endpoints:
@@ -231,7 +187,7 @@ Specific endpoints vary by service - check individual README files for details.
 
 ```bash
 # View all API service logs
-docker-compose logs -f github-api jira-api slack-api sentry-api
+docker-compose logs -f github-api jira-api slack-api
 
 # View specific service
 docker-compose logs -f jira-api

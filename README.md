@@ -1,6 +1,6 @@
 # Groote AI
 
-A containerized multi-agent system that processes webhooks from GitHub, Jira, Slack, and Sentry to autonomously handle development tasks using AI agents (Claude Code CLI or Cursor CLI) with Test-Driven Development methodology.
+A containerized multi-agent system that processes webhooks from GitHub, Jira, and Slack to autonomously handle development tasks using AI agents (Claude Code CLI or Cursor CLI) with Test-Driven Development methodology.
 
 ## Architecture
 
@@ -11,11 +11,10 @@ graph TB
         GitHub[GitHub]
         Jira[Jira]
         Slack[Slack]
-        Sentry[Sentry]
     end
 
     subgraph Gateway["API Gateway :8000"]
-        Webhooks["Webhook Handlers<br/>GitHub, Jira, Slack, Sentry"]
+        Webhooks["Webhook Handlers<br/>GitHub, Jira, Slack"]
     end
 
     subgraph Storage["Storage Layer"]
@@ -32,7 +31,6 @@ graph TB
         GitHubMCP[GitHub MCP :9001]
         JiraMCP[Jira MCP :9002]
         SlackMCP[Slack MCP :9003]
-        SentryMCP[Sentry MCP :9004]
         KGMCP[Knowledge Graph MCP :9005]
         LlamaIndexMCP[LlamaIndex MCP :9006<br/>Optional]
         GKGMcp[GKG MCP :9007<br/>Optional]
@@ -42,7 +40,6 @@ graph TB
         GitHubAPI[GitHub API :3001]
         JiraAPI[Jira API :3002]
         SlackAPI[Slack API :3003]
-        SentryAPI[Sentry API :3004]
     end
 
     subgraph Monitoring["Monitoring & Management"]
@@ -71,14 +68,12 @@ graph TB
     GitHubMCP -->|HTTP| GitHubAPI
     JiraMCP -->|HTTP| JiraAPI
     SlackMCP -->|HTTP| SlackAPI
-    SentryMCP -->|HTTP| SentryAPI
     KGMCP -->|HTTP| Knowledge
     LlamaIndexMCP -.->|HTTP| LlamaIndex
     GKGMcp -.->|HTTP| GKGService
     GitHubAPI --> GitHub
     JiraAPI --> Jira
     SlackAPI --> Slack
-    SentryAPI --> Sentry
     LlamaIndex --> ChromaDB
     GKGService --> ChromaDB
     IndexerWorker --> ChromaDB
@@ -103,7 +98,7 @@ graph TB
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'fontSize':'16px', 'primaryColor':'#2d2d2d', 'primaryTextColor':'#ffffff', 'primaryBorderColor':'#ffffff', 'lineColor':'#ffffff', 'secondaryColor':'#1a1a1a', 'tertiaryColor':'#2d2d2d'}}}%%
 flowchart TD
-    A[External Event<br/>GitHub, Jira, Slack, Sentry] --> B[Webhook → API Gateway :8000]
+    A[External Event<br/>GitHub, Jira, Slack] --> B[Webhook → API Gateway :8000]
     B -->|HTTP 200 OK<br/>Immediate Response| A2[External Service<br/>Receives Confirmation]
     B --> C[Validate Signature<br/>Extract Metadata]
     C --> D[Create Task in PostgreSQL]
@@ -139,7 +134,7 @@ flowchart TD
 
 ### System Flow
 
-1. **Webhook Reception**: External services (GitHub, Jira, Slack, Sentry) send webhooks to the API Gateway
+1. **Webhook Reception**: External services (GitHub, Jira, Slack) send webhooks to the API Gateway
 2. **Validation & Queuing**: API Gateway validates signatures, creates task in PostgreSQL, and enqueues to Redis
 3. **Task Pickup**: Agent Engine picks up task from Redis queue (`agent:tasks`)
 4. **CLI Execution**: Agent Engine executes task using Claude or Cursor CLI with specialized agents
@@ -166,7 +161,7 @@ graph TB
 
     subgraph Layer3["Layer 3: Integration"]
         MCPServers[MCP Servers :9001-9007]
-        APIServices[API Services :3001-3004]
+        APIServices[API Services :3001-3003]
     end
 
     subgraph Layer4["Layer 4: Storage"]
@@ -237,8 +232,7 @@ The wizard walks through each integration step-by-step:
 3. **GitHub OAuth** — create a GitHub App with step-by-step instructions (optional, skippable)
 4. **Jira OAuth** — create a Jira OAuth 2.0 app (optional, skippable)
 5. **Slack OAuth** — create a Slack App (optional, skippable)
-6. **Sentry** — API token for error tracking (optional, skippable)
-7. **Review & Export** — download config as `.env`, Kubernetes Secret, Docker Swarm secrets, or GitHub Actions format
+6. **Review & Export** — download config as `.env`, Kubernetes Secret, Docker Swarm secrets, or GitHub Actions format
 
 All credentials are Fernet-encrypted at rest in PostgreSQL. You can reconfigure
 anytime from **Settings** in the sidebar.
@@ -280,7 +274,6 @@ For detailed setup instructions, see **[SETUP.md](SETUP.md)**.
 | **GitHub MCP** | 9001 | GitHub operations (PRs, issues, comments) |
 | **Jira MCP** | 9002 | Jira operations (tickets, transitions) |
 | **Slack MCP** | 9003 | Slack messaging and channels |
-| **Sentry MCP** | 9004 | Sentry error tracking |
 | **Knowledge Graph MCP** | 9005 | Code search and references |
 | **LlamaIndex MCP** | 9006 | Hybrid search (optional) |
 | **GKG MCP** | 9007 | Code graph queries (optional) |
@@ -292,7 +285,6 @@ For detailed setup instructions, see **[SETUP.md](SETUP.md)**.
 | **GitHub API** | 3001 | GitHub REST API wrapper |
 | **Jira API** | 3002 | Jira REST API wrapper |
 | **Slack API** | 3003 | Slack REST API wrapper |
-| **Sentry API** | 3004 | Sentry REST API wrapper |
 
 ### Storage
 
@@ -383,10 +375,6 @@ JIRA_CLIENT_SECRET=xxx
 SLACK_CLIENT_ID=xxx
 SLACK_CLIENT_SECRET=xxx
 SLACK_SIGNING_SECRET=xxx
-
-# Sentry (token-based)
-SENTRY_DSN=https://xxx@sentry.io/xxx
-SENTRY_AUTH_TOKEN=xxx
 ```
 
 See `.env.example` for complete configuration.
@@ -413,13 +401,11 @@ groote-ai/
 ├── api-services/           # REST API wrappers (credentials here)
 │   ├── github-api/
 │   ├── jira-api/
-│   ├── slack-api/
-│   └── sentry-api/
+│   └── slack-api/
 ├── mcp-servers/            # MCP protocol servers
 │   ├── github-mcp/
 │   ├── jira-mcp/
 │   ├── slack-mcp/
-│   ├── sentry-mcp/
 │   ├── knowledge-graph-mcp/
 │   ├── llamaindex-mcp/     # Optional
 │   └── gkg-mcp/            # Optional

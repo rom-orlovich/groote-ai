@@ -1,6 +1,6 @@
 # API Gateway Setup
 
-The API Gateway receives and validates webhooks from external services (GitHub, Jira, Slack, Sentry).
+The API Gateway receives and validates webhooks from external services (GitHub, Jira, Slack).
 
 ## Overview
 
@@ -106,13 +106,6 @@ curl http://localhost:8000/docs
      - `app_mention`
      - `message.channels`
 
-### Sentry Webhook
-
-1. Go to: **Sentry > Settings > Integrations > Webhooks**
-2. Configure:
-   - **URL**: `https://your-domain.com/webhooks/sentry`
-   - **Events**: Issue alerts
-
 ## API Endpoints
 
 | Endpoint | Method | Purpose |
@@ -121,7 +114,6 @@ curl http://localhost:8000/docs
 | `/webhooks/github` | POST | GitHub webhook receiver |
 | `/webhooks/jira` | POST | Jira webhook receiver |
 | `/webhooks/slack` | POST | Slack webhook receiver |
-| `/webhooks/sentry` | POST | Sentry webhook receiver |
 
 ## Logs
 

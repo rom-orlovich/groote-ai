@@ -135,12 +135,14 @@ async def get_masked_configs(db: AsyncSession) -> list[dict[str, str | bool]]:
             value = "\u2022\u2022\u2022\u2022\u2022\u2022" + value[-3:]
         elif is_masked and value:
             value = "\u2022\u2022\u2022\u2022\u2022\u2022"
-        result.append({
-            "key": config.key,
-            "value": value or "",
-            "category": config.category,
-            "is_masked": is_masked,
-        })
+        result.append(
+            {
+                "key": config.key,
+                "value": value or "",
+                "category": config.category,
+                "is_masked": is_masked,
+            }
+        )
     return result
 
 

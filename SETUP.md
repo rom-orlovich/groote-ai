@@ -44,7 +44,6 @@ You need credentials from at least one of these services to use the system:
 | GitHub App | GitHub integration | [github.com/settings/apps](https://github.com/settings/apps/new) |
 | Jira OAuth App | Jira integration | [developer.atlassian.com](https://developer.atlassian.com/console/myapps/) |
 | Slack App | Slack integration | [api.slack.com/apps](https://api.slack.com/apps) |
-| Sentry Auth Token | Sentry integration | [sentry.io/settings/auth-tokens](https://sentry.io/settings/auth-tokens) |
 
 The Setup Wizard walks you through creating each OAuth app with step-by-step instructions.
 
@@ -129,8 +128,7 @@ The Setup Wizard provides a guided UI for configuring all integrations.
 3. **GitHub OAuth** — create a GitHub App (App ID, Client ID, Client Secret, Private Key). Includes step-by-step instructions with links. (optional, skippable)
 4. **Jira OAuth** — create a Jira OAuth 2.0 (3LO) app (Client ID, Client Secret). (optional, skippable)
 5. **Slack OAuth** — create a Slack App (Client ID, Client Secret, Signing Secret). (optional, skippable)
-6. **Sentry** — API auth token, DSN, org slug (optional, skippable)
-7. **Review & Export** — view configuration summary and download in your format
+6. **Review & Export** — view configuration summary and download in your format
 
 Each OAuth step includes a collapsible instruction panel that guides you through
 creating the app on the external platform, setting permissions, and copying the
@@ -268,13 +266,6 @@ SLACK_CLIENT_SECRET=xxxxxxxxxxxx
 SLACK_SIGNING_SECRET=your-signing-secret
 ```
 
-**Sentry** (token-based):
-```bash
-SENTRY_DSN=https://xxx@sentry.io/xxx
-SENTRY_AUTH_TOKEN=xxxxxxxxxxxx
-SENTRY_ORG_SLUG=your-org-slug
-```
-
 ### Step 4: Build and Start Services
 
 ```bash
@@ -305,7 +296,7 @@ No manual migration step is needed.
 ### How Services Connect
 
 ```
-External Services (GitHub/Jira/Slack/Sentry)
+External Services (GitHub/Jira/Slack)
          |
          | (Webhooks)
          v
@@ -320,7 +311,7 @@ PostgreSQL :5432                    Agent Engine :8080
                                            |
                                            | (HTTP)
                                            v
-                                    API Services :3001-3004
+                                    API Services :3001-3003
                                            |
                                            v
                                     External Service APIs
@@ -332,8 +323,8 @@ The services start in this order (handled automatically by docker-compose):
 
 1. **Infrastructure**: Redis, PostgreSQL
 2. **Core Services**: API Gateway, Dashboard API
-3. **MCP Servers**: GitHub MCP, Jira MCP, Slack MCP, Sentry MCP
-4. **API Services**: GitHub API, Jira API, Slack API, Sentry API
+3. **MCP Servers**: GitHub MCP, Jira MCP, Slack MCP
+4. **API Services**: GitHub API, Jira API, Slack API
 5. **Supporting**: OAuth Service, Task Logger, Knowledge Graph
 6. **UI**: External Dashboard
 7. **Agent Engine**: CLI (started separately)
@@ -366,12 +357,6 @@ Signing Secret: (value of SLACK_SIGNING_SECRET)
 Redirect URL: https://your-domain.com/oauth/callback/slack
 Events: app_mention, message.channels
 Scopes: chat:write, commands, app_mentions:read
-```
-
-**Sentry Webhook:**
-```
-URL: https://your-domain.com/webhooks/sentry
-Events: Issue alerts
 ```
 
 ---
@@ -548,7 +533,7 @@ See [docs/SETUP-KNOWLEDGE.md](docs/SETUP-KNOWLEDGE.md) for detailed knowledge la
 
 After setup is complete:
 
-1. **Configure webhooks** in your external services (GitHub, Jira, Slack, Sentry)
+1. **Configure webhooks** in your external services (GitHub, Jira, Slack)
 2. **Test the integration** by creating a test issue or PR
 3. **Monitor the dashboard** at http://localhost:3005
 4. **Scale the CLI** as needed: `make cli PROVIDER=claude SCALE=3`

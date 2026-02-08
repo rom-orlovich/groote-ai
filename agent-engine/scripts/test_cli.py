@@ -44,15 +44,17 @@ async def publish_status(
 ):
     try:
         r = await get_redis()
-        payload = json.dumps({
-            "provider": provider,
-            "step": step,
-            "status": status,
-            "detail": detail,
-            "version": version,
-            "hostname": get_hostname(),
-            "timestamp": datetime.now(UTC).isoformat(),
-        })
+        payload = json.dumps(
+            {
+                "provider": provider,
+                "step": step,
+                "status": status,
+                "detail": detail,
+                "version": version,
+                "hostname": get_hostname(),
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
+        )
         await r.publish("cli:status", payload)
         await r.set("cli:startup_status", payload)
         logger.info("cli_status_published", step=step, status=status)

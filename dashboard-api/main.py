@@ -79,9 +79,7 @@ async def _cli_status_listener(app: FastAPI) -> None:
                 status = data.get("status", "")
                 is_active = step == "ready" and status == "healthy"
 
-                await app.state.ws_hub.broadcast(
-                    CLIStatusUpdateMessage(active=is_active)
-                )
+                await app.state.ws_hub.broadcast(CLIStatusUpdateMessage(active=is_active))
             except Exception as e:
                 logger.warning("cli_status_broadcast_error", error=str(e))
     except asyncio.CancelledError:

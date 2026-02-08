@@ -678,4 +678,3 @@ class TestWebhookToTaskRouting:
 
         task = task_queue.tasks[0]
         assert task.agent_type == "slack-inquiry"
-

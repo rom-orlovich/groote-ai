@@ -206,10 +206,6 @@ The Agent Engine connects to MCP servers for tool access. Configuration is in `.
       "url": "http://slack-mcp:9003/sse",
       "transport": "sse"
     },
-    "sentry": {
-      "url": "http://sentry-mcp:9004/sse",
-      "transport": "sse"
-    },
     "knowledge-graph": {
       "url": "http://knowledge-graph-mcp:9005/sse",
       "transport": "sse"
