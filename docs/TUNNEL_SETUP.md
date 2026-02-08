@@ -9,7 +9,7 @@ To receive webhooks from GitHub, Jira, Slack, and other external services, you n
 ### Benefits of zrok
 
 - ✅ **Free forever** - No time limits or rate limits that reset
-- ✅ **Permanent URL** - Your URL stays the same across restarts (`https://<your-share-name>.share.zrok.io`)
+- ✅ **Permanent URL** - Your URL stays the same across restarts (`https://<your-share-name>.<your-zrok-domain>`)
 - ✅ **Stable** - No 2-hour session limits like ngrok free tier
 - ✅ **Open source** - Transparent, community-driven
 
@@ -28,12 +28,12 @@ This script will:
    - Check your email for the enable token
    - Run: `zrok enable <TOKEN_FROM_EMAIL>`
 3. **Reserve a permanent share name** (e.g., `my-app`)
-4. **Show your URL**: `https://<your-share-name>.share.zrok.io`
+4. **Show your URL**: `https://<your-share-name>.<your-zrok-domain>`
 
 Then add to `.env`:
 
 ```bash
-PUBLIC_URL=https://<your-share-name>.share.zrok.io
+PUBLIC_URL=https://<your-share-name>.<your-zrok-domain>
 TUNNEL_SHARE_NAME=<your-share-name>
 ```
 
@@ -53,7 +53,7 @@ The tunnel will:
 **Example output:**
 
 ```
-Starting zrok tunnel: https://<your-share-name>.share.zrok.io -> http://localhost:3005
+Starting zrok tunnel: https://<your-share-name>.<your-zrok-domain> -> http://localhost:3005
 
 Routes (via nginx on port 3005):
   /           -> external-dashboard (React SPA)
@@ -63,11 +63,11 @@ Routes (via nginx on port 3005):
   /ws         -> dashboard-api:5000 (WebSocket)
 
 Webhook URLs:
-  GitHub: https://<your-share-name>.share.zrok.io/webhooks/github
-  Jira:   https://<your-share-name>.share.zrok.io/webhooks/jira
-  Slack:  https://<your-share-name>.share.zrok.io/webhooks/slack
+  GitHub: https://<your-share-name>.<your-zrok-domain>/webhooks/github
+  Jira:   https://<your-share-name>.<your-zrok-domain>/webhooks/jira
+  Slack:  https://<your-share-name>.<your-zrok-domain>/webhooks/slack
 
-OAuth callback: https://<your-share-name>.share.zrok.io/oauth/callback
+OAuth callback: https://<your-share-name>.<your-zrok-domain>/oauth/callback
 ```
 
 ### Using a Different Share Name

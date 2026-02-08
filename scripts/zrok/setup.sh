@@ -3,6 +3,7 @@ set -e
 
 TUNNEL_SHARE_NAME="${TUNNEL_SHARE_NAME:-my-app}"
 LOCAL_PORT="${LOCAL_PORT:-3005}"
+TUNNEL_DOMAIN="${TUNNEL_DOMAIN:-share.zrok.io}"
 INSTALL_DIR="$HOME/.local/bin"
 
 echo "=== zrok Setup for Groote AI ==="
@@ -56,9 +57,9 @@ echo "[3/4] Reserving permanent share name '${TUNNEL_SHARE_NAME}'..."
 RESERVE_OUTPUT=$("$TUNNEL_BIN" reserve public "http://localhost:${LOCAL_PORT}" --unique-name "$TUNNEL_SHARE_NAME" 2>&1) || true
 
 if echo "$RESERVE_OUTPUT" | grep -q "reserved frontend endpoint"; then
-    echo "  Reserved: https://${TUNNEL_SHARE_NAME}.share.zrok.io"
+    echo "  Reserved: https://${TUNNEL_SHARE_NAME}.${TUNNEL_DOMAIN}"
 elif echo "$RESERVE_OUTPUT" | grep -q "already reserved"; then
-    echo "  Already reserved: https://${TUNNEL_SHARE_NAME}.share.zrok.io"
+    echo "  Already reserved: https://${TUNNEL_SHARE_NAME}.${TUNNEL_DOMAIN}"
 else
     echo "  $RESERVE_OUTPUT"
     echo "  If the name is taken, set TUNNEL_SHARE_NAME in .env to a different name"
@@ -68,10 +69,10 @@ echo ""
 echo "[4/4] Configuration"
 echo ""
 echo "  Add to your .env file:"
-echo "    PUBLIC_URL=https://${TUNNEL_SHARE_NAME}.share.zrok.io"
+echo "    PUBLIC_URL=https://${TUNNEL_SHARE_NAME}.${TUNNEL_DOMAIN}"
 echo "    TUNNEL_SHARE_NAME=${TUNNEL_SHARE_NAME}"
 echo ""
 echo "=== Setup complete! ==="
 echo ""
 echo "  Start tunnel:  make tunnel-zrok"
-echo "  Your URL:      https://${TUNNEL_SHARE_NAME}.share.zrok.io"
+echo "  Your URL:      https://${TUNNEL_SHARE_NAME}.${TUNNEL_DOMAIN}"

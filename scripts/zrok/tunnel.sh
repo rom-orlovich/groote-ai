@@ -4,7 +4,8 @@ set -e
 TUNNEL_BIN="${TUNNEL_BIN:-zrok}"
 TUNNEL_SHARE_NAME="${TUNNEL_SHARE_NAME:-my-app}"
 LOCAL_PORT="${LOCAL_PORT:-3005}"
-PUBLIC_URL="https://${TUNNEL_SHARE_NAME}.share.zrok.io"
+TUNNEL_DOMAIN="${TUNNEL_DOMAIN:-share.zrok.io}"
+PUBLIC_URL="${PUBLIC_URL:-https://${TUNNEL_SHARE_NAME}.${TUNNEL_DOMAIN}}"
 
 command -v "$TUNNEL_BIN" &> /dev/null || {
     if [ -x "$HOME/.local/bin/zrok" ]; then
