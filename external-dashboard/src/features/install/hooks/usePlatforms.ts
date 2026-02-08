@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+export interface Platform {
+  id: string;
+  name: string;
+  configured: boolean;
+  connected: boolean;
+}
+
 const authToken = () => `Bearer ${localStorage.getItem("auth_token")}`;
 
 export function usePlatforms() {

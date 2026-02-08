@@ -50,7 +50,7 @@ export function AgentScalingSettings() {
   const costPerAgent = 0.05;
   const estimatedMonthlyCost = config.agent_count * costPerAgent * 730;
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-gray-500">Loading settings...</div>

@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle, ExternalLink, Plug } from "lucide-react";
-import { useDisconnectPlatform, usePlatforms } from "./hooks/usePlatforms";
+import { useDisconnectPlatform, usePlatforms, type Platform } from "./hooks/usePlatforms";
 
 export function InstallPage() {
   const { data, isLoading } = usePlatforms();
@@ -34,7 +34,7 @@ export function InstallPage() {
       </div>
 
       <div className="grid gap-6">
-        {platforms.map((platform) => (
+        {platforms.map((platform: Platform) => (
           <div
             key={platform.id}
             className="border rounded-lg p-6 bg-white hover:shadow-md transition"
