@@ -19,7 +19,7 @@ export function DashboardLayout({ children, headerSlot, sidebarSlot }: Dashboard
 
   useEffect(() => {
     setSidebarOpen(true);
-  }, []);
+  }, [location.pathname]);
 
   if (isSetup) {
     return (

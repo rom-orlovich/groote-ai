@@ -1,4 +1,4 @@
-import { AlertCircle, ChevronRight, Loader, Play, Power, StopCircle } from "lucide-react";
+import { AlertCircle, ChevronRight, Loader, Play, StopCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCLIAgentStatus, useStartCLIAgent, useStopCLIAgent } from "./hooks/useCLIAgentControl";
 
