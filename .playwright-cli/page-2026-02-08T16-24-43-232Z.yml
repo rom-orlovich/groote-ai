@@ -1,0 +1,110 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e9]:
+        - generic [ref=e10]: CLAUDE_MACHINE
+        - generic [ref=e11]: CORE_SYSTEM_ACCESS
+    - generic [ref=e12]:
+      - button "TOGGLE_PHASE_MODE" [ref=e13]:
+        - img [ref=e14]
+      - generic [ref=e16]:
+        - img [ref=e17]
+        - generic "CLI agent is not reachable" [ref=e21]: "CLI: INACTIVE"
+      - generic [ref=e22]:
+        - generic [ref=e25]: "CORE_NODE: ONLINE"
+        - generic [ref=e27]:
+          - img [ref=e28]
+          - generic [ref=e31]: GEN_6_ARC
+  - generic [ref=e32]:
+    - complementary [ref=e33]:
+      - navigation [ref=e34]:
+        - link "01_OVERVIEW" [ref=e35] [cursor=pointer]:
+          - /url: /
+          - img [ref=e36]
+          - generic [ref=e41]: 01_OVERVIEW
+        - link "02_ANALYTICS" [ref=e42] [cursor=pointer]:
+          - /url: /analytics
+          - img [ref=e43]
+          - generic [ref=e45]: 02_ANALYTICS
+        - link "03_LEDGER" [ref=e46] [cursor=pointer]:
+          - /url: /ledger
+          - img [ref=e47]
+          - generic [ref=e51]: 03_LEDGER
+        - link "04_SOURCES" [ref=e52] [cursor=pointer]:
+          - /url: /sources
+          - img [ref=e53]
+          - generic [ref=e55]: 04_SOURCES
+        - link "05_WEBHOOKS" [ref=e56] [cursor=pointer]:
+          - /url: /webhooks
+          - img [ref=e57]
+          - generic [ref=e61]: 05_WEBHOOKS
+        - link "06_COMMS" [ref=e62] [cursor=pointer]:
+          - /url: /chat
+          - img [ref=e63]
+          - generic [ref=e65]: 06_COMMS
+        - link "07_REGISTRY" [ref=e66] [cursor=pointer]:
+          - /url: /registry
+          - img [ref=e67]
+          - generic [ref=e71]: 07_REGISTRY
+        - link "08_INTEGRATIONS" [ref=e72] [cursor=pointer]:
+          - /url: /integrations
+          - img [ref=e73]
+          - generic [ref=e76]: 08_INTEGRATIONS
+        - link "09_INSTALL" [ref=e77] [cursor=pointer]:
+          - /url: /install
+          - img [ref=e78]
+          - generic [ref=e81]: 09_INSTALL
+      - generic [ref=e83]:
+        - generic [ref=e84]:
+          - generic [ref=e85]: SYSTEM_PULSE
+          - generic [ref=e86]: ACTIVE
+        - img [ref=e90]
+    - main [ref=e92]:
+      - generic [ref=e94]:
+        - generic [ref=e95]:
+          - heading "Connect Services" [level=1] [ref=e96]
+          - paragraph [ref=e97]: Connect your development tools to enable Groote AI to access your repositories, issues, and communications.
+        - generic [ref=e98]:
+          - generic [ref=e100]:
+            - generic [ref=e101]:
+              - generic [ref=e102]:
+                - heading "GitHub" [level=2] [ref=e103]
+                - generic [ref=e104]:
+                  - img [ref=e105]
+                  - text: Not Configured
+              - paragraph [ref=e107]: Your administrator hasn't configured GitHub yet. Contact them to set it up.
+              - paragraph [ref=e108]:
+                - img [ref=e109]
+                - generic [ref=e111]: This platform is not configured by your administrator. Please contact them to enable it.
+            - button "Disabled" [disabled] [ref=e113]
+          - generic [ref=e115]:
+            - generic [ref=e116]:
+              - generic [ref=e117]:
+                - heading "Jira" [level=2] [ref=e118]
+                - generic [ref=e119]:
+                  - img [ref=e120]
+                  - text: Not Configured
+              - paragraph [ref=e122]: Your administrator hasn't configured Jira yet. Contact them to set it up.
+              - paragraph [ref=e123]:
+                - img [ref=e124]
+                - generic [ref=e126]: This platform is not configured by your administrator. Please contact them to enable it.
+            - button "Disabled" [disabled] [ref=e128]
+          - generic [ref=e130]:
+            - generic [ref=e131]:
+              - generic [ref=e132]:
+                - heading "Slack" [level=2] [ref=e133]
+                - generic [ref=e134]:
+                  - img [ref=e135]
+                  - text: Not Configured
+              - paragraph [ref=e137]: Your administrator hasn't configured Slack yet. Contact them to set it up.
+              - paragraph [ref=e138]:
+                - img [ref=e139]
+                - generic [ref=e141]: This platform is not configured by your administrator. Please contact them to enable it.
+            - button "Disabled" [disabled] [ref=e143]
+        - generic [ref=e144]:
+          - heading "Why connect these services?" [level=3] [ref=e145]
+          - list [ref=e146]:
+            - listitem [ref=e147]: "• GitHub: Access repositories, issues, and pull requests"
+            - listitem [ref=e148]: "• Jira: Create and manage tickets with AI-Fix labels"
+            - listitem [ref=e149]: "• Slack: Get notifications and respond to inquiries"
