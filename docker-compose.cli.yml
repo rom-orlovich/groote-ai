@@ -31,7 +31,7 @@ services:
     build: ./agent-engine
     image: ${CLI_PROVIDER:-claude}-cli:latest
     ports:
-      - "8080-8089:8080"
+      - "9100-9109:9100"
     environment:
       - CLI_PROVIDER=${CLI_PROVIDER:-claude}
       - MAX_CONCURRENT_TASKS=${MAX_CONCURRENT_TASKS:-5}

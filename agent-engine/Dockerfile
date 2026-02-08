@@ -47,15 +47,15 @@ RUN cp -r .claude/agents /home/agent/.claude/agents && \
 RUN find . -name "*.sh" -exec sed -i 's/\r$//' {} + && \
     find . -name "*.sh" -exec chmod +x {} +
 
-ENV PORT=8080
+ENV PORT=9100
 ENV CLI_PROVIDER=claude
 
-EXPOSE 8080
+EXPOSE 9100
 
 # Switch to non-root user
 USER agent
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD curl -f http://localhost:9100/health || exit 1
 
 CMD ["python", "scripts/start.py"]
