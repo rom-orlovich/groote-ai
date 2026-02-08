@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 
 $TunnelShareName = if ($env:TUNNEL_SHARE_NAME) { $env:TUNNEL_SHARE_NAME } else { "my-app" }
 $LocalPort = if ($env:LOCAL_PORT) { $env:LOCAL_PORT } else { "3005" }
-$PublicUrl = "https://${TunnelShareName}.your-tunnel-domain.example"
+$PublicUrl = "https://${TunnelShareName}.share.zrok.io"
 
 $TunnelBin = Get-Command zrok -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
 if (-not $TunnelBin) {

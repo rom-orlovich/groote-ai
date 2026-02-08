@@ -77,9 +77,9 @@ $ReserveOutput = & $TunnelBin reserve public "http://localhost:${LocalPort}" --u
 $ReserveStr = $ReserveOutput | Out-String
 
 if ($ReserveStr -match "reserved frontend endpoint") {
-    Write-Host "  Reserved: https://${TunnelShareName}.your-tunnel-domain.example"
+    Write-Host "  Reserved: https://${TunnelShareName}.share.zrok.io"
 } elseif ($ReserveStr -match "already reserved") {
-    Write-Host "  Already reserved: https://${TunnelShareName}.your-tunnel-domain.example"
+    Write-Host "  Already reserved: https://${TunnelShareName}.share.zrok.io"
 } else {
     Write-Host "  $ReserveStr"
     Write-Host "  If the name is taken, set TUNNEL_SHARE_NAME in .env to a different name"
@@ -89,10 +89,10 @@ Write-Host ""
 Write-Host "[4/4] Configuration"
 Write-Host ""
 Write-Host "  Add to your .env file:"
-Write-Host "    PUBLIC_URL=https://${TunnelShareName}.your-tunnel-domain.example"
+Write-Host "    PUBLIC_URL=https://${TunnelShareName}.share.zrok.io"
 Write-Host "    TUNNEL_SHARE_NAME=${TunnelShareName}"
 Write-Host ""
 Write-Host "=== Setup complete! ==="
 Write-Host ""
 Write-Host "  Start tunnel:  .\make.ps1 tunnel-zrok"
-Write-Host "  Your URL:      https://${TunnelShareName}.your-tunnel-domain.example"
+Write-Host "  Your URL:      https://${TunnelShareName}.share.zrok.io"
