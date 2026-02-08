@@ -2,8 +2,8 @@
 """Shared DB helpers for CLI scripts."""
 
 import os
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 import structlog
 from sqlalchemy import text
@@ -75,7 +75,9 @@ async def ensure_tables(session: AsyncSession):
     )
 
 
-async def upsert_instance(session: AsyncSession, provider: str, hostname: str, version: str | None = None):
+async def upsert_instance(
+    session: AsyncSession, provider: str, hostname: str, version: str | None = None
+):
     params = {"provider": provider, "hostname": hostname, "version": version}
     await session.execute(
         text("""

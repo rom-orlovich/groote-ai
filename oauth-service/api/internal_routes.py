@@ -36,17 +36,13 @@ async def get_internal_token(
 
     if org_id or install_id:
         if platform == "github" and install_id:
-            installation_token = await token_service.get_github_installation_token(
-                str(install_id)
-            )
+            installation_token = await token_service.get_github_installation_token(str(install_id))
             return {
                 "token": installation_token,
                 "available": bool(installation_token),
                 "platform": platform,
             }
-        token = await token_service.get_token(
-            platform, org_id=org_id, installation_id=install_id
-        )
+        token = await token_service.get_token(platform, org_id=org_id, installation_id=install_id)
         return {"token": token, "available": bool(token), "platform": platform}
 
     token, installation = await token_service.get_any_active_token(platform)

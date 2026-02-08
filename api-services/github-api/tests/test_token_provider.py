@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
-
 from token_provider import CACHE_TTL_SECONDS, TokenProvider
 
 

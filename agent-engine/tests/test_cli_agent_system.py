@@ -34,7 +34,6 @@ def _parse_frontmatter(agent_file: Path) -> dict[str, str]:
 
 
 class TestClaudeCLIAgentSystem:
-
     def test_command_does_not_include_model_flag(self):
         runner = ClaudeCLIRunner()
         cmd = runner._build_command(
@@ -49,8 +48,11 @@ class TestClaudeCLIAgentSystem:
     def test_command_uses_print_mode(self):
         runner = ClaudeCLIRunner()
         cmd = runner._build_command(
-            prompt="test", model=None, allowed_tools=None,
-            agents=None, debug_mode=None,
+            prompt="test",
+            model=None,
+            allowed_tools=None,
+            agents=None,
+            debug_mode=None,
         )
         assert "-p" in cmd
         assert "--output-format" in cmd
@@ -59,8 +61,11 @@ class TestClaudeCLIAgentSystem:
     def test_command_skips_permissions(self):
         runner = ClaudeCLIRunner()
         cmd = runner._build_command(
-            prompt="test", model=None, allowed_tools=None,
-            agents=None, debug_mode=None,
+            prompt="test",
+            model=None,
+            allowed_tools=None,
+            agents=None,
+            debug_mode=None,
         )
         assert "--dangerously-skip-permissions" in cmd
 
@@ -68,8 +73,11 @@ class TestClaudeCLIAgentSystem:
         runner = ClaudeCLIRunner()
         agents_json = '{"brain": {"model": "opus"}}'
         cmd = runner._build_command(
-            prompt="test", model=None, allowed_tools=None,
-            agents=agents_json, debug_mode=None,
+            prompt="test",
+            model=None,
+            allowed_tools=None,
+            agents=agents_json,
+            debug_mode=None,
         )
         assert "--agents" in cmd
         idx = cmd.index("--agents")
@@ -77,18 +85,23 @@ class TestClaudeCLIAgentSystem:
 
 
 class TestCursorCLIAgentSystem:
-
     def test_command_does_not_include_model_flag(self):
         runner = CursorCLIRunner()
         cmd = runner._build_command(
-            prompt="test prompt", model=None, mode=None, force=True,
+            prompt="test prompt",
+            model=None,
+            mode=None,
+            force=True,
         )
         assert "-m" not in cmd
 
     def test_command_uses_print_mode(self):
         runner = CursorCLIRunner()
         cmd = runner._build_command(
-            prompt="test", model=None, mode=None, force=True,
+            prompt="test",
+            model=None,
+            mode=None,
+            force=True,
         )
         assert "-p" in cmd
         assert "--output-format" in cmd
@@ -97,33 +110,30 @@ class TestCursorCLIAgentSystem:
     def test_command_uses_force_flag(self):
         runner = CursorCLIRunner()
         cmd = runner._build_command(
-            prompt="test", model=None, mode=None, force=True,
+            prompt="test",
+            model=None,
+            mode=None,
+            force=True,
         )
         assert "-f" in cmd
 
 
 class TestAgentFilesStructure:
-
     def test_all_agents_have_required_fields(self):
         for agent_file in AGENTS_DIR.glob("*.md"):
             frontmatter = _parse_frontmatter(agent_file)
             for field in REQUIRED_FRONTMATTER_FIELDS:
-                assert field in frontmatter, (
-                    f"{agent_file.name} missing required field: {field}"
-                )
+                assert field in frontmatter, f"{agent_file.name} missing required field: {field}"
 
     def test_model_values_are_valid(self):
         valid_models = {"opus", "sonnet", "haiku", "inherit"}
         for agent_file in AGENTS_DIR.glob("*.md"):
             frontmatter = _parse_frontmatter(agent_file)
             model = frontmatter.get("model")
-            assert model in valid_models, (
-                f"{agent_file.name} has invalid model: {model}"
-            )
+            assert model in valid_models, f"{agent_file.name} has invalid model: {model}"
 
 
 class TestDockerfileAgentCopy:
-
     def test_dockerfile_copies_agents_to_claude_home(self):
         content = DOCKERFILE_PATH.read_text()
         assert "/home/agent/.claude/agents" in content
