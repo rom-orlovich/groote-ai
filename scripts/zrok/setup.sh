@@ -5,7 +5,7 @@ TUNNEL_SHARE_NAME="${TUNNEL_SHARE_NAME:-my-app}"
 LOCAL_PORT="${LOCAL_PORT:-3005}"
 INSTALL_DIR="$HOME/.local/bin"
 
-echo "=== zrok Setup for Groote AI ==="
+echo "=== Tunnel Setup for Groote AI ==="
 echo ""
 
 mkdir -p "$INSTALL_DIR"
@@ -16,7 +16,7 @@ if [ -x "$INSTALL_DIR/zrok" ]; then
 fi
 
 if [ -z "$TUNNEL_BIN" ]; then
-    echo "[1/4] Installing zrok..."
+    echo "[1/4] Installing tunnel binary..."
     OS=$(uname -s | tr '[:upper:]' '[:lower:]')
     ARCH=$(uname -m)
     case "$ARCH" in
@@ -25,24 +25,24 @@ if [ -z "$TUNNEL_BIN" ]; then
     esac
     VERSION=$(curl -sL "https://api.github.com/repos/openziti/zrok/releases/latest" | grep '"tag_name"' | sed 's/.*"v\(.*\)".*/\1/')
     DOWNLOAD_URL="https://github.com/openziti/zrok/releases/download/v${VERSION}/zrok_${VERSION}_${OS}_${ARCH}.tar.gz"
-    echo "  Downloading zrok v${VERSION} for ${OS}/${ARCH}..."
-    curl -sL "$DOWNLOAD_URL" -o /tmp/zrok.tar.gz
-    tar -xzf /tmp/zrok.tar.gz -C "$INSTALL_DIR"
+    echo "  Downloading v${VERSION} for ${OS}/${ARCH}..."
+    curl -sL "$DOWNLOAD_URL" -o /tmp/tunnel-bin.tar.gz
+    tar -xzf /tmp/tunnel-bin.tar.gz -C "$INSTALL_DIR"
     chmod +x "$INSTALL_DIR/zrok"
-    rm -f /tmp/zrok.tar.gz
+    rm -f /tmp/tunnel-bin.tar.gz
     TUNNEL_BIN="$INSTALL_DIR/zrok"
     echo "  Installed to $INSTALL_DIR/zrok"
 else
-    echo "[1/4] zrok already installed ($($TUNNEL_BIN version 2>&1 | head -1))"
+    echo "[1/4] Tunnel binary already installed ($($TUNNEL_BIN version 2>&1 | head -1))"
 fi
 
 echo ""
 echo "[2/4] Account setup"
 if "$TUNNEL_BIN" status &> /dev/null; then
-    echo "  zrok environment already enabled"
+    echo "  Environment already enabled"
 else
     echo ""
-    echo "  You need a free zrok account:"
+    echo "  You need a free account:"
     echo "    1. Go to https://myzrok.io and sign up"
     echo "    2. Check your email for the enable token"
     echo "    3. Run: $TUNNEL_BIN enable <TOKEN_FROM_EMAIL>"
@@ -76,7 +76,7 @@ echo "  Set PUBLIC_URL in .env or via the dashboard setup wizard:"
 if [ -n "$RESERVED_URL" ]; then
     echo "    PUBLIC_URL=${RESERVED_URL}"
 else
-    echo "    PUBLIC_URL=<your-zrok-url>"
+    echo "    PUBLIC_URL=<your-tunnel-url>"
 fi
 echo "    TUNNEL_SHARE_NAME=${TUNNEL_SHARE_NAME}"
 echo ""
