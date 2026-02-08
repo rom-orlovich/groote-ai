@@ -9,7 +9,7 @@ To receive webhooks from GitHub, Jira, Slack, and other external services, you n
 ### Benefits of zrok
 
 - ✅ **Free forever** - No time limits or rate limits that reset
-- ✅ **Permanent URL** - Your URL stays the same across restarts (`https://my-app.your-tunnel-domain.example`)
+- ✅ **Permanent URL** - Your URL stays the same across restarts (`https://<your-share-name>.your-tunnel-domain.example`)
 - ✅ **Stable** - No 2-hour session limits like ngrok free tier
 - ✅ **Open source** - Transparent, community-driven
 
@@ -28,13 +28,13 @@ This script will:
    - Check your email for the enable token
    - Run: `zrok enable <TOKEN_FROM_EMAIL>`
 3. **Reserve a permanent share name** (e.g., `my-app`)
-4. **Show your URL**: `https://my-app.your-tunnel-domain.example`
+4. **Show your URL**: `https://<your-share-name>.your-tunnel-domain.example`
 
 Then add to `.env`:
 
 ```bash
-PUBLIC_URL=https://my-app.your-tunnel-domain.example
-TUNNEL_SHARE_NAME=my-app
+PUBLIC_URL=https://<your-share-name>.your-tunnel-domain.example
+TUNNEL_SHARE_NAME=<your-share-name>
 ```
 
 ### Starting the Tunnel
@@ -53,7 +53,7 @@ The tunnel will:
 **Example output:**
 
 ```
-Starting zrok tunnel: https://my-app.your-tunnel-domain.example -> http://localhost:3005
+Starting zrok tunnel: https://<your-share-name>.your-tunnel-domain.example -> http://localhost:3005
 
 Routes (via nginx on port 3005):
   /           -> external-dashboard (React SPA)
@@ -63,16 +63,16 @@ Routes (via nginx on port 3005):
   /ws         -> dashboard-api:5000 (WebSocket)
 
 Webhook URLs:
-  GitHub: https://my-app.your-tunnel-domain.example/webhooks/github
-  Jira:   https://my-app.your-tunnel-domain.example/webhooks/jira
-  Slack:  https://my-app.your-tunnel-domain.example/webhooks/slack
+  GitHub: https://<your-share-name>.your-tunnel-domain.example/webhooks/github
+  Jira:   https://<your-share-name>.your-tunnel-domain.example/webhooks/jira
+  Slack:  https://<your-share-name>.your-tunnel-domain.example/webhooks/slack
 
-OAuth callback: https://my-app.your-tunnel-domain.example/oauth/callback
+OAuth callback: https://<your-share-name>.your-tunnel-domain.example/oauth/callback
 ```
 
 ### Using a Different Share Name
 
-If `my-app` is taken, customize it:
+If your chosen name is taken, customize it:
 
 ```bash
 TUNNEL_SHARE_NAME=my-unique-name make tunnel-setup
