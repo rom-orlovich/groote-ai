@@ -43,45 +43,31 @@ class TestJiraLabelFiltering:
 
 class TestJiraAssigneeTrigger:
     def test_assignee_ai_agent_triggers_processing(self):
-        payload = jira_issue_created_payload(
-            labels=[], assignee="ai-agent"
-        )
+        payload = jira_issue_created_payload(labels=[], assignee="ai-agent")
 
         assert should_process_event("jira:issue_created", payload["issue"]) is True
 
     def test_assignee_other_user_skipped(self):
-        payload = jira_issue_created_payload(
-            labels=[], assignee="john"
-        )
+        payload = jira_issue_created_payload(labels=[], assignee="john")
 
         assert should_process_event("jira:issue_created", payload["issue"]) is False
 
     def test_no_assignee_with_ai_fix_label_still_processed(self):
-        payload = jira_issue_created_payload(
-            labels=["AI-Fix"], assignee=None
-        )
+        payload = jira_issue_created_payload(labels=["AI-Fix"], assignee=None)
 
         assert should_process_event("jira:issue_created", payload["issue"]) is True
 
     def test_assignee_name_configurable(self):
-        payload = jira_issue_created_payload(
-            labels=[], assignee="custom-bot"
-        )
+        payload = jira_issue_created_payload(labels=[], assignee="custom-bot")
 
         assert (
-            should_process_event(
-                "jira:issue_created", payload["issue"], ai_agent_name="custom-bot"
-            )
+            should_process_event("jira:issue_created", payload["issue"], ai_agent_name="custom-bot")
             is True
         )
-        assert (
-            should_process_event("jira:issue_created", payload["issue"]) is False
-        )
+        assert should_process_event("jira:issue_created", payload["issue"]) is False
 
     def test_assignee_check_case_insensitive(self):
-        payload = jira_issue_created_payload(
-            labels=[], assignee="AI-Agent"
-        )
+        payload = jira_issue_created_payload(labels=[], assignee="AI-Agent")
 
         assert should_process_event("jira:issue_created", payload["issue"]) is True
 

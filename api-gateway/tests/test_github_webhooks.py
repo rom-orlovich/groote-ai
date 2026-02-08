@@ -10,7 +10,6 @@ from .fixtures import (
 
 
 class TestGitHubEventFiltering:
-
     def test_issue_opened_is_processed(self):
         assert should_process_event("issues", "opened") is True
 
@@ -50,7 +49,6 @@ class TestGitHubEventFiltering:
 
 
 class TestGitHubTaskExtraction:
-
     def test_issue_opened_extracts_task_info(self):
         payload = github_issue_opened_payload(
             repo="myorg/myrepo",
@@ -154,7 +152,6 @@ class TestGitHubTaskExtraction:
 
 
 class TestGitHubPromptField:
-
     def test_issue_prompt_from_title_and_body(self):
         payload = github_issue_opened_payload(
             title="Fix authentication bug",
@@ -213,7 +210,6 @@ class TestGitHubPromptField:
 
 
 class TestSupportedGitHubEvents:
-
     def test_supported_issues_actions(self):
         supported_actions = ["opened", "edited", "labeled"]
         for action in supported_actions:

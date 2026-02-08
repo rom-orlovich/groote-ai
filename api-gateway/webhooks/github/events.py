@@ -1,9 +1,5 @@
 from typing import Any
 
-import structlog
-
-logger = structlog.get_logger(__name__)
-
 SUPPORTED_EVENTS = {
     "issues": ["opened", "edited", "labeled"],
     "issue_comment": ["created"],
@@ -83,7 +79,9 @@ def extract_task_info(event_type: str, payload: dict[str, Any]) -> dict[str, Any
                 "path": path,
                 "line": line,
             }
-            task_info["prompt"] = f"{pr_title}\n\n{pr_body}\n\nReview comment on {path}:{line}: {comment_body}"
+            task_info["prompt"] = (
+                f"{pr_title}\n\n{pr_body}\n\nReview comment on {path}:{line}: {comment_body}"
+            )
         else:
             task_info["prompt"] = f"{pr_title}\n\n{pr_body}"
 
@@ -95,10 +93,7 @@ def extract_task_info(event_type: str, payload: dict[str, Any]) -> dict[str, Any
             "ref": ref,
             "before": payload.get("before"),
             "after": payload.get("after"),
-            "commits": [
-                {"message": c.get("message"), "sha": c.get("id")}
-                for c in commits
-            ],
+            "commits": [{"message": c.get("message"), "sha": c.get("id")} for c in commits],
         }
         task_info["prompt"] = f"Push to {ref}: {', '.join(commit_messages)}"
 

@@ -1,9 +1,5 @@
 from typing import Any
 
-import structlog
-
-logger = structlog.get_logger(__name__)
-
 SUPPORTED_EVENT_TYPES = ["message", "app_mention"]
 
 

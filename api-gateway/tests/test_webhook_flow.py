@@ -336,7 +336,6 @@ def generate_jira_signature(payload: dict, secret: str = "test-jira-secret") -> 
 
 
 class TestGitHubWebhookFlow:
-
     @pytest.mark.asyncio
     async def test_github_issue_to_task_flow(self, webhook_handler, task_queue):
         payload = github_issue_opened_payload(
@@ -446,7 +445,6 @@ class TestGitHubWebhookFlow:
 
 
 class TestJiraWebhookFlow:
-
     @pytest.mark.asyncio
     async def test_jira_ai_fix_label_creates_task(self, webhook_handler, task_queue):
         payload = jira_issue_created_payload(
@@ -551,7 +549,6 @@ class TestJiraWebhookFlow:
 
 
 class TestSlackWebhookFlow:
-
     @pytest.mark.asyncio
     async def test_slack_app_mention_creates_task(self, webhook_handler, task_queue):
         payload = slack_app_mention_payload(
@@ -602,7 +599,6 @@ class TestSlackWebhookFlow:
 
 
 class TestLoopPreventionFlow:
-
     @pytest.mark.asyncio
     async def test_agent_posted_comment_ignored(self, webhook_handler, task_queue, loop_prevention):
         await loop_prevention.mark_as_posted("456")
@@ -646,7 +642,6 @@ class TestLoopPreventionFlow:
 
 
 class TestWebhookToTaskRouting:
-
     @pytest.mark.asyncio
     async def test_github_issue_routes_to_issue_handler(self, webhook_handler, task_queue):
         payload = github_issue_opened_payload(repo="myorg/myrepo")
@@ -688,7 +683,6 @@ class TestWebhookToTaskRouting:
 
 
 class TestWebhookTaskShape:
-
     @pytest.mark.asyncio
     async def test_all_webhooks_produce_input_message(self, webhook_handler, task_queue):
         github_payload = github_issue_opened_payload(
@@ -715,7 +709,9 @@ class TestWebhookTaskShape:
 
         assert len(task_queue.tasks) == 3
         for task in task_queue.tasks:
-            assert task.input_message, f"Task from {task.source_metadata['provider']} has empty input_message"
+            assert task.input_message, (
+                f"Task from {task.source_metadata['provider']} has empty input_message"
+            )
 
     @pytest.mark.asyncio
     async def test_task_shape_matches_agent_engine_expectations(self, webhook_handler, task_queue):

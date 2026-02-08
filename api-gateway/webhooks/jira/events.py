@@ -1,9 +1,5 @@
 from typing import Any
 
-import structlog
-
-logger = structlog.get_logger(__name__)
-
 SUPPORTED_EVENTS = [
     "jira:issue_created",
     "jira:issue_updated",
