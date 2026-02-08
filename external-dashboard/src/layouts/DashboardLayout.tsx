@@ -14,12 +14,12 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, headerSlot, sidebarSlot }: DashboardLayoutProps) {
   const location = useLocation();
   const isChat = location.pathname === "/chat";
-  const isSetup = location.pathname === "/install" || location.pathname === "/settings/ai-provider";
+  const isSetup = location.pathname === "/install";
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     setSidebarOpen(true);
-  }, [location.pathname]);
+  }, []);
 
   if (isSetup) {
     return (

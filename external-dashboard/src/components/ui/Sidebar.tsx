@@ -27,7 +27,7 @@ const navItems = [
   { icon: MessageSquare, label: "06_COMMS", path: "/chat" },
   { icon: Package, label: "07_REGISTRY", path: "/registry" },
   { icon: Link2, label: "08_INTEGRATIONS", path: "/integrations" },
-  { icon: Settings, label: "09_SETTINGS", path: "/settings/ai-provider" },
+  { icon: Settings, label: "09_SETTINGS", path: "/settings" },
 ];
 
 interface SidebarProps {

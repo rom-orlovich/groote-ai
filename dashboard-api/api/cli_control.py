@@ -1,10 +1,9 @@
-"""CLI agent control endpoints."""
-
 import os
 from datetime import UTC, datetime
 
 import structlog
-from fastapi import APIRouter, HTTPException
+from core.database.redis_client import redis_client
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 logger = structlog.get_logger()
@@ -12,122 +11,68 @@ logger = structlog.get_logger()
 router = APIRouter()
 
 
+class CLIStartupStep(BaseModel):
+    step: str
+    status: str
+    detail: str
+
+
 class CLIStatusResponse(BaseModel):
-    """CLI status response model."""
-
+    provider: str
     status: str
-    active_instances: int
-    max_instances: int
+    version: str
+    active: bool
     health_check: bool
+    startup_steps: list[CLIStartupStep]
     last_checked: str
-
-
-class CLIControlResponse(BaseModel):
-    """CLI control response model."""
-
-    status: str
-    message: str
-    timestamp: str
 
 
 @router.get("/cli-status")
 async def get_cli_status() -> CLIStatusResponse:
-    """Get current CLI agent status."""
     import httpx
 
+    now = datetime.now(UTC).isoformat()
+    provider = "unknown"
+    version = ""
+    active = False
+    health_ok = False
+    startup_steps: list[CLIStartupStep] = []
+
+    data = await redis_client.get_json("cli:startup_status")
+    if data:
+        provider = data.get("provider", "unknown")
+        version = data.get("version", "")
+
+        step = data.get("step", "")
+        status = data.get("status", "")
+        detail = data.get("detail", "")
+        startup_steps.append(CLIStartupStep(step=step, status=status, detail=detail))
+
+        if step == "ready" and status == "healthy":
+            active = True
+
+    agent_engine_url = os.getenv("AGENT_ENGINE_URL", "http://cli:9100")
     try:
-        agent_engine_url = os.getenv("AGENT_ENGINE_URL", "http://agent-engine:8080")
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.get(f"{agent_engine_url}/health")
-
             if response.status_code == 200:
-                data = response.json()
-                return CLIStatusResponse(
-                    status="running",
-                    active_instances=data.get("active_agents", 1),
-                    max_instances=5,
-                    health_check=True,
-                    last_checked=datetime.now(UTC).isoformat(),
-                )
+                health_ok = True
 
-        return CLIStatusResponse(
-            status="stopped",
-            active_instances=0,
-            max_instances=5,
-            health_check=False,
-            last_checked=datetime.now(UTC).isoformat(),
-        )
-    except httpx.TimeoutException:
-        logger.warning("cli_health_check_timeout")
-        return CLIStatusResponse(
-            status="unknown",
-            active_instances=0,
-            max_instances=5,
-            health_check=False,
-            last_checked=datetime.now(UTC).isoformat(),
-        )
-    except Exception as e:
-        logger.error("cli_status_error", error=str(e))
-        return CLIStatusResponse(
-            status="unknown",
-            active_instances=0,
-            max_instances=5,
-            health_check=False,
-            last_checked=datetime.now(UTC).isoformat(),
-        )
+            auth_response = await client.get(f"{agent_engine_url}/health/auth")
+            if auth_response.status_code == 200:
+                auth_data = auth_response.json()
+                provider = auth_data.get("provider", provider)
+                if auth_data.get("authenticated", False):
+                    active = True
+    except httpx.RequestError:
+        pass
 
-
-@router.post("/cli-control/start")
-async def start_cli_agent() -> CLIControlResponse:
-    """Start the CLI agent."""
-    import httpx
-
-    try:
-        agent_engine_url = os.getenv("AGENT_ENGINE_URL", "http://agent-engine:8080")
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(f"{agent_engine_url}/start")
-
-            if response.status_code >= 200 and response.status_code < 300:
-                logger.info("cli_agent_started")
-                return CLIControlResponse(
-                    status="started",
-                    message="CLI agent is starting up",
-                    timestamp=datetime.now(UTC).isoformat(),
-                )
-
-        logger.error("start_cli_failed", status=response.status_code)
-        raise HTTPException(status_code=response.status_code, detail="Failed to start CLI agent")
-    except httpx.TimeoutException:
-        logger.error("start_cli_timeout")
-        raise HTTPException(status_code=503, detail="Start CLI timeout")
-    except Exception as e:
-        logger.error("start_cli_error", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/cli-control/stop")
-async def stop_cli_agent() -> CLIControlResponse:
-    """Stop the CLI agent."""
-    import httpx
-
-    try:
-        agent_engine_url = os.getenv("AGENT_ENGINE_URL", "http://agent-engine:8080")
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(f"{agent_engine_url}/stop")
-
-            if response.status_code >= 200 and response.status_code < 300:
-                logger.info("cli_agent_stopped")
-                return CLIControlResponse(
-                    status="stopped",
-                    message="CLI agent stopped",
-                    timestamp=datetime.now(UTC).isoformat(),
-                )
-
-        logger.error("stop_cli_failed", status=response.status_code)
-        raise HTTPException(status_code=response.status_code, detail="Failed to stop CLI agent")
-    except httpx.TimeoutException:
-        logger.error("stop_cli_timeout")
-        raise HTTPException(status_code=503, detail="Stop CLI timeout")
-    except Exception as e:
-        logger.error("stop_cli_error", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+    return CLIStatusResponse(
+        provider=provider,
+        status="running" if health_ok else "stopped",
+        version=version,
+        active=active,
+        health_check=health_ok,
+        startup_steps=startup_steps,
+        last_checked=now,
+    )

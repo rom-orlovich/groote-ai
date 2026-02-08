@@ -57,7 +57,7 @@ graph TB
 
     subgraph Engine["Agent Engine :8080-8089"]
         Agents["AI Agents<br/>brain, planning, executor<br/>github-issue-handler<br/>github-pr-review<br/>jira-code-plan<br/>slack-inquiry, verifier"]
-        MCPConn["MCP Connections<br/>Server-Sent Events"]
+        MCPConn["MCP Connections<br/>Server-Sent Events"]![alt text](image.png)
     end
 
     subgraph MCPServers["MCP Servers"]
@@ -927,28 +927,28 @@ CHROMADB_URL=http://chromadb:8000
 
 ```json
 {
-  "mcpServers": {
-    "github": {
-      "url": "http://github-mcp:9001/sse",
-      "transport": "sse"
-    },
-    "jira": {
-      "url": "http://jira-mcp:9002/sse",
-      "transport": "sse"
-    },
-    "slack": {
-      "url": "http://slack-mcp:9003/sse",
-      "transport": "sse"
-    },
-    "sentry": {
-      "url": "http://sentry-mcp:9004/sse",
-      "transport": "sse"
-    },
-    "knowledge-graph": {
-      "url": "http://knowledge-graph-mcp:9005/sse",
-      "transport": "sse"
+    "mcpServers": {
+        "github": {
+            "url": "http://github-mcp:9001/sse",
+            "transport": "sse"
+        },
+        "jira": {
+            "url": "http://jira-mcp:9002/sse",
+            "transport": "sse"
+        },
+        "slack": {
+            "url": "http://slack-mcp:9003/sse",
+            "transport": "sse"
+        },
+        "sentry": {
+            "url": "http://sentry-mcp:9004/sse",
+            "transport": "sse"
+        },
+        "knowledge-graph": {
+            "url": "http://knowledge-graph-mcp:9005/sse",
+            "transport": "sse"
+        }
     }
-  }
 }
 ```
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Unified CLI test: credentials, version, prompt, and DB logging."""
 
 import asyncio
 import json
@@ -22,6 +21,43 @@ if TYPE_CHECKING:
     from cli.base import CLIResult
 
 logger = structlog.get_logger()
+
+_redis_client = None
+
+
+async def get_redis():
+    global _redis_client
+    if _redis_client is None:
+        import redis.asyncio as aioredis
+
+        redis_url = os.environ.get("REDIS_URL", "redis://redis:6379/0")
+        _redis_client = aioredis.from_url(redis_url, decode_responses=True)
+    return _redis_client
+
+
+async def publish_status(
+    provider: str,
+    step: str,
+    status: str,
+    detail: str = "",
+    version: str = "",
+):
+    try:
+        r = await get_redis()
+        payload = json.dumps({
+            "provider": provider,
+            "step": step,
+            "status": status,
+            "detail": detail,
+            "version": version,
+            "hostname": get_hostname(),
+            "timestamp": datetime.now(UTC).isoformat(),
+        })
+        await r.publish("cli:status", payload)
+        await r.set("cli:startup_status", payload)
+        logger.info("cli_status_published", step=step, status=status)
+    except Exception as e:
+        logger.warning("cli_status_publish_failed", error=str(e))
 
 
 def check_credentials(provider: str) -> tuple[bool, str]:
@@ -149,28 +185,52 @@ async def log_to_db(provider: str, version: str, status: str):
         logger.warning("db_logging_failed", error=str(e))
 
 
+async def cleanup_redis():
+    if _redis_client:
+        await _redis_client.aclose()
+
+
 async def main() -> int:
     provider = get_provider()
     logger.info("starting_cli_check", provider=provider)
 
+    await publish_status(provider, "credentials", "checking")
+
     creds_ok, creds_detail = check_credentials(provider)
     if not creds_ok:
-        logger.warning("no_credentials", provider=provider, detail=creds_detail)
+        await publish_status(provider, "credentials", "failed", creds_detail)
         await log_to_db(provider, "unknown", "no_credentials")
         print(f"CLI check: FAIL - no credentials ({creds_detail})")
+        await cleanup_redis()
         return 1
+
+    await publish_status(provider, "credentials", "ok", creds_detail)
 
     expiry_ok, expiry_detail = check_token_expiry(provider)
+    if not expiry_ok:
+        await publish_status(provider, "auth", "expired", expiry_detail)
+    else:
+        await publish_status(provider, "auth", "ok", expiry_detail)
 
+    await publish_status(provider, "version", "checking")
     version_ok, version = await test_version(provider)
     if not version_ok:
+        await publish_status(provider, "version", "failed", version, version)
         await log_to_db(provider, "unknown", "version_failed")
         print(f"CLI check: FAIL - version check failed ({version})")
+        await cleanup_redis()
         return 1
+
+    await publish_status(provider, "version", "ok", version, version)
 
     prompt_ok = True
     if expiry_ok:
-        prompt_ok, _prompt_detail = await test_prompt(provider)
+        await publish_status(provider, "prompt_test", "checking", version=version)
+        prompt_ok, prompt_detail = await test_prompt(provider)
+        if prompt_ok:
+            await publish_status(provider, "prompt_test", "ok", "passed", version)
+        else:
+            await publish_status(provider, "prompt_test", "failed", prompt_detail, version)
     else:
         logger.info("skipping_prompt_test", reason="token_expired")
 
@@ -181,9 +241,11 @@ async def main() -> int:
     else:
         status = "prompt_failed"
 
+    await publish_status(provider, "ready", status, version=version)
     await log_to_db(provider, version, status)
 
     print(f"CLI check: provider={provider} version={version} auth={expiry_detail} status={status}")
+    await cleanup_redis()
     return 0 if version_ok else 1
 
 

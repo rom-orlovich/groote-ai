@@ -2,17 +2,25 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const authToken = () => `Bearer ${localStorage.getItem("auth_token")}`;
 
+export interface CLIStartupStep {
+  step: string;
+  status: string;
+  detail: string;
+}
+
 export interface CLIAgentStatus {
+  provider: string;
   status: "running" | "stopped";
-  active_instances: number;
-  max_instances: number;
+  version: string;
+  active: boolean;
   health_check: boolean;
+  startup_steps: CLIStartupStep[];
   last_checked: string;
 }
 
 export function useCLIAgentStatus() {
   return useQuery({
-    queryKey: ["cliAgentStatus"],
+    queryKey: ["cli-agent-status"],
     queryFn: async () => {
       const response = await fetch("/api/cli-status", {
         headers: { Authorization: authToken() },
@@ -40,7 +48,8 @@ export function useStartCLIAgent() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cliAgentStatus"] });
+      queryClient.invalidateQueries({ queryKey: ["cli-agent-status"] });
+      queryClient.invalidateQueries({ queryKey: ["cli-status"] });
     },
   });
 }
@@ -61,7 +70,8 @@ export function useStopCLIAgent() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cliAgentStatus"] });
+      queryClient.invalidateQueries({ queryKey: ["cli-agent-status"] });
+      queryClient.invalidateQueries({ queryKey: ["cli-status"] });
     },
   });
 }

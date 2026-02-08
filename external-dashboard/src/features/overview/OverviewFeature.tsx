@@ -46,7 +46,7 @@ export function OverviewFeature() {
       </div>
 
       <section
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
         data-label="SYSTEM_STATUS"
       >
         <StatCard label="QUEUE_DEPTH" value={metrics.queue_depth} icon={Cpu} />
@@ -57,7 +57,6 @@ export function OverviewFeature() {
           value={`$${metrics.daily_burn.toFixed(2)}`}
           icon={DollarSign}
         />
-        <CLIAgentControl />
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4" data-label="OAUTH_USAGE">
@@ -112,26 +111,30 @@ export function OverviewFeature() {
           </div>
         </section>
 
-        <section className="panel" data-label="AGGREGATE_METRICS">
-          <div className="space-y-6">
-            <div className="text-center py-4">
-              <div className="text-4xl font-heading font-black tracking-tighter text-primary leading-none">
-                {metrics.total_jobs}
+        <div className="space-y-4">
+          <CLIAgentControl />
+
+          <section className="panel" data-label="AGGREGATE_METRICS">
+            <div className="space-y-6">
+              <div className="text-center py-4">
+                <div className="text-4xl font-heading font-black tracking-tighter text-primary leading-none">
+                  {metrics.total_jobs}
+                </div>
+                <div className="text-[10px] text-gray-400 font-heading mt-2 uppercase tracking-wider">
+                  TOTAL_JOBS_COMPLETED
+                </div>
               </div>
-              <div className="text-[10px] text-gray-400 font-heading mt-2 uppercase tracking-wider">
-                TOTAL_JOBS_COMPLETED
+              <div className="text-center py-4 border-t border-gray-100">
+                <div className="text-4xl font-heading font-black tracking-tighter text-cta leading-none">
+                  ${metrics.cumulative_cost.toLocaleString()}
+                </div>
+                <div className="text-[10px] text-gray-400 font-heading mt-2 uppercase tracking-wider">
+                  CUMULATIVE_COMPUTE_COST
+                </div>
               </div>
             </div>
-            <div className="text-center py-4 border-t border-gray-100">
-              <div className="text-4xl font-heading font-black tracking-tighter text-cta leading-none">
-                ${metrics.cumulative_cost.toLocaleString()}
-              </div>
-              <div className="text-[10px] text-gray-400 font-heading mt-2 uppercase tracking-wider">
-                CUMULATIVE_COMPUTE_COST
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
 
       <section className="panel" data-label="GLOBAL_CONTAINER_LOGS">

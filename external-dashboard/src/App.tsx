@@ -18,8 +18,6 @@ import { IntegrationsFeature } from "./features/integrations/IntegrationsFeature
 import { LedgerFeature } from "./features/ledger/LedgerFeature";
 import { OverviewFeature } from "./features/overview/OverviewFeature";
 import { RegistryFeature } from "./features/registry/RegistryFeature";
-import { AgentScalingSettings } from "./features/settings/AgentScalingSettings";
-import { AIProviderGuard } from "./features/settings/AIProviderGuard";
 import { AIProviderSettings } from "./features/settings/AIProviderSettings";
 import { SourcesFeature } from "./features/sources/SourcesFeature";
 import { WebhooksFeature } from "./features/webhooks/WebhooksFeature";
@@ -31,73 +29,16 @@ function App() {
       <BrowserRouter>
         <DashboardLayout>
           <Routes>
-            <Route
-              path="/"
-              element={
-                <AIProviderGuard>
-                  <OverviewFeature />
-                </AIProviderGuard>
-              }
-            />
-            <Route
-              path="/analytics"
-              element={
-                <AIProviderGuard>
-                  <AnalyticsFeature />
-                </AIProviderGuard>
-              }
-            />
-            <Route
-              path="/ledger"
-              element={
-                <AIProviderGuard>
-                  <LedgerFeature />
-                </AIProviderGuard>
-              }
-            />
-            <Route
-              path="/sources"
-              element={
-                <AIProviderGuard>
-                  <SourcesFeature />
-                </AIProviderGuard>
-              }
-            />
-            <Route
-              path="/webhooks"
-              element={
-                <AIProviderGuard>
-                  <WebhooksFeature />
-                </AIProviderGuard>
-              }
-            />
-            <Route
-              path="/chat"
-              element={
-                <AIProviderGuard>
-                  <ChatFeature />
-                </AIProviderGuard>
-              }
-            />
-            <Route
-              path="/registry"
-              element={
-                <AIProviderGuard>
-                  <RegistryFeature />
-                </AIProviderGuard>
-              }
-            />
-            <Route
-              path="/integrations"
-              element={
-                <AIProviderGuard>
-                  <IntegrationsFeature />
-                </AIProviderGuard>
-              }
-            />
+            <Route path="/" element={<OverviewFeature />} />
+            <Route path="/analytics" element={<AnalyticsFeature />} />
+            <Route path="/ledger" element={<LedgerFeature />} />
+            <Route path="/sources" element={<SourcesFeature />} />
+            <Route path="/webhooks" element={<WebhooksFeature />} />
+            <Route path="/chat" element={<ChatFeature />} />
+            <Route path="/registry" element={<RegistryFeature />} />
+            <Route path="/integrations" element={<IntegrationsFeature />} />
+            <Route path="/settings" element={<AIProviderSettings />} />
             <Route path="/install" element={<InstallPage />} />
-            <Route path="/settings/ai-provider" element={<AIProviderSettings />} />
-            <Route path="/settings/agents" element={<AgentScalingSettings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </DashboardLayout>
