@@ -9,7 +9,7 @@ To receive webhooks from GitHub, Jira, Slack, and other external services, you n
 ### Benefits of zrok
 
 - ✅ **Free forever** - No time limits or rate limits that reset
-- ✅ **Permanent URL** - Your URL stays the same across restarts (`https://your-tunnel-url-here`)
+- ✅ **Permanent URL** - Your URL stays the same across restarts (`https://<your-share-name>.tunnel-domain.example`)
 - ✅ **Stable** - No 2-hour session limits like ngrok free tier
 - ✅ **Open source** - Transparent, community-driven
 
@@ -28,13 +28,13 @@ This script will:
    - Check your email for the enable token
    - Run: `zrok enable <TOKEN_FROM_EMAIL>`
 3. **Reserve a permanent share name** (e.g., `my-share-name`)
-4. **Show your URL**: `https://your-tunnel-url-here`
+4. **Show your URL**: `https://<your-share-name>.tunnel-domain.example`
 
 Then add to `.env`:
 
 ```bash
-PUBLIC_URL=https://your-tunnel-url-here
-ZROK_SHARE_NAME=my-share-name
+PUBLIC_URL=https://<your-share-name>.tunnel-domain.example
+ZROK_SHARE_NAME=<your-share-name>
 ```
 
 ### Starting the Tunnel
@@ -53,7 +53,7 @@ The tunnel will:
 **Example output:**
 
 ```
-Starting zrok tunnel: https://your-tunnel-url-here -> http://localhost:3005
+Starting zrok tunnel: https://<your-share-name>.tunnel-domain.example -> http://localhost:3005
 
 Routes (via nginx on port 3005):
   /           -> external-dashboard (React SPA)
@@ -63,16 +63,16 @@ Routes (via nginx on port 3005):
   /ws         -> dashboard-api:5000 (WebSocket)
 
 Webhook URLs:
-  GitHub: https://your-tunnel-url-here/webhooks/github
-  Jira:   https://your-tunnel-url-here/webhooks/jira
-  Slack:  https://your-tunnel-url-here/webhooks/slack
+  GitHub: https://<your-share-name>.tunnel-domain.example/webhooks/github
+  Jira:   https://<your-share-name>.tunnel-domain.example/webhooks/jira
+  Slack:  https://<your-share-name>.tunnel-domain.example/webhooks/slack
 
-OAuth callback: https://your-tunnel-url-here/oauth/callback
+OAuth callback: https://<your-share-name>.tunnel-domain.example/oauth/callback
 ```
 
 ### Using a Different Share Name
 
-If `my-share-name` is taken, customize it:
+If your chosen name is taken, customize it:
 
 ```bash
 ZROK_SHARE_NAME=my-unique-name make tunnel-setup
