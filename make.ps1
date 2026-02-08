@@ -373,10 +373,12 @@ function Invoke-Tunnel {
 
     if (-not $match.Success) {
         Write-Host "Error: PUBLIC_URL not configured in .env"
+        Write-Host "  Set it via the dashboard setup wizard or directly in .env"
         exit 1
     }
 
-    $tunnelDomain = $match.Groups[1].Value.Trim('"')
+    $publicUrl = $match.Groups[1].Value.Trim('"')
+    $tunnelDomain = ($publicUrl -replace 'https?://', '') -replace '/.*', ''
 
     Write-Host "Starting ngrok tunnel to $tunnelDomain"
     Write-Host "   Forwarding to: http://localhost:3005"
