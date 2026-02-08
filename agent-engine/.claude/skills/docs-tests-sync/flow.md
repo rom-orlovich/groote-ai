@@ -45,7 +45,7 @@ Parse for process flows:
 
 ```
 1. Find "### {Service} Flow" sections
-   - Services: GitHub, Jira, Slack, Sentry, Webhook, Task
+   - Services: GitHub, Jira, Slack, Webhook, Task
    - Extract numbered steps
 
 2. Find "## Architecture" section

@@ -36,7 +36,7 @@ Extract from documentation:
 |---------|--------|
 | `### Core Responsibilities` | Numbered features with `**Name**:` |
 | `## API Endpoints` | Table with Method/Path/Description |
-| `### {Service} Flow` | Numbered steps (GitHub, Jira, Slack, Sentry) |
+| `### {Service} Flow` | Numbered steps (GitHub, Jira, Slack) |
 | `- \`name\` - description` | Agent/skill definitions |
 
 ---
@@ -57,7 +57,7 @@ Target directories:
 - `api-gateway/` - Webhook handlers
 - `agent-engine/` - Task execution
 - `dashboard-api/` - Analytics
-- `api-services/{github,jira,slack,sentry}-api/` - External APIs
+- `api-services/{github,jira,slack}-api/` - External APIs
 - `mcp-servers/{name}/` - MCP integrations
 - `oauth-service/`, `task-logger/`, `gkg-service/`, `llamaindex-service/`, `indexer-worker/`
 

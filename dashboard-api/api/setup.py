@@ -24,7 +24,6 @@ from core.setup.validators import (
     validate_cursor,
     validate_github_oauth,
     validate_jira_oauth,
-    validate_sentry,
     validate_slack_oauth,
 )
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -164,7 +163,7 @@ async def _resolve_credential(
 
 @router.post("/setup/validate/{service}")
 async def validate_service(
-    service: Literal["github_oauth", "jira_oauth", "slack_oauth", "sentry", "anthropic", "cursor"],
+    service: Literal["github_oauth", "jira_oauth", "slack_oauth", "anthropic", "cursor"],
     request: ValidateRequest,
     db: AsyncSession = Depends(get_session),
 ) -> ValidateResponse:
@@ -195,10 +194,6 @@ async def validate_service(
         result = await validate_slack_oauth(
             await _resolve_credential(db, creds, "SLACK_CLIENT_ID"),
             await _resolve_credential(db, creds, "SLACK_CLIENT_SECRET"),
-        )
-    elif service == "sentry":
-        result = await validate_sentry(
-            await _resolve_credential(db, creds, "SENTRY_AUTH_TOKEN"),
         )
     elif service == "anthropic":
         result = await validate_anthropic(
@@ -295,14 +290,12 @@ PLATFORM_CREDENTIAL_KEYS: dict[str, list[str]] = {
     ],
     "jira": ["JIRA_CLIENT_ID", "JIRA_CLIENT_SECRET"],
     "slack": ["SLACK_CLIENT_ID", "SLACK_CLIENT_SECRET", "SLACK_SIGNING_SECRET"],
-    "sentry": ["SENTRY_AUTH_TOKEN", "SENTRY_DSN", "SENTRY_ORG_SLUG"],
 }
 
 PLATFORM_CATEGORY_MAP: dict[str, str] = {
     "github": "github_oauth",
     "jira": "jira_oauth",
     "slack": "slack_oauth",
-    "sentry": "sentry",
 }
 
 

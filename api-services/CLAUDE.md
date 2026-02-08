@@ -9,7 +9,6 @@ REST API wrappers for external services. Each service isolates API credentials a
 | github-api | 3001 | GitHub API operations         |
 | jira-api   | 3002 | Jira API operations           |
 | slack-api  | 3003 | Slack API operations          |
-| sentry-api | 3004 | Sentry API operations         |
 
 ## Security Model
 
@@ -42,7 +41,6 @@ make test-services
 uv run pytest api-services/github-api/tests/ -v
 uv run pytest api-services/jira-api/tests/ -v
 uv run pytest api-services/slack-api/tests/ -v
-uv run pytest api-services/sentry-api/tests/ -v
 ```
 
 ## Environment Variables
@@ -67,20 +65,12 @@ SLACK_BOT_TOKEN=xoxb-xxx
 PORT=3003
 ```
 
-### Sentry API (3004)
-```bash
-SENTRY_DSN=https://xxx@sentry.io/xxx
-SENTRY_AUTH_TOKEN=xxx
-PORT=3004
-```
-
 ## Health Checks
 
 ```bash
 curl http://localhost:3001/health  # GitHub
 curl http://localhost:3002/health  # Jira
 curl http://localhost:3003/health  # Slack
-curl http://localhost:3004/health  # Sentry
 ```
 
 ## Development Rules

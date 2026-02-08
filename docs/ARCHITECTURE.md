@@ -2,11 +2,11 @@
 
 ## Overview
 
-Groote AI is a containerized system that automatically handles development tasks. When something happens in GitHub, Jira, Slack, or Sentry, the system receives a webhook, processes it with AI agents, and responds back to the original service.
+Groote AI is a containerized system that automatically handles development tasks. When something happens in GitHub, Jira, or Slack, the system receives a webhook, processes it with AI agents, and responds back to the original service.
 
 **What it does:**
 
-- Receives webhooks from external services (GitHub, Jira, Slack, Sentry)
+- Receives webhooks from external services (GitHub, Jira, Slack)
 - Processes tasks using AI agents (Claude or Cursor CLI)
 - Executes code changes using Test-Driven Development
 - Posts responses back to the originating service
@@ -43,11 +43,10 @@ graph TB
         GitHub[GitHub]
         Jira[Jira]
         Slack[Slack]
-        Sentry[Sentry]
     end
 
     subgraph Gateway["API Gateway :8000"]
-        Webhooks["Webhook Handlers<br/>GitHub, Jira, Slack, Sentry"]
+        Webhooks["Webhook Handlers<br/>GitHub, Jira, Slack"]
     end
 
     subgraph Storage["Storage Layer"]
@@ -57,14 +56,13 @@ graph TB
 
     subgraph Engine["Agent Engine :8080-8089"]
         Agents["AI Agents<br/>brain, planning, executor<br/>github-issue-handler<br/>github-pr-review<br/>jira-code-plan<br/>slack-inquiry, verifier"]
-        MCPConn["MCP Connections<br/>Server-Sent Events"]
+        MCPConn["MCP Connections<br/>Server-Sent Events"]![alt text](image.png)
     end
 
     subgraph MCPServers["MCP Servers"]
         GitHubMCP[GitHub MCP :9001]
         JiraMCP[Jira MCP :9002]
         SlackMCP[Slack MCP :9003]
-        SentryMCP[Sentry MCP :9004]
         KGMCP[Knowledge Graph MCP :9005]
         LlamaIndexMCP[LlamaIndex MCP :9006<br/>Optional]
         GKGMcp[GKG MCP :9007<br/>Optional]
@@ -74,7 +72,6 @@ graph TB
         GitHubAPI[GitHub API :3001]
         JiraAPI[Jira API :3002]
         SlackAPI[Slack API :3003]
-        SentryAPI[Sentry API :3004]
     end
 
     subgraph Monitoring["Monitoring & Management"]
@@ -104,21 +101,18 @@ graph TB
     MCPServers --> GitHubMCP
     MCPServers --> JiraMCP
     MCPServers --> SlackMCP
-    MCPServers --> SentryMCP
     MCPServers --> KGMCP
     MCPServers -.->|Optional| LlamaIndexMCP
     MCPServers -.->|Optional| GKGMcp
     GitHubMCP -->|HTTP| GitHubAPI
     JiraMCP -->|HTTP| JiraAPI
     SlackMCP -->|HTTP| SlackAPI
-    SentryMCP -->|HTTP| SentryAPI
     KGMCP -->|HTTP| Knowledge
     LlamaIndexMCP -.->|HTTP| LlamaIndex
     GKGMcp -.->|HTTP| GKGService
     GitHubAPI --> GitHub
     JiraAPI --> Jira
     SlackAPI --> Slack
-    SentryAPI --> Sentry
     LlamaIndex --> ChromaDB
     GKGService --> ChromaDB
     IndexerWorker --> ChromaDB
@@ -187,7 +181,7 @@ How a task moves through the system:
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'fontSize':'24px', 'primaryColor':'#2d2d2d', 'primaryTextColor':'#ffffff', 'primaryBorderColor':'#ffffff', 'lineColor':'#ffffff', 'secondaryColor':'#1a1a1a', 'tertiaryColor':'#2d2d2d'}}}%%
 flowchart TD
-    A[External Event<br/>GitHub, Jira, Slack, Sentry] --> B[Webhook → API Gateway :8000]
+    A[External Event<br/>GitHub, Jira, Slack] --> B[Webhook → API Gateway :8000]
     B -->|HTTP 200 OK<br/>Immediate Response| A2[External Service<br/>Receives Confirmation]
     B --> C[Validate Signature<br/>Extract Metadata]
     C --> D[Create Task in PostgreSQL]
@@ -360,8 +354,7 @@ groote-ai/
 │   └── webhooks/
 │       ├── github/
 │       ├── jira/
-│       ├── slack/
-│       └── sentry/
+│       └── slack/
 │
 ├── dashboard-api/                      # Analytics & WebSocket :5000
 │   ├── Dockerfile
@@ -401,7 +394,6 @@ groote-ai/
 │   ├── github-mcp/       :9001         # Official GitHub MCP
 │   ├── jira-mcp/         :9002         # FastMCP - Jira
 │   ├── slack-mcp/        :9003         # FastMCP - Slack
-│   ├── sentry-mcp/       :9004         # FastMCP - Sentry
 │   ├── knowledge-graph-mcp/ :9005      # FastMCP - Code Search
 │   ├── llamaindex-mcp/   :9006         # Optional - Hybrid Search
 │   └── gkg-mcp/          :9007         # Optional - Code Graph
@@ -409,8 +401,7 @@ groote-ai/
 ├── api-services/                       # API Wrappers (Credentials Here)
 │   ├── github-api/       :3001
 │   ├── jira-api/         :3002
-│   ├── slack-api/        :3003
-│   └── sentry-api/       :3004
+│   └── slack-api/        :3003
 │
 ├── knowledge-graph/                    # Code Graph Database :4000
 │   ├── Dockerfile                      # Rust-based
@@ -441,7 +432,7 @@ groote-ai/
 
 ## Core Services
 
-The system has 18 core services that always run. Each service runs in its own Docker container.
+The system has 16 core services that always run. Each service runs in its own Docker container.
 
 ### Service List
 
@@ -457,14 +448,12 @@ The system has 18 core services that always run. Each service runs in its own Do
 | 8   | **GitHub MCP**          | 9001      | GitHub tool interface       |
 | 9   | **Jira MCP**            | 9002      | Jira tool interface         |
 | 10  | **Slack MCP**           | 9003      | Slack tool interface        |
-| 11  | **Sentry MCP**          | 9004      | Sentry tool interface       |
-| 12  | **Knowledge Graph MCP** | 9005      | Code search tool interface  |
-| 13  | **GitHub API**          | 3001      | GitHub API wrapper          |
-| 14  | **Jira API**            | 3002      | Jira API wrapper            |
-| 15  | **Slack API**           | 3003      | Slack API wrapper           |
-| 16  | **Sentry API**          | 3004      | Sentry API wrapper          |
-| 17  | **Redis**               | 6379      | Task queue & cache          |
-| 18  | **PostgreSQL**          | 5432      | Persistent storage          |
+| 11  | **Knowledge Graph MCP** | 9005      | Code search tool interface  |
+| 12  | **GitHub API**          | 3001      | GitHub API wrapper          |
+| 13  | **Jira API**            | 3002      | Jira API wrapper            |
+| 14  | **Slack API**           | 3003      | Slack API wrapper           |
+| 15  | **Redis**               | 6379      | Task queue & cache          |
+| 16  | **PostgreSQL**          | 5432      | Persistent storage          |
 
 ### Service Details
 
@@ -515,7 +504,6 @@ The system has 18 core services that always run. Each service runs in its own Do
 - GitHub (issues, pull requests)
 - Jira (ticket updates)
 - Slack (mentions, messages)
-- Sentry (error alerts)
 
 #### 3. Dashboard API
 
@@ -597,7 +585,6 @@ The system has 18 core services that always run. Each service runs in its own Do
 - GitHub MCP (9001) - GitHub operations
 - Jira MCP (9002) - Jira operations
 - Slack MCP (9003) - Slack messaging
-- Sentry MCP (9004) - Sentry operations
 - Knowledge Graph MCP (9005) - Code search (core)
 - LlamaIndex MCP (9006) - Hybrid search (optional)
 - GKG MCP (9007) - Code graph queries (optional)
@@ -633,7 +620,6 @@ This MCP-based approach provides:
 - GitHub API (3001) - GitHub API wrapper
 - Jira API (3002) - Jira API wrapper
 - Slack API (3003) - Slack API wrapper
-- Sentry API (3004) - Sentry API wrapper
 
 **Key features:**
 
@@ -886,8 +872,6 @@ JIRA_URL=https://yourcompany.atlassian.net
 JIRA_EMAIL=your-email@company.com
 JIRA_API_TOKEN=xxx
 SLACK_BOT_TOKEN=xoxb-xxx
-SENTRY_DSN=https://xxx@sentry.io/xxx
-SENTRY_AUTH_TOKEN=xxx
 ```
 
 #### Webhook Secrets
@@ -927,28 +911,24 @@ CHROMADB_URL=http://chromadb:8000
 
 ```json
 {
-  "mcpServers": {
-    "github": {
-      "url": "http://github-mcp:9001/sse",
-      "transport": "sse"
-    },
-    "jira": {
-      "url": "http://jira-mcp:9002/sse",
-      "transport": "sse"
-    },
-    "slack": {
-      "url": "http://slack-mcp:9003/sse",
-      "transport": "sse"
-    },
-    "sentry": {
-      "url": "http://sentry-mcp:9004/sse",
-      "transport": "sse"
-    },
-    "knowledge-graph": {
-      "url": "http://knowledge-graph-mcp:9005/sse",
-      "transport": "sse"
+    "mcpServers": {
+        "github": {
+            "url": "http://github-mcp:9001/sse",
+            "transport": "sse"
+        },
+        "jira": {
+            "url": "http://jira-mcp:9002/sse",
+            "transport": "sse"
+        },
+        "slack": {
+            "url": "http://slack-mcp:9003/sse",
+            "transport": "sse"
+        },
+        "knowledge-graph": {
+            "url": "http://knowledge-graph-mcp:9005/sse",
+            "transport": "sse"
+        }
     }
-  }
 }
 ```
 
@@ -971,7 +951,6 @@ API keys are only stored in API service containers. MCP servers, webhooks, and a
 - GitHub API (GITHUB_TOKEN)
 - Jira API (JIRA_API_KEY)
 - Slack API (SLACK_BOT_TOKEN)
-- Sentry API (SENTRY_DSN)
 
 ### Webhook Signature Validation
 
@@ -980,7 +959,6 @@ All webhooks are validated using HMAC-SHA256:
 - GitHub: `X-Hub-Signature-256`
 - Jira: `X-Atlassian-Webhook-Signature`
 - Slack: `X-Slack-Signature`
-- Sentry: `Sentry-Hook-Signature`
 
 ### Loop Prevention
 
@@ -1075,7 +1053,6 @@ KNOWLEDGE_SERVICES_ENABLED=true docker-compose up -d
 | GitHub MCP          | 9001      | github-mcp          | GitHub tool interface          |
 | Jira MCP            | 9002      | jira-mcp            | Jira tool interface            |
 | Slack MCP           | 9003      | slack-mcp           | Slack tool interface           |
-| Sentry MCP          | 9004      | sentry-mcp          | Sentry tool interface          |
 | Knowledge Graph MCP | 9005      | knowledge-graph-mcp | Code search interface          |
 | LlamaIndex Service  | 8002      | llamaindex-service  | Hybrid RAG (optional)          |
 | LlamaIndex MCP      | 9006      | llamaindex-mcp      | Advanced search (optional)     |
@@ -1085,7 +1062,6 @@ KNOWLEDGE_SERVICES_ENABLED=true docker-compose up -d
 | GitHub API          | 3001      | github-api          | GitHub API wrapper             |
 | Jira API            | 3002      | jira-api            | Jira API wrapper               |
 | Slack API           | 3003      | slack-api           | Slack API wrapper              |
-| Sentry API          | 3004      | sentry-api          | Sentry API wrapper             |
 | Redis               | 6379      | redis               | Task queue & cache             |
 | PostgreSQL          | 5432      | postgres            | Persistent storage             |
 
@@ -1097,7 +1073,6 @@ KNOWLEDGE_SERVICES_ENABLED=true docker-compose up -d
 | GitHub    | PR opened/reviewed      | github-pr-review     |
 | Jira      | Issue with AI-Fix label | jira-code-plan       |
 | Slack     | @agent mention          | slack-inquiry        |
-| Sentry    | Error alert             | planning → executor  |
 | Dashboard | Discovery request       | planning             |
 | Dashboard | Implementation          | executor             |
 
@@ -1108,7 +1083,6 @@ KNOWLEDGE_SERVICES_ENABLED=true docker-compose up -d
 | github-mcp          | create_pull_request, get_file_contents, create_branch, add_comment, search_code     |
 | jira-mcp            | get_issue, create_issue, update_issue, add_comment, search_issues, transition_issue |
 | slack-mcp           | post_message, get_conversations, list_channels, reply_in_thread                     |
-| sentry-mcp          | get_issue, add_comment, update_status, get_events                                   |
 | knowledge-graph-mcp | search_code, find_references, get_call_graph, get_dependencies                      |
 
 ### Key Benefits

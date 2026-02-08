@@ -224,7 +224,6 @@ function Invoke-TestAll {
     uv run pytest api-services/github-api/tests/ -v --tb=short
     uv run pytest api-services/jira-api/tests/ -v --tb=short
     uv run pytest api-services/slack-api/tests/ -v --tb=short
-    uv run pytest api-services/sentry-api/tests/ -v --tb=short
 
     Write-Host ""
     Write-Status "Done." "All tests passed!"
@@ -235,7 +234,7 @@ function Invoke-TestService {
 
     if (-not $SvcName) {
         Write-Host "Usage: .\make.ps1 test-<service>"
-        Write-Host "Available: api-gateway, agent-engine, dashboard-api, task-logger, github-api, jira-api, slack-api, sentry-api"
+        Write-Host "Available: api-gateway, agent-engine, dashboard-api, task-logger, github-api, jira-api, slack-api"
         exit 1
     }
 
@@ -272,17 +271,13 @@ function Invoke-TestService {
             Write-Host "Running Slack API tests..."
             uv run pytest api-services/slack-api/tests/ -v --tb=short
         }
-        { $_ -in "sentry-api", "sentry" } {
-            Write-Host "Running Sentry API tests..."
-            uv run pytest api-services/sentry-api/tests/ -v --tb=short
-        }
         "services" {
             Write-Host "Running API Services tests..."
-            uv run pytest api-services/github-api/tests/ api-services/jira-api/tests/ api-services/slack-api/tests/ api-services/sentry-api/tests/ -v --tb=short
+            uv run pytest api-services/github-api/tests/ api-services/jira-api/tests/ api-services/slack-api/tests/ -v --tb=short
         }
         default {
             Write-Host "Unknown service: $SvcName"
-            Write-Host "Available: api-gateway, agent-engine, dashboard-api, task-logger, github-api, jira-api, slack-api, sentry-api, services"
+            Write-Host "Available: api-gateway, agent-engine, dashboard-api, task-logger, github-api, jira-api, slack-api, services"
             exit 1
         }
     }

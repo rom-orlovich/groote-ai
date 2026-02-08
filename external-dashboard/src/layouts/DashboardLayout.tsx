@@ -14,12 +14,23 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, headerSlot, sidebarSlot }: DashboardLayoutProps) {
   const location = useLocation();
   const isChat = location.pathname === "/chat";
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isSetup = location.pathname === "/install";
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Close sidebar when location changes on mobile
   useEffect(() => {
-    setSidebarOpen(false);
+    setSidebarOpen(true);
   }, []);
+
+  if (isSetup) {
+    return (
+      <div className="h-screen flex flex-col bg-background-app transition-colors duration-300">
+        <div className="flex-1 flex items-center justify-center overflow-y-auto p-4">
+          <div className="w-full max-w-2xl">{children}</div>
+        </div>
+        <TaskStatusModal />
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-background-app transition-colors duration-300">

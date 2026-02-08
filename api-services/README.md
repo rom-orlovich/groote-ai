@@ -1,6 +1,6 @@
 # API Services
 
-> REST API wrappers for external services (GitHub, Jira, Slack, Sentry) with isolated credential management.
+> REST API wrappers for external services (GitHub, Jira, Slack) with isolated credential management.
 
 ## Purpose
 
@@ -25,7 +25,7 @@ Agent Engine / MCP Server
          │
          │ HTTPS (with credentials)
          ▼
-External API (GitHub/Jira/Slack/Sentry)
+External API (GitHub/Jira/Slack)
 ```
 
 ## Folder Structure
@@ -44,8 +44,7 @@ api-services/
 │   └── middleware/
 │       └── auth.py          # Authentication
 ├── jira-api/                # Similar structure
-├── slack-api/                # Similar structure
-└── sentry-api/               # Similar structure
+└── slack-api/                # Similar structure
 ```
 
 ## Services
@@ -55,7 +54,6 @@ api-services/
 | GitHub API | 3001 | GitHub REST API | Personal Access Token / OAuth |
 | Jira API   | 3002 | Jira REST API   | API Token + Email             |
 | Slack API  | 3003 | Slack Web API   | Bot Token (OAuth)             |
-| Sentry API | 3004 | Sentry API      | Auth Token + DSN              |
 
 ## Security Model
 
@@ -64,7 +62,6 @@ api-services/
 - GitHub token → `github-api` container only
 - Jira credentials → `jira-api` container only
 - Slack bot token → `slack-api` container only
-- Sentry DSN → `sentry-api` container only
 
 MCP servers and agent engines have NO access to API keys.
 
@@ -142,30 +139,6 @@ JIRA_API_TOKEN=xxx
 SLACK_BOT_TOKEN=xoxb-xxx
 ```
 
-## Sentry API Service
-
-**Purpose**: Wrapper for Sentry API operations.
-
-**Key Operations**:
-
-- Issue management
-- Event retrieval
-- Project operations
-- Alert management
-
-**Endpoints**:
-
-- `GET /issues/{issue_id}` - Get issue
-- `GET /projects/{project}/issues` - List issues
-- `PUT /issues/{issue_id}` - Update issue
-
-**Environment**:
-
-```bash
-SENTRY_DSN=https://xxx@sentry.io/xxx
-SENTRY_AUTH_TOKEN=xxx
-```
-
 ## Error Handling
 
 Standardized error responses:
@@ -184,7 +157,6 @@ Standardized error responses:
 curl http://localhost:3001/health  # GitHub
 curl http://localhost:3002/health  # Jira
 curl http://localhost:3003/health  # Slack
-curl http://localhost:3004/health  # Sentry
 ```
 
 ## Related Services

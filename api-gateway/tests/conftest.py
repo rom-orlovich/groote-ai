@@ -15,7 +15,6 @@ def mock_gateway_settings():
     settings.github_webhook_secret = "test-github-secret"
     settings.jira_webhook_secret = "test-jira-secret"
     settings.slack_signing_secret = "test-slack-secret"
-    settings.sentry_webhook_secret = "test-sentry-secret"
     settings.port = 8000
     return settings
 

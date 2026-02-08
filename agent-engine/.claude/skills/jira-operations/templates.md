@@ -193,7 +193,7 @@ _Automated update by Claude Agent_
 1. **Always include issue key** in response
 2. **Use markdown** - MCP automatically converts to ADF
 3. **Include structured sections** - Headers, lists, code blocks
-4. **Link to related resources** - GitHub PRs, Sentry issues, etc.
+4. **Link to related resources** - GitHub PRs, etc.
 5. **Mark as automated** - Always include "_Automated by Claude Agent_"
 6. **Use appropriate emoji** - ✅ for success, ❌ for errors
 7. **Keep comments structured** - Use headers, lists, code blocks

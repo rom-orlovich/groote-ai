@@ -257,7 +257,7 @@ async def revoke_oauth(
                 )
 
             for installation in installations:
-                installation_id = installation.get("installation_id")
+                installation_id = installation.get("id")
                 if installation_id:
                     delete_response = await client.delete(
                         f"{OAUTH_SERVICE_URL}/oauth/installations/{installation_id}"

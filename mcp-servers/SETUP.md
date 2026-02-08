@@ -11,7 +11,6 @@ MCP (Model Context Protocol) servers provide tool interfaces for AI agents to in
 | GitHub MCP | 9001 | GitHub operations |
 | Jira MCP | 9002 | Jira operations |
 | Slack MCP | 9003 | Slack messaging |
-| Sentry MCP | 9004 | Sentry operations |
 | Knowledge Graph MCP | 9005 | Code search |
 | LlamaIndex MCP | 9006 | Hybrid search (optional) |
 | GKG MCP | 9007 | Code graph (optional) |
@@ -55,13 +54,6 @@ PORT=9003
 SLACK_API_URL=http://slack-api:3003
 ```
 
-### Sentry MCP
-
-```bash
-PORT=9004
-SENTRY_API_URL=http://sentry-api:3004
-```
-
 ### Knowledge Graph MCP
 
 ```bash
@@ -83,7 +75,6 @@ make up
 # Start specific MCP server
 docker-compose up -d jira-mcp
 docker-compose up -d slack-mcp
-docker-compose up -d sentry-mcp
 docker-compose up -d knowledge-graph-mcp
 ```
 
@@ -104,9 +95,6 @@ curl http://localhost:9002/health
 
 # Slack MCP
 curl http://localhost:9003/health
-
-# Sentry MCP
-curl http://localhost:9004/health
 
 # Knowledge Graph MCP
 curl http://localhost:9005/health
@@ -136,10 +124,6 @@ The Agent Engine connects to MCP servers using the configuration in `.claude/mcp
     },
     "slack": {
       "url": "http://slack-mcp:9003/sse",
-      "transport": "sse"
-    },
-    "sentry": {
-      "url": "http://sentry-mcp:9004/sse",
       "transport": "sse"
     },
     "knowledge-graph": {
@@ -182,15 +166,6 @@ The Agent Engine connects to MCP servers using the configuration in `.claude/mcp
 | `get_conversations` | List conversations |
 | `list_channels` | List channels |
 
-### Sentry MCP
-
-| Tool | Purpose |
-|------|---------|
-| `get_issue` | Get issue details |
-| `add_comment` | Comment on issue |
-| `update_status` | Update issue status |
-| `get_events` | Get error events |
-
 ### Knowledge Graph MCP
 
 | Tool | Purpose |
@@ -226,23 +201,11 @@ uv pip install -r requirements.txt
 PORT=9003 SLACK_API_URL=http://localhost:3003 uvicorn main:app --port 9003
 ```
 
-### Sentry MCP
-
-```bash
-cd mcp-servers/sentry-mcp
-
-# Install dependencies
-uv pip install -r requirements.txt
-
-# Run locally
-PORT=9004 SENTRY_API_URL=http://localhost:3004 uvicorn main:app --port 9004
-```
-
 ## Logs
 
 ```bash
 # View all MCP server logs
-docker-compose logs -f jira-mcp slack-mcp sentry-mcp knowledge-graph-mcp
+docker-compose logs -f jira-mcp slack-mcp knowledge-graph-mcp
 
 # View specific server
 docker-compose logs -f jira-mcp

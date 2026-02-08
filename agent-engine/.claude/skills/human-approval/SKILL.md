@@ -15,7 +15,7 @@ description: Manages human approval workflow before code execution. Use when cod
 
 Executor MUST wait for approval before implementation when:
 
-- Task comes from webhook (Jira, Sentry, GitHub)
+- Task comes from webhook (Jira, GitHub)
 - Task is classified as COMPLEX
 - PLAN.md modifies critical paths (auth, payments, data)
 

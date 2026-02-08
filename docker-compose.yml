@@ -54,7 +54,7 @@ services:
   cli:
     build: ./agent-engine
     ports:
-      - "9100-9109:9100"
+      - "9110-9119:9100"
     environment:
       - CLI_PROVIDER=${CLI_PROVIDER:-claude}
       - MAX_CONCURRENT_TASKS=${MAX_CONCURRENT_TASKS:-5}
@@ -112,17 +112,6 @@ services:
       - agent-network
     restart: unless-stopped
 
-  sentry-mcp:
-    build: ./mcp-servers/sentry-mcp
-    ports:
-      - "9004:9004"
-    environment:
-      - PORT=9004
-      - SENTRY_API_URL=http://sentry-api:3004
-    networks:
-      - agent-network
-    restart: unless-stopped
-
   github-api:
     build: ./api-services/github-api
     ports:
@@ -167,15 +156,22 @@ services:
       - agent-network
     restart: unless-stopped
 
-  sentry-api:
-    build: ./api-services/sentry-api
+  admin-setup:
+    build: ./admin-setup
     ports:
-      - "3004:3004"
+      - "8015:8015"
     environment:
-      - PORT=3004
-      - SENTRY_DSN=${SENTRY_DSN:-}
-      - SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN:-}
-      - SENTRY_ORG_SLUG=${SENTRY_ORG_SLUG:-}
+      - ADMIN_SETUP_TOKEN=${ADMIN_SETUP_TOKEN:-admin-token-change-me}
+      - DATABASE_URL=postgresql+asyncpg://agent:${POSTGRES_PASSWORD:-agent}@postgres:5432/agent_system
+      - REDIS_URL=redis://redis:6379/0
+      - DASHBOARD_URL=${PUBLIC_URL:-http://localhost:3005}
+    volumes:
+      - ${GITHUB_PRIVATE_KEY_FILE:-./secrets/github-private-key.pem}:/secrets/github-private-key.pem:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     networks:
       - agent-network
     restart: unless-stopped
@@ -198,7 +194,6 @@ services:
       - JIRA_CLIENT_SECRET=${JIRA_CLIENT_SECRET:-}
       - SLACK_CLIENT_ID=${SLACK_CLIENT_ID:-}
       - SLACK_CLIENT_SECRET=${SLACK_CLIENT_SECRET:-}
-      - SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN:-}
     depends_on:
       redis:
         condition: service_healthy

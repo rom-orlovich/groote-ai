@@ -234,33 +234,6 @@ async def validate_slack_oauth(
     return await with_retry(_attempt, "slack")
 
 
-async def validate_sentry(auth_token: str) -> ValidationResult:
-    async def _attempt() -> ValidationResult:
-        try:
-            async with httpx.AsyncClient(timeout=VALIDATION_TIMEOUT) as client:
-                response = await client.get(
-                    "https://sentry.io/api/0/",
-                    headers={"Authorization": f"Bearer {auth_token}"},
-                )
-                if response.status_code == 200:
-                    return ValidationResult(
-                        service="sentry",
-                        success=True,
-                        message="Connected to Sentry API",
-                    )
-                return ValidationResult(
-                    service="sentry",
-                    success=False,
-                    message=f"Authentication failed (HTTP {response.status_code})",
-                )
-        except httpx.RequestError as e:
-            return ValidationResult(
-                service="sentry", success=False, message=f"Connection error: {e!s}"
-            )
-
-    return await with_retry(_attempt, "sentry")
-
-
 async def validate_anthropic(api_key: str) -> ValidationResult:
     if not api_key.strip():
         return ValidationResult(
@@ -318,7 +291,6 @@ VALIDATOR_MAP: dict[str, str] = {
     "github_oauth": "validate_github_oauth",
     "jira_oauth": "validate_jira_oauth",
     "slack_oauth": "validate_slack_oauth",
-    "sentry": "validate_sentry",
     "anthropic": "validate_anthropic",
     "cursor": "validate_cursor",
 }

@@ -7,6 +7,12 @@ DC="docker-compose"
 
 echo "Starting $PROVIDER CLI..."
 
+test -f .env && {
+  set -a
+  source .env
+  set +a
+}
+
 $DC up -d redis postgres 2>/dev/null || true
 docker network create agent-network 2>/dev/null || true
 

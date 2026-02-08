@@ -3,15 +3,16 @@ import json
 from contextlib import asynccontextmanager, suppress
 
 import structlog
-import uvicorn
 from api import (
     analytics,
+    cli_control,
     conversations,
     credentials,
     dashboard,
     oauth_status,
     setup,
     sources,
+    user_settings,
     webhook_status,
     websocket,
 )
@@ -59,6 +60,34 @@ async def _task_status_listener(app: FastAPI) -> None:
         logger.error("task_status_listener_fatal", error=str(e))
 
 
+async def _cli_status_listener(app: FastAPI) -> None:
+    import redis.asyncio as aioredis
+    from shared import CLIStatusUpdateMessage
+
+    try:
+        sub_client = aioredis.from_url(settings.redis_url, encoding="utf-8", decode_responses=True)
+        pubsub = sub_client.pubsub()
+        await pubsub.subscribe("cli:status")
+        logger.info("cli_status_listener_started")
+
+        async for message in pubsub.listen():
+            if message["type"] != "message":
+                continue
+            try:
+                data = json.loads(message["data"])
+                step = data.get("step", "")
+                status = data.get("status", "")
+                is_active = step == "ready" and status == "healthy"
+
+                await app.state.ws_hub.broadcast(CLIStatusUpdateMessage(active=is_active))
+            except Exception as e:
+                logger.warning("cli_status_broadcast_error", error=str(e))
+    except asyncio.CancelledError:
+        logger.info("cli_status_listener_stopped")
+    except Exception as e:
+        logger.error("cli_status_listener_fatal", error=str(e))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from core.websocket_hub import WebSocketHub
@@ -68,15 +97,19 @@ async def lifespan(app: FastAPI):
     await redis_client.connect()
     app.state.ws_hub = WebSocketHub()
 
-    listener_task = asyncio.create_task(_task_status_listener(app))
+    task_listener = asyncio.create_task(_task_status_listener(app))
+    cli_listener = asyncio.create_task(_cli_status_listener(app))
 
     logger.info("dashboard_started")
     yield
     logger.info("dashboard_shutting_down")
 
-    listener_task.cancel()
+    task_listener.cancel()
+    cli_listener.cancel()
     with suppress(asyncio.CancelledError):
-        await listener_task
+        await task_listener
+    with suppress(asyncio.CancelledError):
+        await cli_listener
 
     await redis_client.disconnect()
     await shutdown_db()
@@ -105,6 +138,8 @@ app.include_router(webhook_status.router, prefix="/api", tags=["webhooks"])
 app.include_router(oauth_status.router, prefix="/api", tags=["oauth"])
 app.include_router(setup.router, prefix="/api", tags=["setup"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])
+app.include_router(cli_control.router, prefix="/api", tags=["cli-control"])
+app.include_router(user_settings.router, tags=["user-settings"])
 app.include_router(sources.router, tags=["sources"])
 app.include_router(websocket.router, tags=["websocket"])
 
@@ -115,6 +150,8 @@ async def health():
 
 
 if __name__ == "__main__":
+    import uvicorn
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",

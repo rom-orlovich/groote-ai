@@ -2,7 +2,7 @@
 
 ## Overview
 
-The API Gateway is the central webhook reception and routing service for the groote-ai system. It receives webhooks from GitHub, Jira, Slack, and Sentry, validates signatures, extracts routing metadata, and enqueues tasks to Redis for processing by agent-engine.
+The API Gateway is the central webhook reception and routing service for the groote-ai system. It receives webhooks from GitHub, Jira, Slack, validates signatures, extracts routing metadata, and enqueues tasks to Redis for processing by agent-engine.
 
 ## Design Principles
 
@@ -19,7 +19,6 @@ graph TB
         GH[GitHub Webhooks]
         JR[Jira Webhooks]
         SL[Slack Events]
-        SE[Sentry Alerts]
     end
 
     subgraph Gateway["API Gateway :8000"]
@@ -37,7 +36,6 @@ graph TB
     GH --> MW
     JR --> MW
     SL --> MW
-    SE --> MW
 
     MW --> VAL
     VAL -->|Valid| HND
@@ -67,11 +65,7 @@ api-gateway/
 │   │   ├── handler.py
 │   │   ├── validator.py
 │   │   └── events.py
-│   ├── slack/                 # Slack webhook handler
-│   │   ├── handler.py
-│   │   ├── validator.py
-│   │   └── events.py
-│   └── sentry/                # Sentry webhook handler
+│   └── slack/                 # Slack webhook handler
 │       ├── handler.py
 │       ├── validator.py
 │       └── events.py
@@ -149,7 +143,7 @@ sequenceDiagram
 ```json
 {
     "task_id": "uuid",
-    "source": "github | jira | slack | sentry",
+    "source": "github | jira | slack",
     "event_type": "issue_comment | pull_request | ...",
     "prompt": "User's request text",
     "source_metadata": {

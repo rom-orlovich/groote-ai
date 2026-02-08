@@ -24,7 +24,6 @@ echo "=== API Services Tests ==="
 uv run pytest api-services/github-api/tests/ -v --tb=short
 uv run pytest api-services/jira-api/tests/ -v --tb=short
 uv run pytest api-services/slack-api/tests/ -v --tb=short
-uv run pytest api-services/sentry-api/tests/ -v --tb=short
 
 echo ""
 echo "✅ All tests passed!"

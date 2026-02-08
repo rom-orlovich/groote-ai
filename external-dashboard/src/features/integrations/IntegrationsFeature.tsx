@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useOAuthStatus } from "./hooks/useOAuthStatus";
 import { IntegrationCard } from "./IntegrationCard";
 
-const PLATFORM_ORDER = ["github", "jira", "slack", "sentry"];
+const PLATFORM_ORDER = ["github", "jira", "slack"];
 
 interface CallbackNotification {
   platform: string;

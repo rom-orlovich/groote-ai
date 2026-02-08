@@ -13,7 +13,7 @@ Set via `CLI_PROVIDER` environment variable:
 
 **IMPORTANT**: Brain routes tasks based on source and task type:
 
-**Source-Based**: GitHub Issue → `github-issue-handler`, GitHub PR → `github-pr-review`, Jira → `jira-code-plan`, Slack → `slack-inquiry`, Sentry → `sentry-error-handler`
+**Source-Based**: GitHub Issue → `github-issue-handler`, GitHub PR → `github-pr-review`, Jira → `jira-code-plan`, Slack → `slack-inquiry`
 
 **Task Type**: Discovery → `planning`, Implementation → `executor`, Verification → `verifier`, Integration → `service-integrator`
 
@@ -24,7 +24,6 @@ Set via `CLI_PROVIDER` environment variable:
 - GitHub: `github:add_issue_comment` (works for issues and PRs)
 - Jira: `jira:add_jira_comment`
 - Slack: `slack:post_message` (with `thread_ts` to reply in thread)
-- Sentry: `sentry:add_sentry_comment` (if available)
 
 ## Folder Structure
 

@@ -2,19 +2,18 @@
 
 ## Overview
 
-Central webhook reception and routing service for groote-ai system. Receives webhooks from GitHub, Jira, Slack, and Sentry, validates signatures, extracts routing metadata, and enqueues tasks to Redis.
+Central webhook reception and routing service for groote-ai system. Receives webhooks from GitHub, Jira, Slack, validates signatures, extracts routing metadata, and enqueues tasks to Redis.
 
 ## Core Features
 
 ### Webhook Reception
 
-Receives HTTP POST requests from external services (GitHub, Jira, Slack, Sentry) and processes them asynchronously. Each webhook source has a dedicated endpoint with source-specific handling logic.
+Receives HTTP POST requests from external services (GitHub, Jira, Slack) and processes them asynchronously. Each webhook source has a dedicated endpoint with source-specific handling logic.
 
 **Supported Sources:**
 - GitHub: Issues, pull requests, comments, push events
 - Jira: Ticket creation, updates, comments
 - Slack: App mentions, direct messages, slash commands
-- Sentry: Error alerts, regressions, resolved events
 
 ### Security Validation
 
@@ -34,7 +33,6 @@ Extracts routing metadata from webhook payloads to determine how tasks should be
 - GitHub: owner, repo, PR/issue number, comment ID, labels
 - Jira: ticket key, project, labels, assignee
 - Slack: channel ID, thread timestamp, user ID
-- Sentry: issue ID, project, event count
 
 ### Task Creation
 
@@ -86,7 +84,6 @@ Only processes relevant event types and actions. Ignores unsupported events to r
 - GitHub: issues (opened, edited, labeled), issue_comment (created), pull_request (opened, synchronize, reopened), push
 - Jira: Issues with AI-Fix label
 - Slack: app_mention, message (DM only)
-- Sentry: New errors, regressions
 
 ### Agent Routing
 
@@ -97,7 +94,6 @@ Routes webhooks to appropriate agent types based on source and event type.
 - GitHub PRs → `github-pr-review`
 - Jira tickets → `jira-code-plan`
 - Slack mentions → `slack-inquiry`
-- Sentry alerts → `sentry-error-handler`
 
 ## API Endpoints
 
@@ -106,5 +102,4 @@ Routes webhooks to appropriate agent types based on source and event type.
 | `/webhooks/github` | POST | GitHub webhook events |
 | `/webhooks/jira` | POST | Jira webhook events |
 | `/webhooks/slack` | POST | Slack Events API |
-| `/webhooks/sentry` | POST | Sentry webhook alerts |
 | `/health` | GET | Health check endpoint |

@@ -124,7 +124,7 @@
 ```
 
 **Routing Logic:**
-1. Task arrives with `source` (github, jira, slack, sentry)
+1. Task arrives with `source` (github, jira, slack)
 2. Task has `event_type` (issues, pull_request, etc.)
 3. Routing table lookup: `ROUTING[source][event_type]`
 4. If found, return specific agent type

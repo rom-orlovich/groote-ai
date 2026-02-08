@@ -171,8 +171,7 @@ Connects to MCP servers via SSE:
   "mcpServers": {
     "github": { "url": "http://github-mcp:9001/sse", "transport": "sse" },
     "jira": { "url": "http://jira-mcp:9002/sse", "transport": "sse" },
-    "slack": { "url": "http://slack-mcp:9003/sse", "transport": "sse" },
-    "sentry": { "url": "http://sentry-mcp:9004/sse", "transport": "sse" }
+    "slack": { "url": "http://slack-mcp:9003/sse", "transport": "sse" }
   }
 }
 ```

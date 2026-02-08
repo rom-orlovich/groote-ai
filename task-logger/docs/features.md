@@ -27,7 +27,7 @@ Write task metadata as static JSON at task creation.
 
 **Metadata Contents:**
 - Task ID
-- Source (github, jira, slack, sentry)
+- Source (github, jira, slack)
 - Agent type
 - User ID
 - Machine ID

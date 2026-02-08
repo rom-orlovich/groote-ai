@@ -5,7 +5,7 @@ SERVICE="$1"
 
 if [ -z "$SERVICE" ]; then
     echo "Usage: $0 <service-name>"
-    echo "Available services: api-gateway, agent-engine, dashboard-api, task-logger, github-api, jira-api, slack-api, sentry-api"
+    echo "Available services: api-gateway, agent-engine, dashboard-api, task-logger, github-api, jira-api, slack-api"
     exit 1
 fi
 
@@ -38,20 +38,16 @@ case "$SERVICE" in
         echo "Running Slack API tests..."
         uv run pytest api-services/slack-api/tests/ -v --tb=short
         ;;
-    sentry-api|sentry)
-        echo "Running Sentry API tests..."
-        uv run pytest api-services/sentry-api/tests/ -v --tb=short
-        ;;
     services)
         echo "Running API Services tests..."
-        uv run pytest api-services/github-api/tests/ api-services/jira-api/tests/ api-services/slack-api/tests/ api-services/sentry-api/tests/ -v --tb=short
+        uv run pytest api-services/github-api/tests/ api-services/jira-api/tests/ api-services/slack-api/tests/ -v --tb=short
         ;;
     *)
         echo "Unknown service: $SERVICE"
-        echo "Available services: api-gateway, agent-engine, dashboard-api, task-logger, github-api, jira-api, slack-api, sentry-api, services"
+        echo "Available services: api-gateway, agent-engine, dashboard-api, task-logger, github-api, jira-api, slack-api, services"
         exit 1
         ;;
 esac
 
 echo ""
-echo "✅ Tests passed!"
+echo "Tests passed!"

@@ -12,7 +12,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: "3.11"
-  UV_VERSION: "0.4.0"
+  UV_VERSION: "0.8"
 
 jobs:
   lint:
@@ -70,6 +70,8 @@ jobs:
           fi
 
       - name: Run tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/${{ matrix.service }}
         run: |
           if [ -d "${{ matrix.service }}/tests" ]; then
             uv run pytest ${{ matrix.service }}/tests -v --tb=short

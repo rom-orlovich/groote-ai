@@ -1,5 +1,6 @@
 import { Activity, Cpu, DollarSign, Eye, RefreshCw, X, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { CLIAgentControl } from "./CLIAgentControl";
 import { type Task, useMetrics } from "./hooks/useMetrics";
 import { type TaskLogResponse, useGlobalLogs, useTaskLogs } from "./hooks/useTaskLogs";
 
@@ -110,26 +111,30 @@ export function OverviewFeature() {
           </div>
         </section>
 
-        <section className="panel" data-label="AGGREGATE_METRICS">
-          <div className="space-y-6">
-            <div className="text-center py-4">
-              <div className="text-4xl font-heading font-black tracking-tighter text-primary leading-none">
-                {metrics.total_jobs}
+        <div className="space-y-4">
+          <CLIAgentControl />
+
+          <section className="panel" data-label="AGGREGATE_METRICS">
+            <div className="space-y-6">
+              <div className="text-center py-4">
+                <div className="text-4xl font-heading font-black tracking-tighter text-primary leading-none">
+                  {metrics.total_jobs}
+                </div>
+                <div className="text-[10px] text-gray-400 font-heading mt-2 uppercase tracking-wider">
+                  TOTAL_JOBS_COMPLETED
+                </div>
               </div>
-              <div className="text-[10px] text-gray-400 font-heading mt-2 uppercase tracking-wider">
-                TOTAL_JOBS_COMPLETED
+              <div className="text-center py-4 border-t border-gray-100">
+                <div className="text-4xl font-heading font-black tracking-tighter text-cta leading-none">
+                  ${metrics.cumulative_cost.toLocaleString()}
+                </div>
+                <div className="text-[10px] text-gray-400 font-heading mt-2 uppercase tracking-wider">
+                  CUMULATIVE_COMPUTE_COST
+                </div>
               </div>
             </div>
-            <div className="text-center py-4 border-t border-gray-100">
-              <div className="text-4xl font-heading font-black tracking-tighter text-cta leading-none">
-                ${metrics.cumulative_cost.toLocaleString()}
-              </div>
-              <div className="text-[10px] text-gray-400 font-heading mt-2 uppercase tracking-wider">
-                CUMULATIVE_COMPUTE_COST
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
 
       <section className="panel" data-label="GLOBAL_CONTAINER_LOGS">
@@ -144,21 +149,26 @@ export function OverviewFeature() {
             </div>
           </div>
         </div>
-        <div className="h-64 rounded bg-gray-950 p-4 font-mono text-[10px] text-gray-300 space-y-1 overflow-y-auto border border-gray-800 shadow-inner custom-scrollbar">
+        <div className="h-64 rounded bg-gray-950 p-4 font-mono text-[10px] text-gray-300 space-y-1 overflow-y-auto border border-gray-700 shadow-inner custom-scrollbar">
           {globalLogs && globalLogs.length > 0 ? (
             globalLogs.map((log: TaskLogResponse) => (
               <div
                 key={log.task_id}
-                className="space-y-1 pb-4 mb-4 border-b border-gray-900 last:border-0 last:pb-0 last:mb-0"
+                className="space-y-1 pb-3 mb-3 border-b border-gray-800 last:border-0 last:pb-0 last:mb-0 hover:bg-gray-900/50 transition-colors rounded px-2 -mx-2"
               >
-                <div className="text-gray-500 flex items-center gap-2 mb-2">
-                  <span className="bg-gray-900 px-1.5 py-0.5 rounded text-[8px] border border-gray-800">
-                    TASK_{log.task_id.split("-").pop()}
-                  </span>
-                  <span
-                    className={`text-[8px] uppercase font-bold ${log.status === "running" ? "text-blue-400" : "text-gray-600"}`}
-                  >
-                    {log.status}
+                <div className="flex items-center justify-between gap-3 mb-2 pt-2">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-gray-800 px-2 py-1 rounded text-[10px] border border-gray-700 text-gray-200 font-bold">
+                      TASK_{log.task_id.split("-").pop()}
+                    </span>
+                    <span
+                      className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${getLogStatusStyle(log.status)}`}
+                    >
+                      {log.status}
+                    </span>
+                  </div>
+                  <span className="text-[9px] text-gray-500 font-mono">
+                    {log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : ""}
                   </span>
                 </div>
                 {renderLogs(log.output)}
@@ -313,6 +323,21 @@ function getStatusColor(status: string) {
   }
 }
 
+function getLogStatusStyle(status: string) {
+  switch (status.toLowerCase()) {
+    case "completed":
+      return "bg-green-500/10 text-green-400 border border-green-500/20";
+    case "running":
+      return "bg-blue-500/10 text-blue-400 border border-blue-500/20 animate-pulse";
+    case "failed":
+      return "bg-red-500/10 text-red-400 border border-red-500/20";
+    case "queued":
+      return "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20";
+    default:
+      return "bg-gray-500/10 text-gray-300 border border-gray-500/20";
+  }
+}
+
 function renderLogs(output: string) {
   if (!output) return null;
 
@@ -344,7 +369,7 @@ function renderLogs(output: string) {
 
     return (
       <div key={`log-line-${i}-${content.slice(0, 20)}`} className="flex gap-2">
-        {prefix && <span className={`${colorClass} opacity-80 min-w-[32px]`}>{prefix}</span>}
+        {prefix && <span className={`${colorClass} opacity-80 min-w-8`}>{prefix}</span>}
         <span className={prefix ? "text-gray-300" : colorClass}>{content}</span>
       </div>
     );

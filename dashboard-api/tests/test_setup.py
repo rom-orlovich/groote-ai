@@ -55,9 +55,6 @@ class TestSetupSteps:
         assert "jira_oauth" in SETUP_STEPS
         assert "slack_oauth" in SETUP_STEPS
 
-    def test_sentry_remains_as_token_step(self):
-        assert "sentry" in SETUP_STEPS
-
     def test_old_static_token_steps_removed(self):
         assert "github" not in SETUP_STEPS
         assert "jira" not in SETUP_STEPS
@@ -420,11 +417,6 @@ class TestValidatorMapIncludesOAuth:
 
         assert "slack_oauth" in VALIDATOR_MAP
 
-    def test_validator_map_still_has_sentry(self):
-        from core.setup.validators import VALIDATOR_MAP
-
-        assert "sentry" in VALIDATOR_MAP
-
     def test_validator_map_still_has_anthropic(self):
         from core.setup.validators import VALIDATOR_MAP
 
@@ -465,20 +457,12 @@ class TestCredentialEndpointMapping:
         assert "SLACK_CLIENT_ID" in keys
         assert "SLACK_CLIENT_SECRET" in keys
 
-    def test_platform_credential_keys_has_sentry(self):
-        from api.setup import PLATFORM_CREDENTIAL_KEYS
-
-        assert "sentry" in PLATFORM_CREDENTIAL_KEYS
-        keys = PLATFORM_CREDENTIAL_KEYS["sentry"]
-        assert "SENTRY_AUTH_TOKEN" in keys
-
     def test_platform_category_map_uses_oauth_categories(self):
         from api.setup import PLATFORM_CATEGORY_MAP
 
         assert PLATFORM_CATEGORY_MAP["github"] == "github_oauth"
         assert PLATFORM_CATEGORY_MAP["jira"] == "jira_oauth"
         assert PLATFORM_CATEGORY_MAP["slack"] == "slack_oauth"
-        assert PLATFORM_CATEGORY_MAP["sentry"] == "sentry"
 
 
 class TestCategoryTitles:

@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+if [ -f .env ]; then
+    set -a
+    source .env
+    set +a
+fi
+
 TUNNEL_BIN="${TUNNEL_BIN:-zrok}"
 TUNNEL_SHARE_NAME="${TUNNEL_SHARE_NAME:-my-app}"
 LOCAL_PORT="${LOCAL_PORT:-3005}"

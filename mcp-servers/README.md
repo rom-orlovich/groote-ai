@@ -45,10 +45,6 @@ mcp-servers/
 │   ├── main.py
 │   ├── slack_mcp.py
 │   └── config.py
-├── sentry-mcp/               # Custom FastMCP
-│   ├── main.py
-│   ├── sentry_mcp.py
-│   └── config.py
 └── knowledge-graph-mcp/       # Custom FastMCP
     ├── main.py
     ├── kg_client.py
@@ -62,7 +58,6 @@ mcp-servers/
 | GitHub MCP          | 9001 | Official | Node.js          |
 | Jira MCP            | 9002 | Custom   | FastMCP (Python) |
 | Slack MCP           | 9003 | Custom   | FastMCP (Python) |
-| Sentry MCP          | 9004 | Custom   | FastMCP (Python) |
 | Knowledge Graph MCP | 9005 | Custom   | FastMCP (Python) |
 
 ## Security Model
@@ -110,17 +105,6 @@ mcp-servers/
 - `add_reaction` - Add emoji reaction
 - `get_user_info` - Get user information
 
-## Sentry MCP
-
-**Purpose**: Custom FastMCP-based Sentry MCP server.
-
-**Tools Available**:
-
-- `get_issue` - Get Sentry issue details
-- `list_issues` - List issues for project
-- `update_issue` - Update issue status
-- `get_event` - Retrieve event details
-
 ## Knowledge Graph MCP
 
 **Purpose**: MCP wrapper for Knowledge Graph service.
@@ -139,7 +123,6 @@ mcp-servers/
 GITHUB_API_URL=http://github-api:3001
 JIRA_API_URL=http://jira-api:3002
 SLACK_API_URL=http://slack-api:3003
-SENTRY_API_URL=http://sentry-api:3004
 KNOWLEDGE_GRAPH_URL=http://knowledge-graph:4000
 ```
 
@@ -159,7 +142,6 @@ Accept: text/event-stream
 curl http://localhost:9001/health  # GitHub
 curl http://localhost:9002/health  # Jira
 curl http://localhost:9003/health  # Slack
-curl http://localhost:9004/health  # Sentry
 curl http://localhost:9005/health  # Knowledge Graph
 ```
 

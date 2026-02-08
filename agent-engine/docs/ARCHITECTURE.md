@@ -257,8 +257,7 @@ API Gateway → LPUSH agent:tasks → Agent Engine
   "mcpServers": {
     "github": {"url": "http://github-mcp:9001/sse"},
     "jira": {"url": "http://jira-mcp:9002/sse"},
-    "slack": {"url": "http://slack-mcp:9003/sse"},
-    "sentry": {"url": "http://sentry-mcp:9004/sse"}
+    "slack": {"url": "http://slack-mcp:9003/sse"}
   }
 }
 ```

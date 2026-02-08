@@ -35,6 +35,7 @@ export function useWebSocket(sessionId: string = "dashboard") {
 
           if (message.type === "cli_status_update") {
             queryClient.invalidateQueries({ queryKey: ["cli-status"] });
+            queryClient.invalidateQueries({ queryKey: ["cli-agent-status"] });
           }
 
           if (message.type === "task_status") {

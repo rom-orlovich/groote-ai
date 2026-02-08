@@ -98,34 +98,6 @@
 7. Enqueue task to Redis for `slack-inquiry` agent
 8. Return 200 OK (Slack expects 200 for all responses)
 
-### Sentry Webhook Flow
-
-```
-[Sentry] → POST /webhooks/sentry → [Middleware: Validate Signature]
-                                            ↓
-                                   [Parse Alert Data]
-                                            ↓
-                                 [Check Event Type]
-                                      ↓         ↓
-                               [Resolved]   [New/Regression]
-                                   ↓              ↓
-                              [200 OK]      [Create Task]
-                                                  ↓
-                                       [Enqueue to Redis]
-                                                  ↓
-                                          [202 Accepted]
-```
-
-**Processing Steps:**
-1. Receive POST request with Sentry alert webhook
-2. Middleware validates signature using `SENTRY_WEBHOOK_SECRET`
-3. Parse alert: issue ID, project, event type, culprit
-4. Skip resolved events → Return 200 OK
-5. Create task with error context
-6. Set high priority for regressions
-7. Enqueue task to Redis for `sentry-error-handler` agent
-8. Return 202 Accepted with task_id
-
 ### Loop Prevention Flow
 
 ```
