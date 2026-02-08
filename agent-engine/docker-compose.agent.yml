@@ -5,7 +5,7 @@ services:
     image: agent-engine:latest
     build: .
     ports:
-      - "9100-9109:9100"
+      - "9110-9119:9100"
     environment:
       - PORT=9100
       - CLI_PROVIDER=${CLI_PROVIDER:-claude}

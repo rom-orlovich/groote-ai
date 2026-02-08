@@ -52,7 +52,7 @@ export function useDisconnectPlatform() {
   return useMutation({
     mutationFn: async (platformId: string) => {
       const response = await fetch(`/api/oauth/revoke/${platformId}`, {
-        method: "POST",
+        method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to disconnect");
       return response.json();

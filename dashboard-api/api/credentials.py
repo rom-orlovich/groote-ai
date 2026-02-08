@@ -9,7 +9,7 @@ settings = Settings()
 
 CLI_BASE_URLS = [
     settings.agent_engine_url,
-    "http://cli:8080",
+    "http://cli:9100",
 ]
 
 

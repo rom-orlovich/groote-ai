@@ -6,6 +6,7 @@ export interface TaskLogResponse {
   output: string;
   error: string | null;
   is_live: boolean;
+  timestamp?: string;
 }
 
 interface TaskItem {

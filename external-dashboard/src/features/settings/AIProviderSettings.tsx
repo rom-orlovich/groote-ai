@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle, Loader } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -5,6 +6,7 @@ import {
   useSaveAIProvider,
   useTestAIProvider,
 } from "./hooks/useAIProviderSettings";
+import { SetupInstructions } from "./SetupInstructions";
 
 interface Settings {
   provider: string;
@@ -24,17 +26,23 @@ export function AIProviderSettings() {
     type: "success" | "error" | "info";
     text: string;
   } | null>(null);
+  const [isSetupComplete, setIsSetupComplete] = useState(false);
 
+  const queryClient = useQueryClient();
   const { isLoading } = useAIProviderSettings();
   const saveMutation = useSaveAIProvider();
   const testMutation = useTestAIProvider();
 
   useEffect(() => {
     if (saveMutation.isSuccess) {
-      setMessage({ type: "success", text: "Settings saved successfully" });
-      setTimeout(() => setMessage(null), 3000);
+      setMessage({
+        type: "success",
+        text: "Settings saved successfully!",
+      });
+      setIsSetupComplete(true);
+      queryClient.invalidateQueries({ queryKey: ["aiProviderStatus"] });
     }
-  }, [saveMutation.isSuccess]);
+  }, [saveMutation.isSuccess, queryClient]);
 
   useEffect(() => {
     if (saveMutation.isError) {
@@ -69,15 +77,24 @@ export function AIProviderSettings() {
     testMutation.mutate(settings);
   };
 
+  if (isSetupComplete) {
+    return <SetupInstructions provider={settings.provider} apiKey={settings.api_key} />;
+  }
+
   return (
-    <div className="max-w-2xl space-y-6 animate-in fade-in duration-500">
+    <div className="w-full space-y-6 animate-in fade-in duration-500">
       {message && <MessageBanner message={message} />}
 
-      <section className="panel" data-label="AI_PROVIDER">
-        <p className="text-[10px] text-app-muted mb-6">
+      <div className="text-center mb-8">
+        <h1 className="text-2xl font-heading font-black tracking-tighter mb-2">
+          AI_PROVIDER_SETUP
+        </h1>
+        <p className="text-[10px] text-app-muted">
           Configure your AI provider and API credentials for task execution.
         </p>
+      </div>
 
+      <section className="panel" data-label="AI_PROVIDER">
         <div className="space-y-6">
           <FieldGroup label="PROVIDER" htmlFor="provider">
             <select

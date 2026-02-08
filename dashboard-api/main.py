@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager, suppress
 import structlog
 from api import (
     analytics,
+    cli_control,
     conversations,
     credentials,
     dashboard,
@@ -105,6 +106,7 @@ app.include_router(webhook_status.router, prefix="/api", tags=["webhooks"])
 app.include_router(oauth_status.router, prefix="/api", tags=["oauth"])
 app.include_router(setup.router, prefix="/api", tags=["setup"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])
+app.include_router(cli_control.router, prefix="/api", tags=["cli-control"])
 app.include_router(user_settings.router, tags=["user-settings"])
 app.include_router(sources.router, tags=["sources"])
 app.include_router(websocket.router, tags=["websocket"])

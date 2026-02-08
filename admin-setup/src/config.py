@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis:6379/0"
     dashboard_url: str = "http://localhost:3005"
     log_level: str = "INFO"
+    token_encryption_key: str = ""
 
 
 @lru_cache

@@ -54,7 +54,7 @@ services:
   cli:
     build: ./agent-engine
     ports:
-      - "9100-9109:9100"
+      - "9110-9119:9100"
     environment:
       - CLI_PROVIDER=${CLI_PROVIDER:-claude}
       - MAX_CONCURRENT_TASKS=${MAX_CONCURRENT_TASKS:-5}
@@ -165,6 +165,8 @@ services:
       - DATABASE_URL=postgresql+asyncpg://agent:${POSTGRES_PASSWORD:-agent}@postgres:5432/agent_system
       - REDIS_URL=redis://redis:6379/0
       - DASHBOARD_URL=${PUBLIC_URL:-http://localhost:3005}
+    volumes:
+      - ${GITHUB_PRIVATE_KEY_FILE:-./secrets/github-private-key.pem}:/secrets/github-private-key.pem:ro
     depends_on:
       redis:
         condition: service_healthy
