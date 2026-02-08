@@ -1,8 +1,28 @@
 $ErrorActionPreference = "Stop"
 
-$ZrokShareName = if ($env:ZROK_SHARE_NAME) { $env:ZROK_SHARE_NAME } else { "my-share-name" }
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ProjectDir = Split-Path -Parent (Split-Path -Parent $ScriptDir)
+$EnvFile = Join-Path $ProjectDir ".env"
+
+if (Test-Path $EnvFile) {
+    Get-Content $EnvFile | ForEach-Object {
+        if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
+            $key = $matches[1].Trim()
+            $val = $matches[2].Trim().Trim('"').Trim("'")
+            [Environment]::SetEnvironmentVariable($key, $val, "Process")
+        }
+    }
+}
+
+$ZrokShareName = $env:ZROK_SHARE_NAME
 $LocalPort = if ($env:LOCAL_PORT) { $env:LOCAL_PORT } else { "3005" }
-$PublicUrl = "https://${ZrokShareName}.tunnel-domain.example"
+$PublicUrl = $env:PUBLIC_URL
+
+if (-not $PublicUrl -or -not $ZrokShareName) {
+    Write-Host "Error: PUBLIC_URL and ZROK_SHARE_NAME must be set in .env"
+    Write-Host "  Run '.\make.ps1 tunnel-setup' first"
+    exit 1
+}
 
 $ZrokBin = Get-Command zrok -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
 if (-not $ZrokBin) {

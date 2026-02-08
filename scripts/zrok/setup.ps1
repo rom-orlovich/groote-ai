@@ -1,5 +1,19 @@
 $ErrorActionPreference = "Stop"
 
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ProjectDir = Split-Path -Parent (Split-Path -Parent $ScriptDir)
+$EnvFile = Join-Path $ProjectDir ".env"
+
+if (Test-Path $EnvFile) {
+    Get-Content $EnvFile | ForEach-Object {
+        if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
+            $key = $matches[1].Trim()
+            $val = $matches[2].Trim().Trim('"').Trim("'")
+            [Environment]::SetEnvironmentVariable($key, $val, "Process")
+        }
+    }
+}
+
 $ZrokShareName = if ($env:ZROK_SHARE_NAME) { $env:ZROK_SHARE_NAME } else { "my-share-name" }
 $LocalPort = if ($env:LOCAL_PORT) { $env:LOCAL_PORT } else { "3005" }
 $InstallDir = "$env:USERPROFILE\.local\bin"
@@ -75,13 +89,13 @@ Write-Host "[3/4] Reserving permanent share name '${ZrokShareName}'..."
 
 $ReserveOutput = & $ZrokBin reserve public "http://localhost:${LocalPort}" --unique-name $ZrokShareName 2>&1
 $ReserveStr = $ReserveOutput | Out-String
+Write-Host "  $ReserveStr"
 
-if ($ReserveStr -match "reserved frontend endpoint") {
-    Write-Host "  Reserved: https://${ZrokShareName}.tunnel-domain.example"
-} elseif ($ReserveStr -match "already reserved") {
-    Write-Host "  Already reserved: https://${ZrokShareName}.tunnel-domain.example"
-} else {
-    Write-Host "  $ReserveStr"
+if ($ReserveStr -match "already reserved") {
+    Write-Host "  Share name '${ZrokShareName}' is already reserved"
+}
+
+if ($ReserveStr -notmatch "reserved|already") {
     Write-Host "  If the name is taken, set ZROK_SHARE_NAME in .env to a different name"
 }
 
@@ -89,10 +103,9 @@ Write-Host ""
 Write-Host "[4/4] Configuration"
 Write-Host ""
 Write-Host "  Add to your .env file:"
-Write-Host "    PUBLIC_URL=https://${ZrokShareName}.tunnel-domain.example"
+Write-Host "    PUBLIC_URL=<your-zrok-public-url>"
 Write-Host "    ZROK_SHARE_NAME=${ZrokShareName}"
 Write-Host ""
 Write-Host "=== Setup complete! ==="
 Write-Host ""
 Write-Host "  Start tunnel:  .\make.ps1 tunnel-zrok"
-Write-Host "  Your URL:      https://${ZrokShareName}.tunnel-domain.example"

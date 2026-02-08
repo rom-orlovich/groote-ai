@@ -50,12 +50,10 @@ PUBLIC_URL (ngrok/production) -> port 3005 -> nginx
 
 Set `PUBLIC_URL` in `.env` to expose all services through one domain:
 ```bash
-# Option 1: zrok (recommended - free permanent URL)
-PUBLIC_URL=https://<your-share-name>.tunnel-domain.example
+# Set PUBLIC_URL to your tunnel URL (zrok or ngrok)
+PUBLIC_URL=https://your-tunnel-url-here
 make tunnel-zrok   # Starts zrok tunnel to port 3005
-
-# Option 2: ngrok (alternative)
-PUBLIC_URL=https://your-domain.ngrok-free.app
+# or
 make tunnel        # Starts ngrok tunnel to port 3005
 ```
 

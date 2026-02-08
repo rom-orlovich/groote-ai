@@ -1,6 +1,15 @@
 #!/bin/bash
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+if [ -f "$PROJECT_DIR/.env" ]; then
+    set -a
+    . "$PROJECT_DIR/.env"
+    set +a
+fi
+
 ZROK_SHARE_NAME="${ZROK_SHARE_NAME:-my-share-name}"
 LOCAL_PORT="${LOCAL_PORT:-3005}"
 INSTALL_DIR="$HOME/.local/bin"
@@ -54,13 +63,13 @@ fi
 echo ""
 echo "[3/4] Reserving permanent share name '${ZROK_SHARE_NAME}'..."
 RESERVE_OUTPUT=$("$ZROK_BIN" reserve public "http://localhost:${LOCAL_PORT}" --unique-name "$ZROK_SHARE_NAME" 2>&1) || true
+echo "  $RESERVE_OUTPUT"
 
-if echo "$RESERVE_OUTPUT" | grep -q "reserved frontend endpoint"; then
-    echo "  Reserved: https://${ZROK_SHARE_NAME}.tunnel-domain.example"
-elif echo "$RESERVE_OUTPUT" | grep -q "already reserved"; then
-    echo "  Already reserved: https://${ZROK_SHARE_NAME}.tunnel-domain.example"
-else
-    echo "  $RESERVE_OUTPUT"
+if echo "$RESERVE_OUTPUT" | grep -q "already reserved"; then
+    echo "  Share name '${ZROK_SHARE_NAME}' is already reserved"
+fi
+
+if ! echo "$RESERVE_OUTPUT" | grep -q -E "reserved|already"; then
     echo "  If the name is taken, set ZROK_SHARE_NAME in .env to a different name"
 fi
 
@@ -68,10 +77,9 @@ echo ""
 echo "[4/4] Configuration"
 echo ""
 echo "  Add to your .env file:"
-echo "    PUBLIC_URL=https://${ZROK_SHARE_NAME}.tunnel-domain.example"
+echo "    PUBLIC_URL=<your-zrok-public-url>"
 echo "    ZROK_SHARE_NAME=${ZROK_SHARE_NAME}"
 echo ""
 echo "=== Setup complete! ==="
 echo ""
 echo "  Start tunnel:  make tunnel-zrok"
-echo "  Your URL:      https://${ZROK_SHARE_NAME}.tunnel-domain.example"

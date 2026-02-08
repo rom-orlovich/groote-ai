@@ -1,10 +1,25 @@
 #!/bin/bash
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+if [ -f "$PROJECT_DIR/.env" ]; then
+    set -a
+    . "$PROJECT_DIR/.env"
+    set +a
+fi
+
 ZROK_BIN="${ZROK_BIN:-zrok}"
-ZROK_SHARE_NAME="${ZROK_SHARE_NAME:-my-share-name}"
+ZROK_SHARE_NAME="${ZROK_SHARE_NAME:-}"
 LOCAL_PORT="${LOCAL_PORT:-3005}"
-PUBLIC_URL="https://${ZROK_SHARE_NAME}.tunnel-domain.example"
+PUBLIC_URL="${PUBLIC_URL:-}"
+
+if [ -z "$PUBLIC_URL" ] || [ -z "$ZROK_SHARE_NAME" ]; then
+    echo "Error: PUBLIC_URL and ZROK_SHARE_NAME must be set in .env"
+    echo "  Run 'make tunnel-setup' first"
+    exit 1
+fi
 
 command -v "$ZROK_BIN" &> /dev/null || {
     if [ -x "$HOME/.local/bin/zrok" ]; then
@@ -12,13 +27,7 @@ command -v "$ZROK_BIN" &> /dev/null || {
     else
         echo "Error: zrok not installed."
         echo ""
-        echo "Install zrok:"
-        echo "  curl -sL https://github.com/openziti/zrok/releases/latest/download/zrok_\$(uname -s | tr '[:upper:]' '[:lower:]')_amd64.tar.gz | tar -xz -C ~/.local/bin/"
-        echo ""
-        echo "Then setup (one-time):"
-        echo "  1. Create account at https://myzrok.io"
-        echo "  2. zrok enable <TOKEN_FROM_EMAIL>"
-        echo "  3. zrok reserve public http://localhost:${LOCAL_PORT} --unique-name ${ZROK_SHARE_NAME}"
+        echo "Run setup first: make tunnel-setup"
         exit 1
     fi
 }
