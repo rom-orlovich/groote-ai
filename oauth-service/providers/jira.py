@@ -29,7 +29,9 @@ class JiraOAuthProvider(OAuthProvider):
         self._code_verifiers: dict[str, str] = {}
 
         missing = [
-            name for name, val in [("client_id", self.client_id), ("client_secret", self.client_secret)] if not val
+            name
+            for name, val in [("client_id", self.client_id), ("client_secret", self.client_secret)]
+            if not val
         ]
         if missing:
             logger.warning("oauth_provider_missing_credentials", platform="jira", missing=missing)

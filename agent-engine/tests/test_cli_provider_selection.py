@@ -34,19 +34,14 @@ def _parse_frontmatter_model(agent_file: Path) -> str | None:
 
 
 class TestAgentFrontmatter:
-
     def test_each_agent_has_expected_model(self):
         for agent_name, expected_model in EXPECTED_MODELS.items():
             agent_file = AGENTS_DIR / f"{agent_name}.md"
             assert agent_file.exists(), f"{agent_name}.md not found"
             model = _parse_frontmatter_model(agent_file)
-            assert model == expected_model, (
-                f"{agent_name} should use {expected_model}, got {model}"
-            )
+            assert model == expected_model, f"{agent_name} should use {expected_model}, got {model}"
 
     def test_all_agent_files_have_model(self):
         for agent_file in AGENTS_DIR.glob("*.md"):
             model = _parse_frontmatter_model(agent_file)
-            assert model is not None, (
-                f"{agent_file.name} is missing 'model:' in frontmatter"
-            )
+            assert model is not None, f"{agent_file.name} is missing 'model:' in frontmatter"
