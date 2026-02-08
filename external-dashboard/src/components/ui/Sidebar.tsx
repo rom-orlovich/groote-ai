@@ -8,7 +8,6 @@ import {
   Link2,
   MessageSquare,
   Package,
-  Settings,
   Webhook,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
@@ -26,8 +25,7 @@ const navItems = [
   { icon: Webhook, label: "05_WEBHOOKS", path: "/webhooks" },
   { icon: MessageSquare, label: "06_COMMS", path: "/chat" },
   { icon: Package, label: "07_REGISTRY", path: "/registry" },
-  { icon: Link2, label: "08_INTEGRATIONS", path: "/integrations" },
-  { icon: Settings, label: "09_INSTALL", path: "/install" },
+  { icon: Link2, label: "08_INTEGRATIONS", path: "/install" },
 ];
 
 interface SidebarProps {
