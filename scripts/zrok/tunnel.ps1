@@ -2,8 +2,12 @@ $ErrorActionPreference = "Stop"
 
 $TunnelShareName = if ($env:TUNNEL_SHARE_NAME) { $env:TUNNEL_SHARE_NAME } else { "my-app" }
 $LocalPort = if ($env:LOCAL_PORT) { $env:LOCAL_PORT } else { "3005" }
-$ZrokDomain = if ($env:TUNNEL_DOMAIN) { $env:TUNNEL_DOMAIN } else { "share.zrok.io" }
-$PublicUrl = if ($env:PUBLIC_URL) { $env:PUBLIC_URL } else { "https://${TunnelShareName}.${ZrokDomain}" }
+
+if (-not $env:PUBLIC_URL) {
+    Write-Host "Error: PUBLIC_URL is not set. Configure it in .env or via the dashboard setup wizard."
+    exit 1
+}
+$PublicUrl = $env:PUBLIC_URL
 
 $TunnelBin = Get-Command zrok -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
 if (-not $TunnelBin) {

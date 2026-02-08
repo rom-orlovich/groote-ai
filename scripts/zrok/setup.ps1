@@ -2,7 +2,6 @@ $ErrorActionPreference = "Stop"
 
 $TunnelShareName = if ($env:TUNNEL_SHARE_NAME) { $env:TUNNEL_SHARE_NAME } else { "my-app" }
 $LocalPort = if ($env:LOCAL_PORT) { $env:LOCAL_PORT } else { "3005" }
-$ZrokDomain = if ($env:TUNNEL_DOMAIN) { $env:TUNNEL_DOMAIN } else { "share.zrok.io" }
 $InstallDir = "$env:USERPROFILE\.local\bin"
 
 Write-Host "=== zrok Setup for Groote AI ==="
@@ -78,9 +77,9 @@ $ReserveOutput = & $TunnelBin reserve public "http://localhost:${LocalPort}" --u
 $ReserveStr = $ReserveOutput | Out-String
 
 if ($ReserveStr -match "reserved frontend endpoint") {
-    Write-Host "  Reserved: https://${TunnelShareName}.${ZrokDomain}"
+    Write-Host "  Reserved: ${TunnelShareName}"
 } elseif ($ReserveStr -match "already reserved") {
-    Write-Host "  Already reserved: https://${TunnelShareName}.${ZrokDomain}"
+    Write-Host "  Already reserved: ${TunnelShareName}"
 } else {
     Write-Host "  $ReserveStr"
     Write-Host "  If the name is taken, set TUNNEL_SHARE_NAME in .env to a different name"
@@ -89,11 +88,10 @@ if ($ReserveStr -match "reserved frontend endpoint") {
 Write-Host ""
 Write-Host "[4/4] Configuration"
 Write-Host ""
-Write-Host "  Add to your .env file:"
-Write-Host "    PUBLIC_URL=https://${TunnelShareName}.${ZrokDomain}"
+Write-Host "  Set PUBLIC_URL in .env or via the dashboard setup wizard:"
+Write-Host "    PUBLIC_URL=<your-tunnel-url>"
 Write-Host "    TUNNEL_SHARE_NAME=${TunnelShareName}"
 Write-Host ""
 Write-Host "=== Setup complete! ==="
 Write-Host ""
 Write-Host "  Start tunnel:  .\make.ps1 tunnel-zrok"
-Write-Host "  Your URL:      https://${TunnelShareName}.${ZrokDomain}"
