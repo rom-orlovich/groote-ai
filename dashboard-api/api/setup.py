@@ -157,7 +157,7 @@ async def _resolve_credential(
     creds: dict[str, str],
     key: str,
 ) -> str:
-    if key in creds and creds[key]:
+    if creds.get(key):
         return creds[key]
     return await get_config(db, key) or ""
 

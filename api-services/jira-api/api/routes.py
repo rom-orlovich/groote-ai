@@ -4,7 +4,7 @@ from client import JiraClient
 from config import Settings, get_settings
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict
-from token_provider import TokenProvider
+from token_provider import TokenProvider  # noqa: TC002
 
 router = APIRouter(prefix="/api/v1", tags=["jira"])
 

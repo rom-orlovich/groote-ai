@@ -10,6 +10,44 @@ export const SETUP_STEPS: StepDefinition[] = [
     fields: [],
   },
   {
+    id: "public_url",
+    title: "DOMAIN",
+    description: "Set the public URL for webhooks, OAuth callbacks, and dashboard access",
+    icon: "Globe",
+    skippable: false,
+    stepType: "service",
+    instructions: [
+      {
+        step: 1,
+        title: "Choose a Tunnel Provider",
+        description:
+          "You need a public URL to receive webhooks. Use any tunnel provider (zrok, ngrok, cloudflare tunnel) or your production domain",
+      },
+      {
+        step: 2,
+        title: "Get Your Public URL",
+        description:
+          "Run your tunnel provider to get a public URL. All services are proxied through nginx on port 3005",
+      },
+      {
+        step: 3,
+        title: "Enter the URL Below",
+        description:
+          "Paste the full URL (e.g. https://my-app.example.com). This will be used for webhook endpoints, OAuth callbacks, and dashboard access",
+      },
+    ],
+    fields: [
+      {
+        key: "PUBLIC_URL",
+        label: "Public URL",
+        placeholder: "https://my-app.example.com",
+        sensitive: false,
+        required: true,
+        helpText: "Full URL including https:// — no trailing slash",
+      },
+    ],
+  },
+  {
     id: "ai_provider",
     title: "AI_PROVIDER",
     description: "Configure your AI execution engine",

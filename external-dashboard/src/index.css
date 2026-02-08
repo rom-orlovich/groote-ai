@@ -101,7 +101,7 @@
   }
 
   .panel {
-    @apply bg-panel-bg border border-panel-border shadow-sm p-4 relative transition-all duration-300 overflow-hidden;
+    @apply bg-panel-bg border border-panel-border shadow-sm p-4 pt-6 relative transition-all duration-300;
   }
 
   .panel::before {

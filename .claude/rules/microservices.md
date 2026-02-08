@@ -48,15 +48,9 @@ PUBLIC_URL (ngrok/production) -> port 3005 -> nginx
   /ws            -> Dashboard API WebSocket (port 5000)
 ```
 
-Set `PUBLIC_URL` in `.env` to expose all services through one domain:
+Set `PUBLIC_URL` in `.env` or via the dashboard setup wizard (`/setup`):
 ```bash
-# Option 1: zrok (recommended - free permanent URL)
-PUBLIC_URL=https://my-app.your-tunnel-domain.example
-make tunnel-zrok   # Starts zrok tunnel to port 3005
-
-# Option 2: ngrok (alternative)
-PUBLIC_URL=https://your-domain.ngrok-free.app
-make tunnel        # Starts ngrok tunnel to port 3005
+PUBLIC_URL=https://your-domain.example.com
 ```
 
 OAuth callbacks, webhook URLs, and frontend all use this single URL automatically.

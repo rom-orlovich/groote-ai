@@ -1,7 +1,15 @@
 import { CheckCircle, Loader2, RefreshCw, XCircle } from "lucide-react";
 import { useEffect } from "react";
+import { SETUP_STEPS } from "../constants";
 import { useInfrastructure } from "../hooks/useSetup";
 import type { InfrastructureStatus } from "../types";
+
+const overviewSteps = SETUP_STEPS.filter((s) => s.id !== "welcome" && s.id !== "review").map(
+  (s, i) => ({
+    number: String(i + 1).padStart(2, "0"),
+    label: `${s.title} - ${s.description}${s.skippable ? " (optional)" : ""}`,
+  }),
+);
 
 interface WelcomeStepProps {
   onNext: () => void;
@@ -75,30 +83,12 @@ export function WelcomeStep({ onNext, isReconfiguring = false }: WelcomeStepProp
 
       <div className="panel" data-label="SETUP_OVERVIEW">
         <div className="text-[10px] font-mono text-gray-600 dark:text-gray-400 space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-orange-500 font-heading">01</span>
-            <span>AI Provider - Configure Claude or Cursor execution engine</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-orange-500 font-heading">02</span>
-            <span>GitHub - Create GitHub App for repository automation (optional)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-orange-500 font-heading">03</span>
-            <span>Jira - Create Jira OAuth app for project management (optional)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-orange-500 font-heading">04</span>
-            <span>Slack - Create Slack App for chat notifications (optional)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-orange-500 font-heading">05</span>
-            <span>Sentry - Error tracking and alert automation (optional)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-orange-500 font-heading">06</span>
-            <span>Review - Download .env and complete setup</span>
-          </div>
+          {overviewSteps.map((step) => (
+            <div key={step.number} className="flex items-center gap-2">
+              <span className="text-orange-500 font-heading">{step.number}</span>
+              <span>{step.label}</span>
+            </div>
+          ))}
         </div>
       </div>
 

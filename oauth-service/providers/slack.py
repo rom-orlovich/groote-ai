@@ -24,7 +24,9 @@ class SlackOAuthProvider(OAuthProvider):
         self.scopes = DEFAULT_SCOPES
 
         missing = [
-            name for name, val in [("client_id", self.client_id), ("client_secret", self.client_secret)] if not val
+            name
+            for name, val in [("client_id", self.client_id), ("client_secret", self.client_secret)]
+            if not val
         ]
         if missing:
             logger.warning("oauth_provider_missing_credentials", platform="slack", missing=missing)

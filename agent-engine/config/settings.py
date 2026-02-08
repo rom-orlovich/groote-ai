@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     model_config = ConfigDict(strict=True, env_file=".env", extra="ignore")
 
-    port: int = 8080
+    port: int = 9100
     cli_provider: Literal["claude", "cursor"] = "claude"
     redis_host: str = "redis"
     redis_port: int = 6379

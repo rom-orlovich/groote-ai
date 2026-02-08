@@ -56,39 +56,49 @@ class TaskWorker:
             conversation_id = task.get("conversation_id")
             logger.info("task_started", task_id=task_id)
 
-            await self._publish_task_event(task_id, "task:started", {
-                "task_id": task_id,
-                "session_id": session_id,
-                "conversation_id": conversation_id,
-            })
+            await self._publish_task_event(
+                task_id,
+                "task:started",
+                {
+                    "task_id": task_id,
+                    "session_id": session_id,
+                    "conversation_id": conversation_id,
+                },
+            )
 
             await self._update_task_status(task_id, "in_progress")
             result = await self._execute_task(task)
             await self._update_task_status(task_id, "completed", result)
 
-            await self._publish_task_event(task_id, "task:completed", {
-                "task_id": task_id,
-                "session_id": session_id,
-                "conversation_id": conversation_id,
-                "cost_usd": result.get("cost_usd"),
-                "input_tokens": result.get("input_tokens"),
-                "output_tokens": result.get("output_tokens"),
-            })
+            await self._publish_task_event(
+                task_id,
+                "task:completed",
+                {
+                    "task_id": task_id,
+                    "session_id": session_id,
+                    "conversation_id": conversation_id,
+                    "cost_usd": result.get("cost_usd"),
+                    "input_tokens": result.get("input_tokens"),
+                    "output_tokens": result.get("output_tokens"),
+                },
+            )
 
             if conversation_id and result.get("output"):
-                await self._post_assistant_message(
-                    conversation_id, result["output"], task_id
-                )
+                await self._post_assistant_message(conversation_id, result["output"], task_id)
 
             logger.info("task_completed", task_id=task_id)
         except Exception as e:
             logger.exception("task_failed", error=str(e))
             if "task_id" in locals():
                 await self._update_task_status(task_id, "failed", {"error": str(e)})
-                await self._publish_task_event(task_id, "task:failed", {
-                    "task_id": task_id,
-                    "error": str(e),
-                })
+                await self._publish_task_event(
+                    task_id,
+                    "task:failed",
+                    {
+                        "task_id": task_id,
+                        "error": str(e),
+                    },
+                )
 
     async def _execute_task(self, task: dict[str, Any]) -> dict[str, Any]:
         from pathlib import Path

@@ -92,7 +92,7 @@ async def oauth_callback(
     code: str | None = Query(None),
     state: str | None = Query(None),
     installation_id: str | None = Query(None),
-    setup_action: str | None = Query(None),
+    setup_action: str | None = Query(None),  # noqa: ARG001
     session: AsyncSession = Depends(get_session),
     settings: Settings = Depends(get_settings),
 ) -> RedirectResponse:

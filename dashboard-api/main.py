@@ -28,13 +28,10 @@ settings = Settings()
 
 async def _task_status_listener(app: FastAPI) -> None:
     import redis.asyncio as aioredis
-
     from shared import TaskStatusMessage
 
     try:
-        sub_client = aioredis.from_url(
-            settings.redis_url, encoding="utf-8", decode_responses=True
-        )
+        sub_client = aioredis.from_url(settings.redis_url, encoding="utf-8", decode_responses=True)
         pubsub = sub_client.pubsub()
         await pubsub.psubscribe("task:*:status")
         logger.info("task_status_listener_started")
@@ -48,10 +45,12 @@ async def _task_status_listener(app: FastAPI) -> None:
                 data = json.loads(message["data"])
                 status = data.get("status", "unknown")
 
-                await app.state.ws_hub.broadcast(TaskStatusMessage(
-                    task_id=task_id,
-                    status=status,
-                ))
+                await app.state.ws_hub.broadcast(
+                    TaskStatusMessage(
+                        task_id=task_id,
+                        status=status,
+                    )
+                )
             except Exception as e:
                 logger.warning("task_status_broadcast_error", error=str(e))
     except asyncio.CancelledError:

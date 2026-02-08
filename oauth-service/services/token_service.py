@@ -84,10 +84,14 @@ class TokenService:
         self,
         platform: str,
     ) -> tuple[str | None, Installation | None]:
-        query = select(Installation).where(
-            Installation.platform == platform,
-            Installation.status == InstallationStatus.ACTIVE.value,
-        ).order_by(Installation.last_used_at.desc().nullslast())
+        query = (
+            select(Installation)
+            .where(
+                Installation.platform == platform,
+                Installation.status == InstallationStatus.ACTIVE.value,
+            )
+            .order_by(Installation.last_used_at.desc().nullslast())
+        )
 
         result = await self.session.execute(query)
         installation = result.scalar_one_or_none()
@@ -97,9 +101,7 @@ class TokenService:
 
         if self._is_token_expired(installation):
             if platform == Platform.GITHUB.value and installation.external_install_id:
-                token = await self.get_github_installation_token(
-                    installation.external_install_id
-                )
+                token = await self.get_github_installation_token(installation.external_install_id)
                 return token, installation
             new_token = await self._refresh_token(installation)
             if new_token:

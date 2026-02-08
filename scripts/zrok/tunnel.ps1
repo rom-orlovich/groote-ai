@@ -2,7 +2,12 @@ $ErrorActionPreference = "Stop"
 
 $TunnelShareName = if ($env:TUNNEL_SHARE_NAME) { $env:TUNNEL_SHARE_NAME } else { "my-app" }
 $LocalPort = if ($env:LOCAL_PORT) { $env:LOCAL_PORT } else { "3005" }
-$PublicUrl = "https://${TunnelShareName}.your-tunnel-domain.example"
+
+if (-not $env:PUBLIC_URL) {
+    Write-Host "Error: PUBLIC_URL is not set. Configure it in .env or via the dashboard setup wizard."
+    exit 1
+}
+$PublicUrl = $env:PUBLIC_URL
 
 $TunnelBin = Get-Command zrok -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
 if (-not $TunnelBin) {
@@ -10,7 +15,7 @@ if (-not $TunnelBin) {
     if (Test-Path $UserBin) {
         $TunnelBin = $UserBin
     } else {
-        Write-Host "Error: zrok not installed."
+        Write-Host "Error: tunnel binary not installed."
         Write-Host ""
         Write-Host "Run setup first: .\make.ps1 tunnel-setup"
         exit 1
@@ -19,7 +24,7 @@ if (-not $TunnelBin) {
 
 $StatusResult = & $TunnelBin status 2>&1
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Error: zrok not enabled. Run: $TunnelBin enable <YOUR_TOKEN>"
+    Write-Host "Error: tunnel not enabled. Run: $TunnelBin enable <YOUR_TOKEN>"
     Write-Host ""
     Write-Host "  1. Create account at https://myzrok.io"
     Write-Host "  2. Check email for token"
@@ -27,7 +32,7 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-Write-Host "Starting zrok tunnel: ${PublicUrl} -> http://localhost:${LocalPort}"
+Write-Host "Starting tunnel: ${PublicUrl} -> http://localhost:${LocalPort}"
 Write-Host ""
 Write-Host "Routes (via nginx on port ${LocalPort}):"
 Write-Host "  /           -> external-dashboard (React SPA)"

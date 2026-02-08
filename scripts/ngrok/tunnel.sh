@@ -2,18 +2,14 @@
 set -e
 
 PUBLIC_URL=$(grep "^PUBLIC_URL=" .env 2>/dev/null | cut -d '=' -f 2 | tr -d '"' | tr -d "'")
-PUBLIC_URL=$(grep "^PUBLIC_URL=" .env 2>/dev/null | cut -d '=' -f 2 | tr -d '"' | tr -d "'")
 
-DOMAIN="${PUBLIC_URL}"
-if [ -z "$DOMAIN" ] && [ -n "$PUBLIC_URL" ]; then
-    DOMAIN=$(echo "$PUBLIC_URL" | sed 's|https\?://||' | sed 's|/.*||')
-fi
-
-if [ -z "$DOMAIN" ]; then
-    echo "Error: Set PUBLIC_URL or PUBLIC_URL in .env"
-    echo "  PUBLIC_URL=https://your-domain.ngrok-free.app"
+if [ -z "$PUBLIC_URL" ]; then
+    echo "Error: PUBLIC_URL is not set. Configure it in .env or via the dashboard setup wizard."
+    echo "  PUBLIC_URL=https://your-domain.example.com"
     exit 1
 fi
+
+DOMAIN=$(echo "$PUBLIC_URL" | sed 's|https\?://||' | sed 's|/.*||')
 
 command -v ngrok &> /dev/null || {
     echo "Error: ngrok not installed. Install with: brew install ngrok"

@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
-
 from token_provider import CACHE_TTL_SECONDS, TokenProvider
 
 
@@ -132,6 +131,7 @@ async def test_cache_expired_triggers_new_call(provider: TokenProvider) -> None:
 
         await provider.get_token()
         from token_provider import JiraTokenResult
+
         provider._cache["jira"] = (
             JiraTokenResult(token="stale", auth_mode="bearer", base_url="http://old"),
             time.monotonic() - CACHE_TTL_SECONDS - 1,

@@ -11,7 +11,7 @@ from core.database import get_session as get_db_session
 from core.database.models import SessionDB, TaskDB, WebhookConfigDB, WebhookEventDB
 from core.database.redis_client import redis_client
 from core.webhook_configs import WEBHOOK_CONFIGS
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from shared import (
     AgentType,
@@ -435,22 +435,26 @@ async def chat_with_brain(
     conversation.updated_at = datetime.now(UTC)
     await db.commit()
 
-    await redis_client.push_agent_task({
-        "task_id": task_id,
-        "prompt": full_input_message,
-        "repo_path": "/app",
-        "session_id": session_id,
-        "conversation_id": conversation_id,
-    })
+    await redis_client.push_agent_task(
+        {
+            "task_id": task_id,
+            "prompt": full_input_message,
+            "repo_path": "/app",
+            "session_id": session_id,
+            "conversation_id": conversation_id,
+        }
+    )
     await redis_client.push_task(task_id)
     await redis_client.add_session_task(session_id, task_id)
 
     ws_hub = raw_request.app.state.ws_hub
-    await ws_hub.broadcast(TaskStatusMessage(
-        task_id=task_id,
-        status="queued",
-        conversation_id=conversation_id,
-    ))
+    await ws_hub.broadcast(
+        TaskStatusMessage(
+            task_id=task_id,
+            status="queued",
+            conversation_id=conversation_id,
+        )
+    )
 
     await redis_client.publish_task_event(
         "task:created",
