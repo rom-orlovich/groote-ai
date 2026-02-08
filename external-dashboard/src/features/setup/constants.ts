@@ -348,68 +348,6 @@ export const SETUP_STEPS: StepDefinition[] = [
     ],
   },
   {
-    id: "sentry",
-    title: "SENTRY",
-    description: "Connect Sentry for error tracking and alerts",
-    icon: "AlertTriangle",
-    skippable: true,
-    stepType: "service",
-    validationService: "sentry",
-    instructions: [
-      {
-        step: 1,
-        title: "Create a Sentry Project",
-        description:
-          "Log in to Sentry. Go to Projects > Create Project. Choose your platform (e.g. Python/Node.js) and name it (e.g. groote-ai)",
-        link: "https://sentry.io/organizations/",
-      },
-      {
-        step: 2,
-        title: "Get Your Auth Token",
-        description:
-          "Go to Settings > Auth Tokens. Click Create New Token. Select scopes: project:read, org:read, event:read. Copy the token",
-        link: "https://sentry.io/settings/auth-tokens/",
-      },
-      {
-        step: 3,
-        title: "Get the DSN",
-        description:
-          "Go to your project Settings > Client Keys (DSN). Copy the DSN URL (looks like https://xxx@xxx.ingest.sentry.io/xxx)",
-      },
-      {
-        step: 4,
-        title: "Find Your Organization Slug",
-        description:
-          "Your org slug is in the Sentry URL: sentry.io/organizations/{your-org-slug}/. Copy just the slug part",
-      },
-    ],
-    fields: [
-      {
-        key: "SENTRY_AUTH_TOKEN",
-        label: "Auth Token",
-        placeholder: "your-auth-token",
-        sensitive: true,
-        required: true,
-        helpText: "sentry.io/settings/auth-tokens",
-      },
-      {
-        key: "SENTRY_DSN",
-        label: "DSN",
-        placeholder: "https://xxx@sentry.io/xxx",
-        sensitive: true,
-        required: false,
-        helpText: "Project DSN for error reporting",
-      },
-      {
-        key: "SENTRY_ORG_SLUG",
-        label: "Organization Slug",
-        placeholder: "your-org",
-        sensitive: false,
-        required: false,
-      },
-    ],
-  },
-  {
     id: "review",
     title: "REVIEW",
     description: "Review configuration and complete setup",

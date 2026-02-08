@@ -3,7 +3,6 @@ import json
 from contextlib import asynccontextmanager, suppress
 
 import structlog
-import uvicorn
 from api import (
     analytics,
     conversations,
@@ -12,6 +11,7 @@ from api import (
     oauth_status,
     setup,
     sources,
+    user_settings,
     webhook_status,
     websocket,
 )
@@ -105,6 +105,7 @@ app.include_router(webhook_status.router, prefix="/api", tags=["webhooks"])
 app.include_router(oauth_status.router, prefix="/api", tags=["oauth"])
 app.include_router(setup.router, prefix="/api", tags=["setup"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])
+app.include_router(user_settings.router, tags=["user-settings"])
 app.include_router(sources.router, tags=["sources"])
 app.include_router(websocket.router, tags=["websocket"])
 
@@ -115,6 +116,8 @@ async def health():
 
 
 if __name__ == "__main__":
+    import uvicorn
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",

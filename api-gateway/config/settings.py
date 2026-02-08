@@ -14,7 +14,6 @@ class Settings(BaseSettings):
     github_webhook_secret: str = ""
     jira_webhook_secret: str = ""
     slack_signing_secret: str = ""
-    sentry_client_secret: str = ""
     log_level: str = "INFO"
     knowledge_graph_url: str = "http://knowledge-graph:4000"
     agent_engine_url: str = "http://agent-engine:8080"

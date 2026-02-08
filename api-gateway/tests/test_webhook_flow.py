@@ -17,8 +17,6 @@ from .fixtures import (
     github_issue_opened_payload,
     github_pr_opened_payload,
     jira_issue_created_payload,
-    sentry_issue_created_payload,
-    sentry_issue_regression_payload,
     slack_app_mention_payload,
     slack_message_payload,
 )
@@ -293,48 +291,6 @@ class WebhookHandler:
             },
             input_message=text,
             agent_type="slack-inquiry",
-        )
-
-        task_id = await self.task_queue.enqueue(task)
-
-        return WebhookResponse(
-            status_code=202,
-            body={"action": "accepted", "task_id": task_id},
-            task_id=task_id,
-        )
-
-    async def handle_sentry(
-        self,
-        payload: dict,
-    ) -> WebhookResponse:
-        action = payload.get("action", "")
-
-        if action == "resolved":
-            return WebhookResponse(
-                status_code=200,
-                body={"action": "ignored", "reason": "resolved event"},
-            )
-
-        data = payload.get("data", {})
-        issue = data.get("issue", {})
-        issue_id = issue.get("id", "")
-        title = issue.get("title", "")
-        culprit = issue.get("culprit", "")
-
-        priority = "high" if action == "regression" else "normal"
-
-        task = Task(
-            task_id="",
-            source="webhook",
-            source_metadata={
-                "provider": "sentry",
-                "action": action,
-                "issue_id": issue_id,
-                "project": data.get("project", {}).get("slug", ""),
-            },
-            input_message=f"Sentry error: {title}\n\nLocation: {culprit}",
-            agent_type="sentry-error-handler",
-            priority=priority,
         )
 
         task_id = await self.task_queue.enqueue(task)
@@ -630,55 +586,6 @@ class TestSlackWebhookFlow:
         assert task.source_metadata["user"] == "U456USER"
 
 
-class TestSentryWebhookFlow:
-    """End-to-end tests for Sentry webhook flow."""
-
-    @pytest.mark.asyncio
-    async def test_sentry_new_error_creates_task(self, webhook_handler, task_queue):
-        """Business requirement: New errors trigger investigation."""
-        payload = sentry_issue_created_payload(
-            issue_id="sentry-123",
-            title="TypeError: Cannot read property 'x' of undefined",
-            culprit="src/utils/parser.js",
-        )
-
-        response = await webhook_handler.handle_sentry(payload)
-
-        assert response.status_code == 202
-        task = await task_queue.get_task(response.task_id)
-        assert task.source_metadata["provider"] == "sentry"
-        assert task.source_metadata["issue_id"] == "sentry-123"
-        assert task.agent_type == "sentry-error-handler"
-        assert "TypeError" in task.input_message
-
-    @pytest.mark.asyncio
-    async def test_sentry_regression_high_priority(self, webhook_handler, task_queue):
-        """Business requirement: Regressions are high priority."""
-        payload = sentry_issue_regression_payload(
-            issue_id="sentry-456",
-            title="NullPointerException in AuthService",
-        )
-
-        response = await webhook_handler.handle_sentry(payload)
-
-        task = await task_queue.get_task(response.task_id)
-        assert task.priority == "high"
-
-    @pytest.mark.asyncio
-    async def test_sentry_resolved_ignored(self, webhook_handler, task_queue):
-        """Business requirement: Resolved events don't trigger tasks."""
-        payload = {
-            "action": "resolved",
-            "data": {"issue": {"id": "sentry-789", "title": "Fixed error"}},
-        }
-
-        response = await webhook_handler.handle_sentry(payload)
-
-        assert response.status_code == 200
-        assert response.body["action"] == "ignored"
-        assert len(task_queue.tasks) == 0
-
-
 class TestLoopPreventionFlow:
     """End-to-end tests for loop prevention."""
 
@@ -772,12 +679,3 @@ class TestWebhookToTaskRouting:
         task = task_queue.tasks[0]
         assert task.agent_type == "slack-inquiry"
 
-    @pytest.mark.asyncio
-    async def test_sentry_routes_to_error_handler(self, webhook_handler, task_queue):
-        """Business requirement: Sentry alerts route to error handler."""
-        payload = sentry_issue_created_payload()
-
-        await webhook_handler.handle_sentry(payload)
-
-        task = task_queue.tasks[0]
-        assert task.agent_type == "sentry-error-handler"

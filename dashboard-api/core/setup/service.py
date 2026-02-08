@@ -16,7 +16,6 @@ SETUP_STEPS = [
     "github_oauth",
     "jira_oauth",
     "slack_oauth",
-    "sentry",
     "review",
 ]
 
@@ -173,7 +172,6 @@ CATEGORY_TITLES = {
     "github_oauth": "GitHub Configuration",
     "jira_oauth": "Jira Configuration",
     "slack_oauth": "Slack Configuration",
-    "sentry": "Sentry Configuration",
     "webhooks": "Webhook Secrets",
     "general": "General Configuration",
 }

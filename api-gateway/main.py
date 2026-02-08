@@ -7,7 +7,6 @@ from fastapi import FastAPI
 from routes import webhooks_router
 from webhooks.github.validator import GitHubAuthMiddleware
 from webhooks.jira.validator import JiraAuthMiddleware
-from webhooks.sentry.validator import SentryAuthMiddleware
 from webhooks.slack.validator import SlackAuthMiddleware
 
 logger = structlog.get_logger(__name__)
@@ -28,7 +27,6 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    app.add_middleware(SentryAuthMiddleware)
     app.add_middleware(SlackAuthMiddleware)
     app.add_middleware(JiraAuthMiddleware)
     app.add_middleware(GitHubAuthMiddleware)
@@ -48,7 +46,6 @@ def create_app() -> FastAPI:
                 "github": "/webhooks/github",
                 "jira": "/webhooks/jira",
                 "slack": "/webhooks/slack",
-                "sentry": "/webhooks/sentry",
             },
         }
 

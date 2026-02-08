@@ -55,9 +55,6 @@ class TestSetupSteps:
         assert "jira_oauth" in SETUP_STEPS
         assert "slack_oauth" in SETUP_STEPS
 
-    def test_sentry_remains_as_token_step(self):
-        assert "sentry" in SETUP_STEPS
-
     def test_old_static_token_steps_removed(self):
         assert "github" not in SETUP_STEPS
         assert "jira" not in SETUP_STEPS
