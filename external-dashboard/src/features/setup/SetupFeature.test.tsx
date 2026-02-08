@@ -129,7 +129,7 @@ describe("SetupFeature", () => {
 
     test("should render step indicator with all 7 steps", async () => {
       await renderSetup();
-      expect(screen.getByText(/STEP_01 OF_07/)).toBeInTheDocument();
+      expect(screen.getByText(/STEP_01 OF_08/)).toBeInTheDocument();
     });
   });
 
@@ -149,8 +149,8 @@ describe("SetupFeature", () => {
       await renderSetup();
 
       await user.click(screen.getByTestId("welcome-next"));
-      expect(screen.getByTestId("ai-provider-step")).toBeInTheDocument();
-      expect(screen.getByText(/STEP_02 OF_07/)).toBeInTheDocument();
+      expect(screen.getByTestId("service-step")).toBeInTheDocument();
+      expect(screen.getByText(/STEP_02 OF_08/)).toBeInTheDocument();
     });
 
     test("should show back button after advancing past first step", async () => {
@@ -176,7 +176,7 @@ describe("SetupFeature", () => {
       await renderSetup();
 
       await user.click(screen.getByTestId("welcome-next"));
-      expect(screen.getByTestId("ai-provider-step")).toBeInTheDocument();
+      expect(screen.getByTestId("service-step")).toBeInTheDocument();
 
       await user.click(screen.getByText("BACK"));
       expect(screen.getByTestId("welcome-step")).toBeInTheDocument();
@@ -189,7 +189,7 @@ describe("SetupFeature", () => {
       await renderSetup();
       const indicators = document.querySelectorAll(".h-1");
       const completedIndicators = document.querySelectorAll(".bg-green-500.h-1");
-      expect(indicators.length).toBe(7);
+      expect(indicators.length).toBe(8);
       expect(completedIndicators.length).toBe(1);
     });
 
@@ -218,7 +218,7 @@ describe("SetupFeature", () => {
     test("should start at step 0 when setup is complete", async () => {
       mockStatus = mockSetupComplete;
       await renderSetup();
-      expect(screen.getByText(/STEP_01 OF_07/)).toBeInTheDocument();
+      expect(screen.getByText(/STEP_01 OF_08/)).toBeInTheDocument();
     });
 
     test("should allow editing steps when setup is complete", async () => {
@@ -232,7 +232,7 @@ describe("SetupFeature", () => {
       await renderSetup();
 
       await user.click(screen.getByTestId("welcome-next"));
-      expect(screen.getByTestId("ai-provider-step")).toBeInTheDocument();
+      expect(screen.getByTestId("service-step")).toBeInTheDocument();
     });
   });
 });

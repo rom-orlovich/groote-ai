@@ -2,13 +2,14 @@ import type { SetupStatus } from "../types";
 
 export const mockSetupIncomplete: SetupStatus = {
   is_complete: false,
-  current_step: "ai_provider",
-  completed_steps: ["welcome"],
+  current_step: "welcome",
+  completed_steps: [],
   skipped_steps: [],
-  progress_percent: 14.3,
-  total_steps: 7,
+  progress_percent: 12.5,
+  total_steps: 8,
   steps: [
     "welcome",
+    "public_url",
     "ai_provider",
     "github_oauth",
     "jira_oauth",
@@ -25,6 +26,7 @@ export const mockSetupComplete: SetupStatus = {
   current_step: "complete",
   completed_steps: [
     "welcome",
+    "public_url",
     "ai_provider",
     "github_oauth",
     "jira_oauth",
@@ -33,9 +35,10 @@ export const mockSetupComplete: SetupStatus = {
   ],
   skipped_steps: [],
   progress_percent: 100.0,
-  total_steps: 7,
+  total_steps: 8,
   steps: [
     "welcome",
+    "public_url",
     "ai_provider",
     "github_oauth",
     "jira_oauth",
@@ -50,12 +53,13 @@ export const mockSetupComplete: SetupStatus = {
 export const mockSetupPartial: SetupStatus = {
   is_complete: false,
   current_step: "github_oauth",
-  completed_steps: ["welcome", "ai_provider"],
-  skipped_steps: ["github_oauth"],
-  progress_percent: 42.9,
-  total_steps: 7,
+  completed_steps: ["welcome"],
+  skipped_steps: ["public_url"],
+  progress_percent: 37.5,
+  total_steps: 8,
   steps: [
     "welcome",
+    "public_url",
     "ai_provider",
     "github_oauth",
     "jira_oauth",
