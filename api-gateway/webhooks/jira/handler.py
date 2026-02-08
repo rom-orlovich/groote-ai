@@ -26,11 +26,15 @@ async def handle_jira_webhook(request: Request):
         issue_key=issue.get("key"),
     )
 
-    if not should_process_event(webhook_event, issue):
+    settings = get_settings()
+
+    if not should_process_event(
+        webhook_event, issue, ai_agent_name=settings.jira_ai_agent_name
+    ):
         logger.debug(
             "jira_event_skipped",
             event_type=webhook_event,
-            reason="Missing AI-Fix label or unsupported event",
+            reason="Missing AI-Fix label or ai-agent assignee, or unsupported event",
         )
         return JSONResponse(
             status_code=200,
@@ -41,7 +45,6 @@ async def handle_jira_webhook(request: Request):
     task_id = str(uuid.uuid4())
     task_info["task_id"] = task_id
 
-    settings = get_settings()
     redis_client = redis.from_url(settings.redis_url)
     await redis_client.lpush("agent:tasks", json.dumps(task_info))
     await redis_client.aclose()

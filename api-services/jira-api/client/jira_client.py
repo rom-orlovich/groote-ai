@@ -136,3 +136,18 @@ class JiraClient:
         response = await client.get("/project")
         response.raise_for_status()
         return response.json()
+
+    async def get_confluence_spaces(self) -> list[dict[str, Any]]:
+        confluence_base = self._base_url.replace("/ex/jira/", "/ex/confluence/")
+        url = f"{confluence_base}/wiki/rest/api/space"
+        async with httpx.AsyncClient(
+            headers={
+                "Authorization": self._get_auth_header(),
+                "Accept": "application/json",
+            },
+            timeout=self._timeout,
+        ) as client:
+            response = await client.get(url, params={"limit": 250})
+            response.raise_for_status()
+            data = response.json()
+            return data.get("results", [])

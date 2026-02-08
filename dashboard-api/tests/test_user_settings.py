@@ -1,4 +1,4 @@
-"""Tests for user settings endpoints."""
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from core.user_settings.models import AgentScalingSettings, AIProviderSettings
@@ -6,7 +6,6 @@ from core.user_settings.models import AgentScalingSettings, AIProviderSettings
 
 @pytest.mark.asyncio
 async def test_save_ai_provider_settings(async_client, db_session):
-    """User can save AI provider configuration."""
     token = "Bearer test-user-123"
     settings = AIProviderSettings(
         provider="claude",
@@ -27,7 +26,6 @@ async def test_save_ai_provider_settings(async_client, db_session):
 
 @pytest.mark.asyncio
 async def test_get_ai_provider_settings(async_client, db_session):
-    """User can retrieve AI provider configuration."""
     token = "Bearer test-user-123"
 
     response = await async_client.get(
@@ -43,7 +41,6 @@ async def test_get_ai_provider_settings(async_client, db_session):
 
 @pytest.mark.asyncio
 async def test_test_ai_provider_anthropic(async_client):
-    """Test connection for Anthropic API key."""
     settings = AIProviderSettings(
         provider="claude",
         api_key="sk-ant-invalid",
@@ -63,23 +60,30 @@ async def test_test_ai_provider_anthropic(async_client):
 
 @pytest.mark.asyncio
 async def test_save_agent_scaling(async_client, db_session):
-    """User can save agent scaling configuration."""
     token = "Bearer test-user-123"
     settings = AgentScalingSettings(agent_count=5)
 
-    response = await async_client.post(
-        "/api/user-settings/agent-scaling",
-        json=settings.model_dump(),
-        headers={"Authorization": token},
-    )
+    with patch(
+        "api.user_settings.redis_client.publish", new_callable=AsyncMock
+    ) as mock_publish:
+        response = await async_client.post(
+            "/api/user-settings/agent-scaling",
+            json=settings.model_dump(),
+            headers={"Authorization": token},
+        )
 
     assert response.status_code == 200
-    assert response.json()["agent_count"] == 5
+    data = response.json()
+    assert data["status"] == "scaling"
+    assert data["agent_count"] == 5
+    mock_publish.assert_called_once_with(
+        "cli:scaling",
+        {"provider": "claude", "agent_count": 5},
+    )
 
 
 @pytest.mark.asyncio
 async def test_save_agent_scaling_out_of_range(async_client, db_session):
-    """Agent count must be within valid range."""
     token = "Bearer test-user-123"
     settings = AgentScalingSettings(agent_count=100)
 
@@ -94,7 +98,6 @@ async def test_save_agent_scaling_out_of_range(async_client, db_session):
 
 @pytest.mark.asyncio
 async def test_get_agent_scaling(async_client, db_session):
-    """User can retrieve agent scaling configuration."""
     token = "Bearer test-user-123"
 
     response = await async_client.get(
@@ -111,15 +114,64 @@ async def test_get_agent_scaling(async_client, db_session):
 
 @pytest.mark.asyncio
 async def test_missing_authorization_header(async_client):
-    """Requests without auth header are rejected."""
     response = await async_client.get("/api/user-settings/ai-provider")
 
     assert response.status_code == 401
 
 
 @pytest.mark.asyncio
+async def test_save_agent_scaling_uses_saved_provider(async_client, mock_db_session):
+    token = "Bearer test-user-123"
+    settings = AgentScalingSettings(agent_count=3)
+
+    with patch(
+        "api.user_settings.redis_client.publish", new_callable=AsyncMock
+    ) as mock_publish, patch(
+        "api.user_settings.get_user_setting", new_callable=AsyncMock
+    ) as mock_get:
+        mock_get.side_effect = lambda db, uid, cat, key: (
+            "cursor" if cat == "ai_provider" and key == "provider" else None
+        )
+        response = await async_client.post(
+            "/api/user-settings/agent-scaling",
+            json=settings.model_dump(),
+            headers={"Authorization": token},
+        )
+
+    assert response.status_code == 200
+    mock_publish.assert_called_once_with(
+        "cli:scaling",
+        {"provider": "cursor", "agent_count": 3},
+    )
+
+
+@pytest.mark.asyncio
+async def test_save_agent_scaling_falls_back_to_env_provider(
+    async_client, mock_db_session
+):
+    token = "Bearer test-user-123"
+    settings = AgentScalingSettings(agent_count=2)
+
+    with patch(
+        "api.user_settings.redis_client.publish", new_callable=AsyncMock
+    ) as mock_publish, patch(
+        "api.user_settings.get_user_setting", new_callable=AsyncMock, return_value=None
+    ), patch.dict("os.environ", {"CLI_PROVIDER": "cursor"}):
+        response = await async_client.post(
+            "/api/user-settings/agent-scaling",
+            json=settings.model_dump(),
+            headers={"Authorization": token},
+        )
+
+    assert response.status_code == 200
+    mock_publish.assert_called_once_with(
+        "cli:scaling",
+        {"provider": "cursor", "agent_count": 2},
+    )
+
+
+@pytest.mark.asyncio
 async def test_delete_user_setting(async_client, db_session):
-    """User can delete a setting."""
     token = "Bearer test-user-123"
 
     response = await async_client.delete(

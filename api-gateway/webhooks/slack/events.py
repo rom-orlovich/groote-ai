@@ -35,6 +35,7 @@ def extract_task_info(event: dict[str, Any], team_id: str) -> dict[str, Any]:
         "user": event.get("user"),
         "text": event.get("text"),
         "ts": event.get("ts"),
+        "prompt": event.get("text", ""),
     }
 
     if "thread_ts" in event:

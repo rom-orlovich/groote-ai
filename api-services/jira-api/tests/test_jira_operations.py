@@ -101,6 +101,13 @@ class MockJiraClient:
         if transition_id not in valid_ids:
             raise ValueError(f"Invalid transition: {transition_id}")
 
+    async def get_confluence_spaces(self) -> list[dict]:
+        return [
+            {"key": "ENG", "name": "Engineering", "type": "global"},
+            {"key": "DOCS", "name": "Documentation", "type": "global"},
+            {"key": "HR", "name": "Human Resources", "type": "personal"},
+        ]
+
 
 @pytest.fixture
 def jira_client():
@@ -198,3 +205,19 @@ class TestJiraTransitionOperations:
                 issue_key="PROJ-123",
                 transition_id="99",
             )
+
+
+class TestConfluenceSpaces:
+    async def test_get_confluence_spaces_returns_space_list(self, jira_client):
+        spaces = await jira_client.get_confluence_spaces()
+        assert isinstance(spaces, list)
+        assert len(spaces) > 0
+        first_space = spaces[0]
+        assert "key" in first_space
+        assert "name" in first_space
+        assert "type" in first_space
+
+    async def test_get_confluence_spaces_returns_expected_keys(self, jira_client):
+        spaces = await jira_client.get_confluence_spaces()
+        keys = [s["key"] for s in spaces]
+        assert "ENG" in keys

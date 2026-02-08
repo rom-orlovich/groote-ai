@@ -138,6 +138,16 @@ class MockGitHubClient:
             {"name": "develop", "commit": {"sha": "def456"}},
         ]
 
+    async def list_installation_repos(self, per_page: int = 100, page: int = 1) -> dict:
+        return {
+            "total_count": 3,
+            "repositories": [
+                {"full_name": "org/repo1", "description": "First repo", "language": "Python", "private": False, "stargazers_count": 10},
+                {"full_name": "org/repo2", "description": "Second repo", "language": "TypeScript", "private": True, "stargazers_count": 5},
+                {"full_name": "org/repo3", "description": None, "language": None, "private": False, "stargazers_count": 0},
+            ][:per_page],
+        }
+
 
 @pytest.fixture
 def github_client():
@@ -262,3 +272,20 @@ class TestGitHubBranchOperations:
         )
 
         assert "refs/heads/fix/issue-123" in result["ref"]
+
+
+class TestGitHubInstallationRepos:
+    async def test_list_installation_repos_returns_repos_with_metadata(self, github_client):
+        repos = await github_client.list_installation_repos()
+        assert "total_count" in repos
+        assert "repositories" in repos
+        assert len(repos["repositories"]) > 0
+        first_repo = repos["repositories"][0]
+        assert "full_name" in first_repo
+        assert "description" in first_repo
+        assert "language" in first_repo
+        assert "private" in first_repo
+
+    async def test_list_installation_repos_supports_pagination(self, github_client):
+        repos = await github_client.list_installation_repos(per_page=2, page=1)
+        assert len(repos["repositories"]) <= 2

@@ -1,5 +1,3 @@
-"""GitHub webhook payload fixtures for testing."""
-
 from typing import Any
 
 
@@ -11,7 +9,6 @@ def github_issue_opened_payload(
     labels: list[str] | None = None,
     user: str = "testuser",
 ) -> dict[str, Any]:
-    """Create a GitHub issue opened payload."""
     return {
         "action": "opened",
         "issue": {
@@ -40,7 +37,6 @@ def github_issue_edited_payload(
     body: str = "Updated issue body",
     user: str = "testuser",
 ) -> dict[str, Any]:
-    """Create a GitHub issue edited payload."""
     payload = github_issue_opened_payload(
         repo=repo,
         issue_number=issue_number,
@@ -59,7 +55,6 @@ def github_issue_labeled_payload(
     label: str = "AI-Fix",
     user: str = "testuser",
 ) -> dict[str, Any]:
-    """Create a GitHub issue labeled payload."""
     return {
         "action": "labeled",
         "issue": {
@@ -87,7 +82,6 @@ def github_issue_comment_payload(
     body: str = "Test comment",
     user: str = "testuser",
 ) -> dict[str, Any]:
-    """Create a GitHub issue comment payload."""
     return {
         "action": "created",
         "issue": {
@@ -122,7 +116,6 @@ def github_pr_opened_payload(
     base: str = "main",
     user: str = "testuser",
 ) -> dict[str, Any]:
-    """Create a GitHub pull request opened payload."""
     return {
         "action": "opened",
         "pull_request": {
@@ -153,7 +146,6 @@ def github_pr_synchronize_payload(
     base: str = "main",
     user: str = "testuser",
 ) -> dict[str, Any]:
-    """Create a GitHub pull request synchronize payload."""
     payload = github_pr_opened_payload(
         repo=repo,
         pr_number=pr_number,
@@ -176,7 +168,6 @@ def github_pr_review_comment_payload(
     line: int = 10,
     user: str = "reviewer",
 ) -> dict[str, Any]:
-    """Create a GitHub PR review comment payload."""
     return {
         "action": "created",
         "pull_request": {
@@ -212,7 +203,6 @@ def github_push_payload(
     commits: list[dict[str, str]] | None = None,
     pusher: str = "testuser",
 ) -> dict[str, Any]:
-    """Create a GitHub push payload."""
     if commits is None:
         commits = [
             {"message": "Initial commit", "id": "commit-sha-1"},

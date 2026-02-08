@@ -11,6 +11,9 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { CreateSourceRequest, SourceTypeInfo } from "./hooks/useSources";
 import { useSourceTypes } from "./hooks/useSources";
+import { ResourcePicker } from "./ResourcePicker";
+import type { ConfluenceConfig, GitHubConfig, JiraConfig } from "./SourceConfigForm";
+import { SourceConfigForm } from "./SourceConfigForm";
 
 interface AddSourceModalProps {
   isOpen: boolean;
@@ -20,6 +23,7 @@ interface AddSourceModalProps {
 }
 
 type SourceType = "github" | "jira" | "confluence";
+type ModalStep = "select" | "browse" | "configure";
 
 const SOURCE_ICONS: Record<string, typeof GitBranch> = {
   github: GitBranch,
@@ -27,30 +31,17 @@ const SOURCE_ICONS: Record<string, typeof GitBranch> = {
   confluence: FileText,
 };
 
-interface GitHubConfig {
-  include_patterns: string;
-  exclude_patterns: string;
-  branches: string;
-  file_patterns: string;
-}
-
-interface JiraConfig {
-  jql: string;
-  issue_types: string;
-  include_labels: string;
-  max_results: number;
-}
-
-interface ConfluenceConfig {
-  spaces: string;
-  include_labels: string;
-  content_types: string;
-}
+const STEP_TITLES: Record<ModalStep, string> = {
+  select: "ADD_DATA_SOURCE",
+  browse: "BROWSE_RESOURCES",
+  configure: "CONFIGURE_SOURCE",
+};
 
 export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddSourceModalProps) {
-  const [step, setStep] = useState<"select" | "configure">("select");
+  const [step, setStep] = useState<ModalStep>("select");
   const [selectedType, setSelectedType] = useState<SourceType | null>(null);
   const [selectedTypeInfo, setSelectedTypeInfo] = useState<SourceTypeInfo | null>(null);
+  const [selectedResourceIds, setSelectedResourceIds] = useState<string[]>([]);
   const [name, setName] = useState("");
 
   const { data: sourceTypes, isLoading: isLoadingTypes } = useSourceTypes();
@@ -79,6 +70,21 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
     setSelectedType(typeInfo.source_type as SourceType);
     setSelectedTypeInfo(typeInfo);
     setName(`${typeInfo.name} Source`);
+    if (typeInfo.oauth_connected) {
+      setStep("browse");
+    } else {
+      setStep("configure");
+    }
+  };
+
+  const handleBrowseNext = () => {
+    if (selectedType === "github") {
+      setGithubConfig({ ...githubConfig, include_patterns: selectedResourceIds.join(", ") });
+    } else if (selectedType === "jira") {
+      setJiraConfig({ ...jiraConfig, jql: `project IN (${selectedResourceIds.join(", ")})` });
+    } else if (selectedType === "confluence") {
+      setConfluenceConfig({ ...confluenceConfig, spaces: selectedResourceIds.join(", ") });
+    }
     setStep("configure");
   };
 
@@ -136,18 +142,14 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
       };
     }
 
-    onSubmit({
-      name,
-      source_type: selectedType,
-      config,
-      enabled: true,
-    });
+    onSubmit({ name, source_type: selectedType, config, enabled: true });
   };
 
   const handleClose = () => {
     setStep("select");
     setSelectedType(null);
     setSelectedTypeInfo(null);
+    setSelectedResourceIds([]);
     setName("");
     onClose();
   };
@@ -158,9 +160,7 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-modal-bg border border-modal-border w-full max-w-lg mx-4">
         <div className="flex items-center justify-between p-4 border-b border-modal-border">
-          <h2 className="font-heading text-sm text-text-main">
-            {step === "select" ? "ADD_DATA_SOURCE" : "CONFIGURE_SOURCE"}
-          </h2>
+          <h2 className="font-heading text-sm text-text-main">{STEP_TITLES[step]}</h2>
           <button
             type="button"
             onClick={handleClose}
@@ -172,245 +172,37 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
 
         <div className="p-4">
           {step === "select" && (
-            <div className="grid gap-3">
-              <p className="text-[10px] text-app-muted mb-2">
-                Select the type of data source you want to add. Each source will be indexed and made
-                searchable for the AI agent.
-              </p>
-              {isLoadingTypes ? (
-                <div className="text-center py-4 text-[10px] text-app-muted">
-                  Loading source types...
-                </div>
-              ) : (
-                sourceTypes?.map((typeInfo) => {
-                  const Icon = SOURCE_ICONS[typeInfo.source_type] || FileText;
-                  return (
-                    <button
-                      type="button"
-                      key={typeInfo.source_type}
-                      onClick={() => handleTypeSelect(typeInfo)}
-                      className={`flex items-center gap-3 p-3 border text-left transition-colors ${
-                        typeInfo.oauth_connected
-                          ? "border-panel-border hover:border-primary/50 hover:bg-panel-border/20"
-                          : "border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/30"
-                      }`}
-                    >
-                      <div className="p-2 border border-panel-border text-text-main">
-                        <Icon size={20} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-heading text-sm text-text-main">
-                            {typeInfo.name}
-                          </span>
-                          {typeInfo.oauth_connected ? (
-                            <CheckCircle size={12} className="text-green-500" />
-                          ) : (
-                            <AlertTriangle size={12} className="text-amber-500" />
-                          )}
-                        </div>
-                        <div className="text-[10px] text-app-muted">{typeInfo.description}</div>
-                        {!typeInfo.oauth_connected && (
-                          <div className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
-                            OAuth not connected -
-                            <Link
-                              to="/integrations"
-                              className="inline-flex items-center gap-1 ml-1 hover:text-amber-800"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Link2 size={10} />
-                              Connect
-                            </Link>
-                          </div>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
+            <SelectStep
+              sourceTypes={sourceTypes}
+              isLoadingTypes={isLoadingTypes}
+              onTypeSelect={handleTypeSelect}
+            />
+          )}
+
+          {step === "browse" && selectedType && (
+            <ResourcePicker
+              platform={selectedType}
+              selectedIds={selectedResourceIds}
+              onSelectionChange={setSelectedResourceIds}
+              onBack={() => setStep("select")}
+              onNext={handleBrowseNext}
+            />
           )}
 
           {step === "configure" && selectedType && (
             <div className="space-y-4">
-              {selectedTypeInfo && !selectedTypeInfo.oauth_connected && (
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[10px]">
-                  <div className="flex items-center gap-1 text-amber-700 dark:text-amber-400 mb-1">
-                    <AlertTriangle size={12} />
-                    <span className="font-heading">OAUTH_NOT_CONNECTED</span>
-                  </div>
-                  <p className="text-amber-600 dark:text-amber-400 mb-2">
-                    You can configure this source, but it will be created as disabled. Connect{" "}
-                    {selectedTypeInfo.oauth_platform} OAuth to enable syncing.
-                  </p>
-                  <Link
-                    to="/integrations"
-                    className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 font-heading"
-                  >
-                    <Link2 size={10} />
-                    GO_TO_INTEGRATIONS
-                  </Link>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-[10px] font-heading text-app-muted mb-1">
-                  SOURCE_NAME
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm focus:outline-none focus:border-primary mt-1"
-                    placeholder="Enter source name"
-                  />
-                </label>
-              </div>
-
-              {selectedType === "github" && (
-                <>
-                  <div>
-                    <label className="block text-[10px] font-heading text-app-muted mb-1">
-                      INCLUDE_PATTERNS (comma-separated)
-                      <input
-                        type="text"
-                        value={githubConfig.include_patterns}
-                        onChange={(e) =>
-                          setGithubConfig({
-                            ...githubConfig,
-                            include_patterns: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
-                        placeholder="owner/repo, owner/repo-*"
-                      />
-                    </label>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-heading text-app-muted mb-1">
-                      BRANCHES (comma-separated)
-                      <input
-                        type="text"
-                        value={githubConfig.branches}
-                        onChange={(e) =>
-                          setGithubConfig({
-                            ...githubConfig,
-                            branches: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
-                        placeholder="main, master, develop"
-                      />
-                    </label>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-heading text-app-muted mb-1">
-                      FILE_PATTERNS (comma-separated)
-                      <input
-                        type="text"
-                        value={githubConfig.file_patterns}
-                        onChange={(e) =>
-                          setGithubConfig({
-                            ...githubConfig,
-                            file_patterns: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
-                        placeholder="**/*.py, **/*.ts"
-                      />
-                    </label>
-                  </div>
-                </>
-              )}
-
-              {selectedType === "jira" && (
-                <>
-                  <div>
-                    <label className="block text-[10px] font-heading text-app-muted mb-1">
-                      JQL_FILTER (optional)
-                      <input
-                        type="text"
-                        value={jiraConfig.jql}
-                        onChange={(e) => setJiraConfig({ ...jiraConfig, jql: e.target.value })}
-                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
-                        placeholder="project = PROJ AND status != Done"
-                      />
-                    </label>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-heading text-app-muted mb-1">
-                      ISSUE_TYPES (comma-separated)
-                      <input
-                        type="text"
-                        value={jiraConfig.issue_types}
-                        onChange={(e) =>
-                          setJiraConfig({
-                            ...jiraConfig,
-                            issue_types: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
-                        placeholder="Bug, Story, Task"
-                      />
-                    </label>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-heading text-app-muted mb-1">
-                      MAX_RESULTS
-                      <input
-                        type="number"
-                        value={jiraConfig.max_results}
-                        onChange={(e) =>
-                          setJiraConfig({
-                            ...jiraConfig,
-                            max_results: parseInt(e.target.value, 10) || 1000,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
-                      />
-                    </label>
-                  </div>
-                </>
-              )}
-
-              {selectedType === "confluence" && (
-                <>
-                  <div>
-                    <label className="block text-[10px] font-heading text-app-muted mb-1">
-                      SPACES (comma-separated, leave empty for all)
-                      <input
-                        type="text"
-                        value={confluenceConfig.spaces}
-                        onChange={(e) =>
-                          setConfluenceConfig({
-                            ...confluenceConfig,
-                            spaces: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
-                        placeholder="ENG, DOCS, WIKI"
-                      />
-                    </label>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-heading text-app-muted mb-1">
-                      CONTENT_TYPES (comma-separated)
-                      <input
-                        type="text"
-                        value={confluenceConfig.content_types}
-                        onChange={(e) =>
-                          setConfluenceConfig({
-                            ...confluenceConfig,
-                            content_types: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-input-border bg-input-bg text-input-text text-sm font-mono focus:outline-none focus:border-primary mt-1"
-                        placeholder="page, blogpost"
-                      />
-                    </label>
-                  </div>
-                </>
-              )}
-
+              <SourceConfigForm
+                sourceType={selectedType}
+                name={name}
+                onNameChange={setName}
+                githubConfig={githubConfig}
+                onGithubConfigChange={setGithubConfig}
+                jiraConfig={jiraConfig}
+                onJiraConfigChange={setJiraConfig}
+                confluenceConfig={confluenceConfig}
+                onConfluenceConfigChange={setConfluenceConfig}
+                selectedTypeInfo={selectedTypeInfo}
+              />
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
@@ -432,6 +224,72 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function SelectStep({
+  sourceTypes,
+  isLoadingTypes,
+  onTypeSelect,
+}: {
+  sourceTypes: SourceTypeInfo[] | undefined;
+  isLoadingTypes: boolean;
+  onTypeSelect: (typeInfo: SourceTypeInfo) => void;
+}) {
+  return (
+    <div className="grid gap-3">
+      <p className="text-[10px] text-app-muted mb-2">
+        Select the type of data source you want to add. Each source will be indexed and made
+        searchable for the AI agent.
+      </p>
+      {isLoadingTypes ? (
+        <div className="text-center py-4 text-[10px] text-app-muted">Loading source types...</div>
+      ) : (
+        sourceTypes?.map((typeInfo) => {
+          const Icon = SOURCE_ICONS[typeInfo.source_type] || FileText;
+          return (
+            <button
+              type="button"
+              key={typeInfo.source_type}
+              onClick={() => onTypeSelect(typeInfo)}
+              className={`flex items-center gap-3 p-3 border text-left transition-colors ${
+                typeInfo.oauth_connected
+                  ? "border-panel-border hover:border-primary/50 hover:bg-panel-border/20"
+                  : "border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/30"
+              }`}
+            >
+              <div className="p-2 border border-panel-border text-text-main">
+                <Icon size={20} />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-heading text-sm text-text-main">{typeInfo.name}</span>
+                  {typeInfo.oauth_connected ? (
+                    <CheckCircle size={12} className="text-green-500" />
+                  ) : (
+                    <AlertTriangle size={12} className="text-amber-500" />
+                  )}
+                </div>
+                <div className="text-[10px] text-app-muted">{typeInfo.description}</div>
+                {!typeInfo.oauth_connected && (
+                  <div className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
+                    OAuth not connected -
+                    <Link
+                      to="/integrations"
+                      className="inline-flex items-center gap-1 ml-1 hover:text-amber-800"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Link2 size={10} />
+                      Connect
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </button>
+          );
+        })
+      )}
     </div>
   );
 }

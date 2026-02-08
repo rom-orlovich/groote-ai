@@ -58,10 +58,36 @@ fi
 
 echo ""
 $DC build
-$DC up -d
+
+$DC up -d --scale cli=0
+echo "  ✅ Core services started"
+
+CREDS_FILE="$HOME/.claude/.credentials.json"
+CLAUDE_JSON="$HOME/.claude/.claude.json"
+
+if [ "$PROVIDER" = "claude" ]; then
+  if [ ! -f "$CREDS_FILE" ]; then
+    echo "  ⚠️  Credentials file missing, extracting..."
+    ./agent-engine/scripts/extract_oauth_creds.sh "$CREDS_FILE" || true
+  fi
+
+  if [ ! -f "$CREDS_FILE" ]; then
+    echo "  ⚠️  Creating placeholder credentials file for Docker mount"
+    mkdir -p "$(dirname "$CREDS_FILE")"
+    echo '{}' > "$CREDS_FILE"
+  fi
+
+  if [ ! -f "$CLAUDE_JSON" ]; then
+    echo "  ⚠️  Creating placeholder .claude.json for Docker mount"
+    echo '{}' > "$CLAUDE_JSON"
+  fi
+fi
+
+echo "  Starting agent engine (CLI)..."
+$DC up -d cli
 
 echo ""
-echo "Waiting for services to start..."
+echo "Waiting for agent engine..."
 
 MAX_WAIT=60
 WAITED=0

@@ -14,7 +14,7 @@ router = APIRouter()
 
 OAUTH_SERVICE_URL = os.getenv("OAUTH_SERVICE_URL", "http://oauth-service:8010")
 
-SUPPORTED_PLATFORMS = ["github", "jira", "slack", "sentry"]
+SUPPORTED_PLATFORMS = ["github", "jira", "slack"]
 
 PLATFORM_CONFIG = {
     "github": {
@@ -34,12 +34,6 @@ PLATFORM_CONFIG = {
         "icon": "message-square",
         "description": "Connect to Slack for notifications",
         "required_env": ["SLACK_CLIENT_ID", "SLACK_CLIENT_SECRET"],
-    },
-    "sentry": {
-        "name": "Sentry",
-        "icon": "alert-triangle",
-        "description": "Connect to Sentry for error tracking",
-        "required_env": ["SENTRY_AUTH_TOKEN"],
     },
 }
 
@@ -94,79 +88,15 @@ async def is_platform_configured(platform: str, db: AsyncSession) -> bool:
     return True
 
 
-@router.get("/oauth/status")
-async def get_all_oauth_status(
-    db: AsyncSession = Depends(get_session),
-) -> OAuthStatusResponse:
-    statuses: dict[str, OAuthStatus] = {}
-
-    for platform in SUPPORTED_PLATFORMS:
-        config = PLATFORM_CONFIG.get(platform, {})
-        configured = await is_platform_configured(platform, db)
-        connected = False
-        installed_at = None
-        scopes = None
-
-        webhook_registered = False
-        webhook_url = None
-        webhook_error = None
-
-        if configured:
-            try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    response = await client.get(
-                        f"{OAUTH_SERVICE_URL}/oauth/installations",
-                        params={"platform": platform},
-                    )
-                    if response.status_code == 200:
-                        data = response.json()
-                        installations = data.get("installations", [])
-                        if installations:
-                            connected = True
-                            latest = installations[0]
-                            installed_at = latest.get("installed_at")
-                            scopes = latest.get("scopes")
-                            webhook_registered = latest.get("webhook_registered", False)
-                            webhook_url = latest.get("webhook_url")
-                            webhook_error = latest.get("webhook_error")
-            except httpx.RequestError as e:
-                logger.warning(
-                    "oauth_service_unreachable",
-                    platform=platform,
-                    error=str(e),
-                )
-
-        statuses[platform] = OAuthStatus(
-            platform=platform,
-            name=config.get("name", platform.title()),
-            connected=connected,
-            configured=configured,
-            icon=config.get("icon", "link"),
-            description=config.get("description", ""),
-            installed_at=installed_at,
-            scopes=scopes,
-            webhook_registered=webhook_registered,
-            webhook_url=webhook_url,
-            webhook_error=webhook_error,
-        )
-
-    return OAuthStatusResponse(success=True, statuses=statuses)
-
-
-@router.get("/oauth/status/{platform}")
-async def get_platform_oauth_status(
-    platform: Literal["github", "jira", "slack", "sentry"],
-    db: AsyncSession = Depends(get_session),
+async def _fetch_platform_status(
+    platform: str,
+    config: dict,
+    db: AsyncSession,
 ) -> OAuthStatus:
-    if platform not in SUPPORTED_PLATFORMS:
-        raise HTTPException(status_code=400, detail=f"Unsupported platform: {platform}")
-
-    config = PLATFORM_CONFIG.get(platform, {})
     configured = await is_platform_configured(platform, db)
     connected = False
     installed_at = None
     scopes = None
-
     webhook_registered = False
     webhook_url = None
     webhook_error = None
@@ -211,9 +141,34 @@ async def get_platform_oauth_status(
     )
 
 
+@router.get("/oauth/status")
+async def get_all_oauth_status(
+    db: AsyncSession = Depends(get_session),
+) -> OAuthStatusResponse:
+    statuses: dict[str, OAuthStatus] = {}
+
+    for platform in SUPPORTED_PLATFORMS:
+        config = PLATFORM_CONFIG.get(platform, {})
+        statuses[platform] = await _fetch_platform_status(platform, config, db)
+
+    return OAuthStatusResponse(success=True, statuses=statuses)
+
+
+@router.get("/oauth/status/{platform}")
+async def get_platform_oauth_status(
+    platform: Literal["github", "jira", "slack"],
+    db: AsyncSession = Depends(get_session),
+) -> OAuthStatus:
+    if platform not in SUPPORTED_PLATFORMS:
+        raise HTTPException(status_code=400, detail=f"Unsupported platform: {platform}")
+
+    config = PLATFORM_CONFIG.get(platform, {})
+    return await _fetch_platform_status(platform, config, db)
+
+
 @router.post("/oauth/install/{platform}")
 async def start_oauth_install(
-    platform: Literal["github", "jira", "slack", "sentry"],
+    platform: Literal["github", "jira", "slack"],
     db: AsyncSession = Depends(get_session),
 ) -> OAuthInstallResponse:
     if platform not in SUPPORTED_PLATFORMS:
@@ -232,7 +187,7 @@ async def start_oauth_install(
 
 @router.delete("/oauth/revoke/{platform}")
 async def revoke_oauth(
-    platform: Literal["github", "jira", "slack", "sentry"],
+    platform: Literal["github", "jira", "slack"],
 ) -> OAuthRevokeResponse:
     if platform not in SUPPORTED_PLATFORMS:
         raise HTTPException(status_code=400, detail=f"Unsupported platform: {platform}")

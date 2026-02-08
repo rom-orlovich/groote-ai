@@ -30,7 +30,7 @@ export function AIProviderSettings() {
 
   useEffect(() => {
     if (saveProvider.isSuccess && saveScaling.isSuccess) {
-      setMessage({ type: "success", text: "Settings applied" });
+      setMessage({ type: "success", text: "Settings applied — scaling agents..." });
       setTimeout(() => setMessage(null), 3000);
     }
   }, [saveProvider.isSuccess, saveScaling.isSuccess]);

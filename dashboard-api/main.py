@@ -11,6 +11,7 @@ from api import (
     dashboard,
     oauth_status,
     setup,
+    source_browser,
     sources,
     user_settings,
     webhook_status,
@@ -141,6 +142,7 @@ app.include_router(credentials.router, prefix="/api", tags=["credentials"])
 app.include_router(cli_control.router, prefix="/api", tags=["cli-control"])
 app.include_router(user_settings.router, tags=["user-settings"])
 app.include_router(sources.router, tags=["sources"])
+app.include_router(source_browser.router, tags=["source-browser"])
 app.include_router(websocket.router, tags=["websocket"])
 
 

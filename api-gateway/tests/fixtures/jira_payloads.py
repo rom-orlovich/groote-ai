@@ -1,5 +1,3 @@
-"""Jira webhook payload fixtures for testing."""
-
 from typing import Any
 
 
@@ -12,8 +10,15 @@ def jira_issue_created_payload(
     issue_type: str = "Bug",
     priority: str = "Medium",
     reporter: str = "testuser",
+    assignee: str | None = None,
 ) -> dict[str, Any]:
-    """Create a Jira issue created payload."""
+    assignee_field = None
+    if assignee:
+        assignee_field = {
+            "displayName": assignee,
+            "emailAddress": f"{assignee.lower().replace(' ', '.')}@example.com",
+        }
+
     return {
         "webhookEvent": "jira:issue_created",
         "timestamp": 1706702400000,
@@ -39,6 +44,7 @@ def jira_issue_created_payload(
                     "displayName": reporter,
                     "emailAddress": f"{reporter}@example.com",
                 },
+                "assignee": assignee_field,
                 "status": {
                     "name": "To Do",
                 },
@@ -61,13 +67,14 @@ def jira_issue_updated_payload(
     change_type: str = "labels",
     from_value: str = "",
     to_value: str = "AI-Fix",
+    assignee: str | None = None,
 ) -> dict[str, Any]:
-    """Create a Jira issue updated payload."""
     payload = jira_issue_created_payload(
         issue_key=issue_key,
         summary=summary,
         labels=labels,
         project=project,
+        assignee=assignee,
     )
     payload["webhookEvent"] = "jira:issue_updated"
     payload["changelog"] = {
@@ -91,8 +98,15 @@ def jira_comment_created_payload(
     comment_id: str = "10001",
     body: str = "Test comment",
     author: str = "testuser",
+    assignee: str | None = None,
 ) -> dict[str, Any]:
-    """Create a Jira comment created payload."""
+    assignee_field = None
+    if assignee:
+        assignee_field = {
+            "displayName": assignee,
+            "emailAddress": f"{assignee.lower().replace(' ', '.')}@example.com",
+        }
+
     return {
         "webhookEvent": "comment_created",
         "timestamp": 1706702400000,
@@ -102,7 +116,9 @@ def jira_comment_created_payload(
             "self": f"https://jira.example.com/rest/api/2/issue/{issue_key}",
             "fields": {
                 "summary": "Test Issue",
+                "description": "Test description",
                 "labels": ["AI-Fix"],
+                "assignee": assignee_field,
                 "project": {
                     "key": "PROJ",
                 },

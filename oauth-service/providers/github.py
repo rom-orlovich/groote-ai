@@ -16,7 +16,7 @@ class GitHubOAuthProvider(OAuthProvider):
         self.app_name = settings.github_app_name
         self.client_id = settings.github_client_id
         self.client_secret = settings.github_client_secret
-        self.private_key = settings.github_private_key.replace("\\n", "\n")
+        self.private_key = self._load_private_key(settings)
         self.redirect_uri = f"{settings.base_url}/oauth/callback/github"
 
         missing = [
@@ -31,6 +31,25 @@ class GitHubOAuthProvider(OAuthProvider):
         ]
         if missing:
             logger.warning("oauth_provider_missing_credentials", platform="github", missing=missing)
+
+    @staticmethod
+    def _load_private_key(settings: Settings) -> str:
+        if settings.github_private_key_path:
+            try:
+                with open(settings.github_private_key_path) as f:
+                    key = f.read().strip()
+                if key.startswith("-----BEGIN"):
+                    logger.info("github_private_key_loaded_from_file")
+                    return key
+            except FileNotFoundError:
+                logger.warning("github_private_key_file_not_found", path=settings.github_private_key_path)
+
+        inline_key = settings.github_private_key.replace("\\n", "\n")
+        if inline_key.startswith("-----BEGIN"):
+            return inline_key
+
+        logger.warning("github_private_key_not_configured")
+        return inline_key
 
     def get_authorization_url(self, state: str) -> str:
         return f"https://github.com/apps/{self.app_name}/installations/new?state={state}"

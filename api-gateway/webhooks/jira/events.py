@@ -11,13 +11,26 @@ SUPPORTED_EVENTS = [
 ]
 
 AI_FIX_LABEL = "AI-Fix"
+DEFAULT_AI_AGENT_NAME = "ai-agent"
 
 
-def should_process_event(webhook_event: str, issue_data: dict[str, Any]) -> bool:
+def should_process_event(
+    webhook_event: str,
+    issue_data: dict[str, Any],
+    ai_agent_name: str = DEFAULT_AI_AGENT_NAME,
+) -> bool:
     if webhook_event not in SUPPORTED_EVENTS:
         return False
 
-    labels = issue_data.get("fields", {}).get("labels", [])
+    fields = issue_data.get("fields", {})
+
+    assignee = fields.get("assignee")
+    if assignee:
+        assignee_display = assignee.get("displayName", "")
+        if assignee_display.lower() == ai_agent_name.lower():
+            return True
+
+    labels = fields.get("labels", [])
     return AI_FIX_LABEL in labels
 
 
@@ -25,14 +38,21 @@ def extract_task_info(webhook_event: str, payload: dict[str, Any]) -> dict[str, 
     issue = payload.get("issue", {})
     fields = issue.get("fields", {})
 
+    summary = fields.get("summary", "")
+    description = fields.get("description", "")
+    prompt = f"{summary}\n\n{description}" if description else summary
+
+    assignee = fields.get("assignee")
+    assignee_name = assignee.get("displayName") if assignee else None
+
     task_info: dict[str, Any] = {
         "source": "jira",
         "event_type": webhook_event,
         "issue": {
             "key": issue.get("key"),
             "id": issue.get("id"),
-            "summary": fields.get("summary"),
-            "description": fields.get("description"),
+            "summary": summary,
+            "description": description,
             "issue_type": fields.get("issuetype", {}).get("name"),
             "status": fields.get("status", {}).get("name"),
             "priority": fields.get("priority", {}).get("name"),
@@ -42,6 +62,8 @@ def extract_task_info(webhook_event: str, payload: dict[str, Any]) -> dict[str, 
                 "name": fields.get("project", {}).get("name"),
             },
         },
+        "assignee": assignee_name,
+        "prompt": prompt,
     }
 
     if webhook_event == "comment_created":
@@ -51,6 +73,9 @@ def extract_task_info(webhook_event: str, payload: dict[str, Any]) -> dict[str, 
             "body": comment.get("body"),
             "author": comment.get("author", {}).get("displayName"),
         }
+        comment_body = comment.get("body", "")
+        if comment_body:
+            task_info["prompt"] = f"{summary}\n\n{description}\n\n{comment_body}"
 
     custom_fields = {}
     for key, value in fields.items():

@@ -1,5 +1,3 @@
-"""Test fixtures and payload generators for api-gateway."""
-
 from .github_payloads import (
     github_issue_comment_payload,
     github_issue_edited_payload,

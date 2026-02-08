@@ -128,3 +128,12 @@ class GitHubClient:
         )
         response.raise_for_status()
         return response.json()
+
+    async def list_installation_repos(self, per_page: int = 100, page: int = 1) -> dict[str, Any]:
+        client = await self._get_client()
+        response = await client.get(
+            "/installation/repositories",
+            params={"per_page": per_page, "page": page},
+        )
+        response.raise_for_status()
+        return response.json()

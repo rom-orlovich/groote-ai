@@ -128,3 +128,10 @@ async def get_projects(
     client: Annotated[JiraClient, Depends(get_jira_client)],
 ):
     return await client.get_projects()
+
+
+@router.get("/confluence/spaces")
+async def get_confluence_spaces(
+    client: Annotated[JiraClient, Depends(get_jira_client)],
+):
+    return await client.get_confluence_spaces()

@@ -1,8 +1,3 @@
-"""End-to-end tests for webhook processing flow.
-
-Tests the complete flow from webhook receipt to task creation.
-"""
-
 import hashlib
 import hmac
 import json
@@ -24,8 +19,6 @@ from .fixtures import (
 
 @dataclass
 class Task:
-    """Task created from webhook."""
-
     task_id: str
     source: str
     source_metadata: dict[str, Any]
@@ -38,16 +31,12 @@ class Task:
 
 @dataclass
 class WebhookResponse:
-    """Response from webhook handler."""
-
     status_code: int
     body: dict[str, Any]
     task_id: str | None = None
 
 
 class TaskQueue:
-    """In-memory task queue for testing."""
-
     def __init__(self):
         self.tasks: list[Task] = []
         self._task_counter = 0
@@ -70,8 +59,6 @@ class TaskQueue:
 
 
 class LoopPreventionStore:
-    """In-memory loop prevention store for testing."""
-
     def __init__(self):
         self.posted_comments: set[str] = set()
 
@@ -86,8 +73,6 @@ class LoopPreventionStore:
 
 
 class WebhookHandler:
-    """Webhook handler for testing."""
-
     GITHUB_SUPPORTED_EVENTS = {
         "issues": ["opened", "edited", "labeled"],
         "issue_comment": ["created"],
@@ -229,10 +214,18 @@ class WebhookHandler:
             for lbl in fields.get("labels", [])
         ]
 
-        if "AI-Fix" not in labels:
+        assignee = fields.get("assignee") or {}
+        assignee_name = assignee.get("displayName", "").lower()
+        has_ai_label = "AI-Fix" in labels
+        has_ai_assignee = assignee_name == "ai-agent"
+
+        if not has_ai_label and not has_ai_assignee:
             return WebhookResponse(
                 status_code=200,
-                body={"action": "ignored", "reason": "missing AI-Fix label"},
+                body={
+                    "action": "ignored",
+                    "reason": "missing AI-Fix label or ai-agent assignee",
+                },
             )
 
         issue_key = issue.get("key", "")
@@ -304,7 +297,6 @@ class WebhookHandler:
 
 @pytest.fixture
 def task_queue():
-    """Task queue fixture."""
     queue = TaskQueue()
     yield queue
     queue.clear()
@@ -312,7 +304,6 @@ def task_queue():
 
 @pytest.fixture
 def loop_prevention():
-    """Loop prevention store fixture."""
     store = LoopPreventionStore()
     yield store
     store.clear()
@@ -320,12 +311,10 @@ def loop_prevention():
 
 @pytest.fixture
 def webhook_handler(task_queue, loop_prevention):
-    """Webhook handler fixture."""
     return WebhookHandler(task_queue, loop_prevention)
 
 
 def generate_github_signature(payload: dict, secret: str = "test-secret") -> str:
-    """Generate valid GitHub webhook signature."""
     payload_str = json.dumps(payload)
     return (
         "sha256="
@@ -338,7 +327,6 @@ def generate_github_signature(payload: dict, secret: str = "test-secret") -> str
 
 
 def generate_jira_signature(payload: dict, secret: str = "test-jira-secret") -> str:
-    """Generate valid Jira webhook signature."""
     payload_str = json.dumps(payload)
     return hmac.new(
         secret.encode(),
@@ -348,11 +336,9 @@ def generate_jira_signature(payload: dict, secret: str = "test-jira-secret") -> 
 
 
 class TestGitHubWebhookFlow:
-    """End-to-end tests for GitHub webhook flow."""
 
     @pytest.mark.asyncio
     async def test_github_issue_to_task_flow(self, webhook_handler, task_queue):
-        """Business requirement: GitHub issues become agent tasks."""
         payload = github_issue_opened_payload(
             repo="myorg/myrepo",
             issue_number=123,
@@ -376,7 +362,6 @@ class TestGitHubWebhookFlow:
 
     @pytest.mark.asyncio
     async def test_github_issue_comment_flow(self, webhook_handler, task_queue):
-        """Business requirement: Issue comments trigger response."""
         payload = github_issue_comment_payload(
             repo="myorg/myrepo",
             issue_number=123,
@@ -396,7 +381,6 @@ class TestGitHubWebhookFlow:
 
     @pytest.mark.asyncio
     async def test_github_pr_opened_flow(self, webhook_handler, task_queue):
-        """Business requirement: New PRs need review."""
         payload = github_pr_opened_payload(
             repo="myorg/myrepo",
             pr_number=42,
@@ -417,7 +401,6 @@ class TestGitHubWebhookFlow:
 
     @pytest.mark.asyncio
     async def test_github_invalid_signature_rejected(self, webhook_handler, task_queue):
-        """Business requirement: Invalid signatures rejected."""
         payload = github_issue_opened_payload(repo="myorg/myrepo")
         invalid_signature = "sha256=invalid"
 
@@ -430,7 +413,6 @@ class TestGitHubWebhookFlow:
 
     @pytest.mark.asyncio
     async def test_github_unsupported_event_ignored(self, webhook_handler, task_queue):
-        """Business requirement: Only relevant events processed."""
         payload = {"action": "deleted", "repository": {"full_name": "myorg/myrepo"}}
         signature = generate_github_signature(payload)
 
@@ -442,7 +424,6 @@ class TestGitHubWebhookFlow:
 
     @pytest.mark.asyncio
     async def test_github_bot_comment_ignored(self, webhook_handler, task_queue):
-        """Business requirement: Bot comments don't trigger tasks."""
         payload = {
             "action": "created",
             "comment": {
@@ -465,11 +446,9 @@ class TestGitHubWebhookFlow:
 
 
 class TestJiraWebhookFlow:
-    """End-to-end tests for Jira webhook flow."""
 
     @pytest.mark.asyncio
     async def test_jira_ai_fix_label_creates_task(self, webhook_handler, task_queue):
-        """Business requirement: AI-Fix labeled tickets processed."""
         payload = jira_issue_created_payload(
             issue_key="PROJ-123",
             summary="Fix authentication bug",
@@ -487,23 +466,22 @@ class TestJiraWebhookFlow:
 
     @pytest.mark.asyncio
     async def test_jira_without_ai_fix_ignored(self, webhook_handler, task_queue):
-        """Business requirement: Only AI-Fix labeled tickets processed."""
         payload = jira_issue_created_payload(
             issue_key="PROJ-123",
             labels=["bug", "urgent"],
         )
+        payload["issue"]["fields"]["assignee"] = None
         signature = generate_jira_signature(payload)
 
         response = await webhook_handler.handle_jira(payload, signature)
 
         assert response.status_code == 200
         assert response.body["action"] == "ignored"
-        assert response.body["reason"] == "missing AI-Fix label"
+        assert response.body["reason"] == "missing AI-Fix label or ai-agent assignee"
         assert len(task_queue.tasks) == 0
 
     @pytest.mark.asyncio
     async def test_jira_invalid_signature_rejected(self, webhook_handler, task_queue):
-        """Business requirement: Invalid signatures rejected."""
         payload = jira_issue_created_payload(labels=["AI-Fix"])
 
         response = await webhook_handler.handle_jira(payload, "invalid-signature")
@@ -513,7 +491,6 @@ class TestJiraWebhookFlow:
 
     @pytest.mark.asyncio
     async def test_jira_metadata_preserved(self, webhook_handler, task_queue):
-        """Business requirement: Jira context preserved in task."""
         payload = jira_issue_created_payload(
             issue_key="PROJ-456",
             summary="Implement new API endpoint",
@@ -530,13 +507,53 @@ class TestJiraWebhookFlow:
         assert "Implement new API endpoint" in task.input_message
         assert "REST endpoint" in task.input_message
 
+    @pytest.mark.asyncio
+    async def test_jira_assignee_ai_agent_creates_task(self, webhook_handler, task_queue):
+        payload = jira_issue_created_payload(
+            issue_key="PROJ-123",
+            summary="Fix bug",
+            labels=["bug"],
+        )
+        payload["issue"]["fields"]["assignee"] = {
+            "displayName": "ai-agent",
+            "emailAddress": "ai@example.com",
+        }
+        signature = generate_jira_signature(payload)
+
+        response = await webhook_handler.handle_jira(payload, signature)
+
+        assert response.status_code == 202
+        assert response.task_id is not None
+        task = await task_queue.get_task(response.task_id)
+        assert task is not None
+        assert task.source_metadata["provider"] == "jira"
+        assert task.source_metadata["issue_key"] == "PROJ-123"
+
+    @pytest.mark.asyncio
+    async def test_jira_assignee_plus_label_both_work(self, webhook_handler, task_queue):
+        payload = jira_issue_created_payload(
+            issue_key="PROJ-456",
+            summary="Both triggers",
+            labels=["AI-Fix"],
+        )
+        payload["issue"]["fields"]["assignee"] = {
+            "displayName": "ai-agent",
+            "emailAddress": "ai@example.com",
+        }
+        signature = generate_jira_signature(payload)
+
+        response = await webhook_handler.handle_jira(payload, signature)
+
+        assert response.status_code == 202
+        task = await task_queue.get_task(response.task_id)
+        assert task is not None
+        assert task.agent_type == "jira-code-plan"
+
 
 class TestSlackWebhookFlow:
-    """End-to-end tests for Slack webhook flow."""
 
     @pytest.mark.asyncio
     async def test_slack_app_mention_creates_task(self, webhook_handler, task_queue):
-        """Business requirement: @agent mentions trigger tasks."""
         payload = slack_app_mention_payload(
             text="<@U123BOT> please help debug this issue",
             user="U456USER",
@@ -553,7 +570,6 @@ class TestSlackWebhookFlow:
 
     @pytest.mark.asyncio
     async def test_slack_bot_message_ignored(self, webhook_handler, task_queue):
-        """Business requirement: Bot messages don't trigger tasks."""
         payload = {
             "event": {
                 "type": "message",
@@ -571,7 +587,6 @@ class TestSlackWebhookFlow:
 
     @pytest.mark.asyncio
     async def test_slack_thread_context_preserved(self, webhook_handler, task_queue):
-        """Business requirement: Thread context preserved for replies."""
         payload = slack_message_payload(
             text="Can you explain this code?",
             user="U456USER",
@@ -587,11 +602,9 @@ class TestSlackWebhookFlow:
 
 
 class TestLoopPreventionFlow:
-    """End-to-end tests for loop prevention."""
 
     @pytest.mark.asyncio
     async def test_agent_posted_comment_ignored(self, webhook_handler, task_queue, loop_prevention):
-        """Business requirement: Agent doesn't respond to its own comments."""
         await loop_prevention.mark_as_posted("456")
 
         payload = github_issue_comment_payload(
@@ -613,7 +626,6 @@ class TestLoopPreventionFlow:
 
     @pytest.mark.asyncio
     async def test_different_comment_processed(self, webhook_handler, task_queue, loop_prevention):
-        """Business requirement: Only exact comment match blocked."""
         await loop_prevention.mark_as_posted("comment-456")
 
         payload = github_issue_comment_payload(
@@ -634,11 +646,9 @@ class TestLoopPreventionFlow:
 
 
 class TestWebhookToTaskRouting:
-    """Tests for webhook to agent routing."""
 
     @pytest.mark.asyncio
     async def test_github_issue_routes_to_issue_handler(self, webhook_handler, task_queue):
-        """Business requirement: GitHub issues route to issue handler."""
         payload = github_issue_opened_payload(repo="myorg/myrepo")
         signature = generate_github_signature(payload)
 
@@ -649,7 +659,6 @@ class TestWebhookToTaskRouting:
 
     @pytest.mark.asyncio
     async def test_github_pr_routes_to_pr_review(self, webhook_handler, task_queue):
-        """Business requirement: GitHub PRs route to PR review."""
         payload = github_pr_opened_payload(repo="myorg/myrepo")
         signature = generate_github_signature(payload)
 
@@ -660,7 +669,6 @@ class TestWebhookToTaskRouting:
 
     @pytest.mark.asyncio
     async def test_jira_routes_to_code_plan(self, webhook_handler, task_queue):
-        """Business requirement: Jira tickets route to code plan."""
         payload = jira_issue_created_payload(labels=["AI-Fix"])
         signature = generate_jira_signature(payload)
 
@@ -671,10 +679,60 @@ class TestWebhookToTaskRouting:
 
     @pytest.mark.asyncio
     async def test_slack_routes_to_inquiry(self, webhook_handler, task_queue):
-        """Business requirement: Slack messages route to inquiry."""
         payload = slack_app_mention_payload(user="U123")
 
         await webhook_handler.handle_slack(payload)
 
         task = task_queue.tasks[0]
         assert task.agent_type == "slack-inquiry"
+
+
+class TestWebhookTaskShape:
+
+    @pytest.mark.asyncio
+    async def test_all_webhooks_produce_input_message(self, webhook_handler, task_queue):
+        github_payload = github_issue_opened_payload(
+            repo="myorg/myrepo",
+            title="Test issue",
+            body="Issue body",
+        )
+        github_sig = generate_github_signature(github_payload)
+        await webhook_handler.handle_github(github_payload, github_sig, event_type="issues")
+
+        jira_payload = jira_issue_created_payload(
+            issue_key="PROJ-1",
+            summary="Jira task",
+            labels=["AI-Fix"],
+        )
+        jira_sig = generate_jira_signature(jira_payload)
+        await webhook_handler.handle_jira(jira_payload, jira_sig)
+
+        slack_payload = slack_app_mention_payload(
+            text="Help me debug",
+            user="U123",
+        )
+        await webhook_handler.handle_slack(slack_payload)
+
+        assert len(task_queue.tasks) == 3
+        for task in task_queue.tasks:
+            assert task.input_message, f"Task from {task.source_metadata['provider']} has empty input_message"
+
+    @pytest.mark.asyncio
+    async def test_task_shape_matches_agent_engine_expectations(self, webhook_handler, task_queue):
+        github_payload = github_issue_opened_payload(repo="myorg/myrepo")
+        github_sig = generate_github_signature(github_payload)
+        await webhook_handler.handle_github(github_payload, github_sig, event_type="issues")
+
+        jira_payload = jira_issue_created_payload(labels=["AI-Fix"])
+        jira_sig = generate_jira_signature(jira_payload)
+        await webhook_handler.handle_jira(jira_payload, jira_sig)
+
+        slack_payload = slack_app_mention_payload(user="U123", text="hello")
+        await webhook_handler.handle_slack(slack_payload)
+
+        for task in task_queue.tasks:
+            assert task.source == "webhook"
+            assert "provider" in task.source_metadata
+            assert "event_type" in task.source_metadata
+            assert task.input_message
+            assert task.agent_type

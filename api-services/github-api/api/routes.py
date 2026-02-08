@@ -141,3 +141,12 @@ async def list_branches(
     client: Annotated[GitHubClient, Depends(get_github_client)] = None,
 ):
     return await client.list_branches(owner, repo, per_page, page)
+
+
+@router.get("/installation/repos")
+async def list_installation_repos(
+    per_page: Annotated[int, Query(ge=1, le=100)] = 100,
+    page: Annotated[int, Query(ge=1)] = 1,
+    client: Annotated[GitHubClient, Depends(get_github_client)] = None,
+):
+    return await client.list_installation_repos(per_page, page)

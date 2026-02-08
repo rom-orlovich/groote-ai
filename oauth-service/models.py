@@ -15,7 +15,6 @@ class Platform(str, enum.Enum):
     GITHUB = "github"
     JIRA = "jira"
     SLACK = "slack"
-    SENTRY = "sentry"
 
 
 class InstallationStatus(str, enum.Enum):

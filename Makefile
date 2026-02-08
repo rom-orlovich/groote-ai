@@ -1,4 +1,4 @@
-.PHONY: help init build up down logs test test-all test-api-gateway test-agent-engine test-dashboard test-logger test-services test-cov lint format clean health cli cli-down cli-logs cli-claude cli-cursor db-migrate db-upgrade knowledge-up knowledge-down knowledge-logs knowledge-build up-full fix-line-endings tunnel tunnel-zrok tunnel-setup
+.PHONY: help init build up down logs test test-all test-api-gateway test-agent-engine test-dashboard test-logger test-services test-cov lint format clean health cli cli-down cli-logs cli-claude cli-cursor cli-watcher db-migrate db-upgrade knowledge-up knowledge-down knowledge-logs knowledge-build up-full fix-line-endings tunnel tunnel-zrok tunnel-setup
 
 PROVIDER ?= claude
 SCALE ?= 1
@@ -59,6 +59,9 @@ cli-claude:
 
 cli-cursor:
 	@./scripts/cli/start.sh cursor $(SCALE)
+
+cli-watcher:
+	@uv run python scripts/cli/scaling-watcher.py
 
 # ============================================
 # TESTING

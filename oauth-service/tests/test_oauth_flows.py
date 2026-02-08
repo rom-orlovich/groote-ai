@@ -17,6 +17,7 @@ def mock_settings():
     settings.github_private_key = (
         "-----BEGIN RSA PRIVATE KEY-----\ntest\n-----END RSA PRIVATE KEY-----"
     )
+    settings.github_private_key_path = ""
     settings.slack_client_id = "slack-client-id"
     settings.slack_client_secret = "slack-client-secret"
     settings.jira_client_id = "jira-client-id"

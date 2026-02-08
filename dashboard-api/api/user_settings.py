@@ -1,5 +1,9 @@
+import os
+
 import httpx
+import structlog
 from core.database import get_session
+from core.database.redis_client import redis_client
 from core.user_settings.models import AgentScalingSettings, AIProviderSettings
 from core.user_settings.service import (
     delete_user_setting,
@@ -9,6 +13,8 @@ from core.user_settings.service import (
 )
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = structlog.get_logger()
 
 router = APIRouter(prefix="/api/user-settings", tags=["user-settings"])
 
@@ -147,7 +153,17 @@ async def save_agent_scaling(
         is_sensitive=False,
     )
 
-    return {"status": "saved", "agent_count": settings.agent_count}
+    provider_setting = await get_user_setting(
+        db, user_id, "ai_provider", "provider"
+    )
+    provider = provider_setting or os.environ.get("CLI_PROVIDER", "claude")
+
+    await redis_client.publish("cli:scaling", {
+        "provider": provider,
+        "agent_count": settings.agent_count,
+    })
+
+    return {"status": "scaling", "agent_count": settings.agent_count}
 
 
 @router.get("/agent-scaling")

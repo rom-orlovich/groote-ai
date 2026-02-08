@@ -1,5 +1,3 @@
-"""Slack webhook payload fixtures for testing."""
-
 from typing import Any
 
 
@@ -11,7 +9,6 @@ def slack_app_mention_payload(
     event_ts: str = "1706702400.000001",
     team: str = "T1234567890",
 ) -> dict[str, Any]:
-    """Create a Slack app mention event payload."""
     event: dict[str, Any] = {
         "type": "app_mention",
         "channel": channel,
@@ -53,7 +50,6 @@ def slack_message_payload(
     subtype: str | None = None,
     bot_id: str | None = None,
 ) -> dict[str, Any]:
-    """Create a Slack message event payload."""
     event: dict[str, Any] = {
         "type": "message",
         "channel": channel,
@@ -87,7 +83,6 @@ def slack_message_payload(
 def slack_url_verification_payload(
     challenge: str = "test-challenge-token",
 ) -> dict[str, Any]:
-    """Create a Slack URL verification payload."""
     return {
         "token": "verification-token",
         "challenge": challenge,
@@ -101,7 +96,6 @@ def slack_bot_message_payload(
     text: str = "Bot response message",
     thread_ts: str | None = None,
 ) -> dict[str, Any]:
-    """Create a Slack bot message payload (should be ignored)."""
     return slack_message_payload(
         channel=channel,
         user="",

@@ -392,6 +392,16 @@ class RedisClient:
             raise RuntimeError("Redis not connected")
         return await self._client.exists(key) > 0
 
+    # ==================== Pub/Sub ====================
+
+    async def publish(self, channel: str, data: dict[str, Any]) -> None:
+        if not self._client:
+            raise RuntimeError("Redis not connected")
+        message = json.dumps(data)
+        await self._client.publish(channel, message)
+        await self._client.lpush(f"queue:{channel}", message)
+        logger.debug("redis_message_published", channel=channel)
+
     # ==================== Task Event Publishing ====================
 
     async def publish_task_event(
