@@ -10,7 +10,12 @@ class Settings(BaseSettings):
     port: int = 8010
     base_url: str = "http://localhost:8010"
     frontend_url: str = "http://localhost:3005"
+    public_url: str = ""
     dashboard_api_url: str = "http://dashboard-api:5000"
+
+    @property
+    def webhook_base_url(self) -> str:
+        return self.public_url or self.frontend_url
 
     database_url: str = "postgresql+asyncpg://agent:agent@localhost:5432/agent_system"
 

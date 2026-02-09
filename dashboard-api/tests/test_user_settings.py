@@ -63,9 +63,7 @@ async def test_save_agent_scaling(async_client, db_session):
     token = "Bearer test-user-123"
     settings = AgentScalingSettings(agent_count=5)
 
-    with patch(
-        "api.user_settings.redis_client.publish", new_callable=AsyncMock
-    ) as mock_publish:
+    with patch("api.user_settings.redis_client.publish", new_callable=AsyncMock) as mock_publish:
         response = await async_client.post(
             "/api/user-settings/agent-scaling",
             json=settings.model_dump(),
@@ -124,11 +122,10 @@ async def test_save_agent_scaling_uses_saved_provider(async_client, mock_db_sess
     token = "Bearer test-user-123"
     settings = AgentScalingSettings(agent_count=3)
 
-    with patch(
-        "api.user_settings.redis_client.publish", new_callable=AsyncMock
-    ) as mock_publish, patch(
-        "api.user_settings.get_user_setting", new_callable=AsyncMock
-    ) as mock_get:
+    with (
+        patch("api.user_settings.redis_client.publish", new_callable=AsyncMock) as mock_publish,
+        patch("api.user_settings.get_user_setting", new_callable=AsyncMock) as mock_get,
+    ):
         mock_get.side_effect = lambda db, uid, cat, key: (
             "cursor" if cat == "ai_provider" and key == "provider" else None
         )
@@ -146,17 +143,15 @@ async def test_save_agent_scaling_uses_saved_provider(async_client, mock_db_sess
 
 
 @pytest.mark.asyncio
-async def test_save_agent_scaling_falls_back_to_env_provider(
-    async_client, mock_db_session
-):
+async def test_save_agent_scaling_falls_back_to_env_provider(async_client, mock_db_session):
     token = "Bearer test-user-123"
     settings = AgentScalingSettings(agent_count=2)
 
-    with patch(
-        "api.user_settings.redis_client.publish", new_callable=AsyncMock
-    ) as mock_publish, patch(
-        "api.user_settings.get_user_setting", new_callable=AsyncMock, return_value=None
-    ), patch.dict("os.environ", {"CLI_PROVIDER": "cursor"}):
+    with (
+        patch("api.user_settings.redis_client.publish", new_callable=AsyncMock) as mock_publish,
+        patch("api.user_settings.get_user_setting", new_callable=AsyncMock, return_value=None),
+        patch.dict("os.environ", {"CLI_PROVIDER": "cursor"}),
+    ):
         response = await async_client.post(
             "/api/user-settings/agent-scaling",
             json=settings.model_dump(),

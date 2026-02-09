@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     knowledge_graph_url: str = "http://knowledge-graph:4000"
     agent_engine_url: str = "http://agent-engine:8080"
+    github_api_url: str = "http://github-api:3001"
+    jira_api_url: str = "http://jira-api:3002"
+    slack_api_url: str = "http://slack-api:3003"
+    slack_notification_channel: str = ""
 
     @property
     def redis_url(self) -> str:

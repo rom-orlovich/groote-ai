@@ -1,0 +1,43 @@
+name: slack
+description: Slack webhook for messages and app mentions
+endpoint: /webhooks/slack
+source: slack
+agent_trigger:
+  prefix: "@agent"
+  aliases: ["@claude", "@bot", "@ai-agent"]
+default_command: analyze
+security:
+  requires_signature: true
+  signature_header: "X-Slack-Signature"
+  secret_env_var: "SLACK_WEBHOOK_SECRET"
+commands:
+  - name: analyze
+    aliases: [analysis]
+    target_agent: brain
+    requires_approval: false
+    template_file: prompts/analyze.md
+  - name: execute
+    aliases: [do, run]
+    target_agent: executor
+    requires_approval: true
+    template_file: prompts/execute.md
+  - name: jira
+    aliases: [ticket, query-jira]
+    target_agent: slack-inquiry
+    requires_approval: false
+    template_file: prompts/jira.md
+  - name: discover
+    aliases: [code, explore, find-code]
+    target_agent: slack-inquiry
+    requires_approval: false
+    template_file: prompts/discover.md
+  - name: status
+    aliases: [check, task-status]
+    target_agent: brain
+    requires_approval: false
+    template_file: prompts/status.md
+  - name: help
+    aliases: [commands, what-can-you-do]
+    target_agent: brain
+    requires_approval: false
+    template_file: prompts/help.md

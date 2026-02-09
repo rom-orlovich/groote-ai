@@ -70,7 +70,11 @@ def main() -> None:
                     handle_scaling_message(data)
 
         except redis.ConnectionError:
-            print("[watcher] Redis connection lost. Reconnecting in 5s...", file=sys.stderr, flush=True)
+            print(
+                "[watcher] Redis connection lost. Reconnecting in 5s...",
+                file=sys.stderr,
+                flush=True,
+            )
             time.sleep(5)
         except KeyboardInterrupt:
             print("\n[watcher] Shutting down.", flush=True)

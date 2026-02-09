@@ -42,6 +42,11 @@ class CreatePRReviewCommentRequest(BaseModel):
     line: int
 
 
+class AddReactionRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+    content: str
+
+
 @router.get("/repos/{owner}/{repo}")
 async def get_repository(
     owner: str,
@@ -80,6 +85,17 @@ async def create_issue_comment(
     client: Annotated[GitHubClient, Depends(get_github_client)],
 ):
     return await client.create_issue_comment(owner, repo, issue_number, request.body)
+
+
+@router.post("/repos/{owner}/{repo}/issues/comments/{comment_id}/reactions")
+async def add_reaction(
+    owner: str,
+    repo: str,
+    comment_id: int,
+    request: AddReactionRequest,
+    client: Annotated[GitHubClient, Depends(get_github_client)],
+):
+    return await client.add_reaction(owner, repo, comment_id, request.content)
 
 
 @router.get("/repos/{owner}/{repo}/pulls/{pr_number}")

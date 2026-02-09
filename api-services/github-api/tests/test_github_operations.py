@@ -142,9 +142,27 @@ class MockGitHubClient:
         return {
             "total_count": 3,
             "repositories": [
-                {"full_name": "org/repo1", "description": "First repo", "language": "Python", "private": False, "stargazers_count": 10},
-                {"full_name": "org/repo2", "description": "Second repo", "language": "TypeScript", "private": True, "stargazers_count": 5},
-                {"full_name": "org/repo3", "description": None, "language": None, "private": False, "stargazers_count": 0},
+                {
+                    "full_name": "org/repo1",
+                    "description": "First repo",
+                    "language": "Python",
+                    "private": False,
+                    "stargazers_count": 10,
+                },
+                {
+                    "full_name": "org/repo2",
+                    "description": "Second repo",
+                    "language": "TypeScript",
+                    "private": True,
+                    "stargazers_count": 5,
+                },
+                {
+                    "full_name": "org/repo3",
+                    "description": None,
+                    "language": None,
+                    "private": False,
+                    "stargazers_count": 0,
+                },
             ][:per_page],
         }
 

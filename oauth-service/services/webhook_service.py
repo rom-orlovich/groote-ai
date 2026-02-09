@@ -20,7 +20,7 @@ class WebhookRegistrationResult:
 class WebhookRegistrationService:
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.base_webhook_url = settings.frontend_url
+        self.base_webhook_url = settings.webhook_base_url
 
     async def configure_github_app_webhook(self) -> WebhookRegistrationResult:
         webhook_url = f"{self.base_webhook_url}/webhooks/github"

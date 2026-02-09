@@ -10,7 +10,6 @@ from config import get_settings
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from services.knowledge import KnowledgeService, NoopKnowledgeService
-from services.response_publisher import ResponsePublisher
 
 logger = structlog.get_logger(__name__)
 
@@ -22,13 +21,11 @@ class TaskWorker:
         self,
         settings: Any,
         knowledge_service: KnowledgeService | NoopKnowledgeService,
-        response_publisher: ResponsePublisher | None = None,
     ):
         self._settings = settings
         self._redis: redis.Redis | None = None
         self._running = False
         self._knowledge = knowledge_service
-        self._response_publisher = response_publisher
 
     async def start(self) -> None:
         self._redis = redis.from_url(self._settings.redis_url)
@@ -89,13 +86,8 @@ class TaskWorker:
             if conversation_id and result.get("output"):
                 await self._post_assistant_message(conversation_id, result["output"], task_id)
 
-            source = task.get("source")
-            if (
-                source in ("github", "jira", "slack")
-                and self._response_publisher
-                and result.get("output")
-            ):
-                await self._response_publisher.post_response(task, result)
+            if result.get("output"):
+                await self._post_platform_response(task, result)
 
             logger.info("task_completed", task_id=task_id)
         except Exception as e:
@@ -110,6 +102,7 @@ class TaskWorker:
                         "error": str(e),
                     },
                 )
+                await self._notify_platform_failure(task, str(e))
 
     async def _execute_task(self, task: dict[str, Any]) -> dict[str, Any]:
         from pathlib import Path
@@ -169,6 +162,58 @@ class TaskWorker:
                 conversation_id=conversation_id,
                 error=str(e),
             )
+
+    async def _post_platform_response(self, task: dict, result: dict) -> None:
+        from services import github_responder, jira_responder, slack_responder
+        from services.slack_notifier import notify_task_completed
+
+        source = task.get("source")
+        output = result.get("output", "")
+        success = result.get("success", True)
+        task_id = task.get("task_id", "unknown")
+        settings = self._settings
+
+        if source == "github":
+            await github_responder.post_completion(settings.github_api_url, task, output, success)
+        elif source == "jira":
+            await jira_responder.post_completion(settings.jira_api_url, task, output, success)
+        elif source == "slack":
+            await slack_responder.post_completion(settings.slack_api_url, task, output, success)
+        else:
+            return
+
+        await notify_task_completed(
+            settings.slack_api_url,
+            settings.slack_notification_channel,
+            source,
+            task_id,
+            output[:200],
+        )
+
+    async def _notify_platform_failure(self, task: dict, error: str) -> None:
+        from services import github_responder, jira_responder, slack_responder
+        from services.slack_notifier import notify_task_failed
+
+        source = task.get("source")
+        task_id = task.get("task_id", "unknown")
+        settings = self._settings
+
+        if source == "github":
+            await github_responder.post_completion(settings.github_api_url, task, error, False)
+        elif source == "jira":
+            await jira_responder.post_completion(settings.jira_api_url, task, error, False)
+        elif source == "slack":
+            await slack_responder.post_completion(settings.slack_api_url, task, error, False)
+        else:
+            return
+
+        await notify_task_failed(
+            settings.slack_api_url,
+            settings.slack_notification_channel,
+            source or "unknown",
+            task_id,
+            error,
+        )
 
     async def _update_task_status(
         self, task_id: str, status: str, result: dict[str, Any] | None = None
@@ -231,13 +276,7 @@ async def lifespan(app: FastAPI):
         knowledge_service = NoopKnowledgeService()
         logger.info("knowledge_services_disabled")
 
-    response_publisher = ResponsePublisher(
-        github_api_url=settings.github_api_url,
-        jira_api_url=settings.jira_api_url,
-        slack_api_url=settings.slack_api_url,
-    )
-
-    worker = TaskWorker(settings, knowledge_service, response_publisher)
+    worker = TaskWorker(settings, knowledge_service)
 
     worker_task = asyncio.create_task(worker.start())
 

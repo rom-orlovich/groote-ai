@@ -7,8 +7,10 @@ from config import get_settings
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from services.event_publisher import EventPublisher
+from services.slack_notifier import notify_task_failed, notify_task_started
 
 from .events import extract_task_info, should_process_event
+from .response import send_error_response, send_immediate_response
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/webhooks/jira", tags=["jira-webhook"])
@@ -24,13 +26,15 @@ async def handle_jira_webhook(request: Request):
     data = json.loads(payload)
     webhook_event = data.get("webhookEvent", "")
     issue = data.get("issue", {})
+    issue_key = issue.get("key", "")
+    settings = get_settings()
     publisher = _get_publisher(request)
     webhook_event_id = EventPublisher.generate_webhook_event_id() if publisher else ""
 
     logger.info(
         "jira_webhook_received",
         event_type=webhook_event,
-        issue_key=issue.get("key"),
+        issue_key=issue_key,
     )
 
     if publisher:
@@ -45,8 +49,6 @@ async def handle_jira_webhook(request: Request):
             source="jira",
             signature_valid=True,
         )
-
-    settings = get_settings()
 
     if not should_process_event(webhook_event, issue, ai_agent_name=settings.jira_ai_agent_name):
         logger.debug(
@@ -63,6 +65,11 @@ async def handle_jira_webhook(request: Request):
     task_id = str(uuid.uuid4())
     task_info["task_id"] = task_id
 
+    try:
+        await send_immediate_response(settings.jira_api_url, issue_key)
+    except Exception as e:
+        logger.warning("jira_immediate_response_failed", error=str(e))
+
     if publisher:
         await publisher.publish_webhook_matched(
             webhook_event_id=webhook_event_id,
@@ -71,9 +78,21 @@ async def handle_jira_webhook(request: Request):
             matched_handler="jira-code-plan",
         )
 
-    redis_client = redis.from_url(settings.redis_url)
-    await redis_client.lpush("agent:tasks", json.dumps(task_info))
-    await redis_client.aclose()
+    try:
+        redis_client = redis.from_url(settings.redis_url)
+        await redis_client.lpush("agent:tasks", json.dumps(task_info))
+        await redis_client.aclose()
+    except Exception as e:
+        logger.error("jira_task_queue_failed", error=str(e), task_id=task_id)
+        await send_error_response(settings.jira_api_url, issue_key, str(e))
+        await notify_task_failed(
+            settings.slack_api_url,
+            settings.slack_notification_channel,
+            "jira",
+            task_id,
+            str(e),
+        )
+        return JSONResponse(status_code=500, content={"status": "error", "error": str(e)})
 
     if publisher:
         await publisher.publish_webhook_task_created(
@@ -84,7 +103,15 @@ async def handle_jira_webhook(request: Request):
             input_message=task_info.get("prompt", ""),
         )
 
-    logger.info("jira_task_queued", task_id=task_id, issue_key=issue.get("key"))
+    await notify_task_started(
+        settings.slack_api_url,
+        settings.slack_notification_channel,
+        "jira",
+        task_id,
+        f"{issue_key} {webhook_event}",
+    )
+
+    logger.info("jira_task_queued", task_id=task_id, issue_key=issue_key)
 
     return JSONResponse(
         status_code=202,

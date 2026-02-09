@@ -1,17 +1,5 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-from services.response_publisher import ResponsePublisher
-
-
-@pytest.fixture
-def publisher():
-    return ResponsePublisher(
-        github_api_url="http://github-api:3001",
-        jira_api_url="http://jira-api:3002",
-        slack_api_url="http://slack-api:3003",
-    )
-
 
 def _github_task(
     event_type: str = "issues",
@@ -57,146 +45,239 @@ def _slack_task(
     }
 
 
-def _success_result(output: str = "Here is the fix...") -> dict:
-    return {"output": output, "success": True}
+def _mock_http_client():
+    mock_response = MagicMock()
+    mock_response.raise_for_status = MagicMock()
+    mock_client = AsyncMock()
+    mock_client.post = AsyncMock(return_value=mock_response)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=False)
+    return mock_client
 
 
-class TestGitHubResponsePosting:
-    @patch("services.response_publisher.httpx.AsyncClient")
-    async def test_github_issue_comment_posted(self, mock_client_cls, publisher):
-        mock_response = MagicMock()
-        mock_response.raise_for_status = MagicMock()
-        mock_client = AsyncMock()
-        mock_client.post = AsyncMock(return_value=mock_response)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
+class TestGitHubCompletionPosting:
+    @patch("services.github_responder.httpx.AsyncClient")
+    async def test_posts_comment_to_correct_issue(self, mock_cls):
+        from services.github_responder import post_completion
 
-        success = await publisher.post_response(_github_task(), _success_result())
+        mock_cls.return_value = _mock_http_client()
+        task = _github_task()
 
-        assert success is True
-        mock_client.post.assert_called_once()
-        url = mock_client.post.call_args[0][0]
+        result = await post_completion("http://github-api:3001", task, "Fixed!", True)
+
+        assert result is True
+        url = mock_cls.return_value.__aenter__.return_value.post.call_args[0][0]
         assert "myorg/myrepo" in url
         assert "/issues/123/comments" in url
 
-    @patch("services.response_publisher.httpx.AsyncClient")
-    async def test_github_pr_comment_posted(self, mock_client_cls, publisher):
-        mock_response = MagicMock()
-        mock_response.raise_for_status = MagicMock()
-        mock_client = AsyncMock()
-        mock_client.post = AsyncMock(return_value=mock_response)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
+    @patch("services.github_responder.httpx.AsyncClient")
+    async def test_posts_comment_to_pr(self, mock_cls):
+        from services.github_responder import post_completion
 
+        mock_cls.return_value = _mock_http_client()
         task = _github_task(event_type="pull_request", pr_number=42)
-        success = await publisher.post_response(task, _success_result())
 
-        assert success is True
-        url = mock_client.post.call_args[0][0]
+        result = await post_completion("http://github-api:3001", task, "Reviewed!", True)
+
+        assert result is True
+        url = mock_cls.return_value.__aenter__.return_value.post.call_args[0][0]
         assert "/issues/42/comments" in url
 
-    async def test_github_missing_repo_returns_false(self, publisher):
+    async def test_missing_repo_returns_false(self):
+        from services.github_responder import post_completion
+
         task = {"task_id": "t1", "source": "github", "event_type": "issues"}
+        result = await post_completion("http://github-api:3001", task, "output", True)
+        assert result is False
 
-        success = await publisher.post_response(task, _success_result())
+    async def test_missing_issue_number_returns_false(self):
+        from services.github_responder import post_completion
 
-        assert success is False
+        task = {
+            "task_id": "t1",
+            "source": "github",
+            "event_type": "issues",
+            "repository": {"full_name": "myorg/myrepo"},
+        }
+        result = await post_completion("http://github-api:3001", task, "output", True)
+        assert result is False
+
+    @patch("services.github_responder.httpx.AsyncClient")
+    async def test_failure_prefix_added_on_error(self, mock_cls):
+        from services.github_responder import post_completion
+
+        mock_cls.return_value = _mock_http_client()
+        task = _github_task()
+
+        await post_completion("http://github-api:3001", task, "Something broke", False)
+
+        body = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]["body"]
+        assert body.startswith("Task failed.")
+
+    @patch("services.github_responder.httpx.AsyncClient")
+    async def test_long_output_truncated(self, mock_cls):
+        from services.github_responder import post_completion
+
+        mock_cls.return_value = _mock_http_client()
+        task = _github_task()
+
+        await post_completion("http://github-api:3001", task, "x" * 10000, True)
+
+        body = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]["body"]
+        assert len(body) <= 8001
 
 
-class TestJiraResponsePosting:
-    @patch("services.response_publisher.httpx.AsyncClient")
-    async def test_jira_comment_posted(self, mock_client_cls, publisher):
-        mock_response = MagicMock()
-        mock_response.raise_for_status = MagicMock()
-        mock_client = AsyncMock()
-        mock_client.post = AsyncMock(return_value=mock_response)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
+class TestJiraCompletionPosting:
+    @patch("services.jira_responder.httpx.AsyncClient")
+    async def test_posts_comment_to_correct_issue(self, mock_cls):
+        from services.jira_responder import post_completion
 
-        success = await publisher.post_response(_jira_task(), _success_result())
+        mock_cls.return_value = _mock_http_client()
+        task = _jira_task()
 
-        assert success is True
-        url = mock_client.post.call_args[0][0]
+        result = await post_completion("http://jira-api:3002", task, "Fixed!", True)
+
+        assert result is True
+        url = mock_cls.return_value.__aenter__.return_value.post.call_args[0][0]
         assert "/issues/PROJ-123/comments" in url
 
-    async def test_jira_missing_key_returns_false(self, publisher):
+    async def test_missing_issue_key_returns_false(self):
+        from services.jira_responder import post_completion
+
         task = {"task_id": "t1", "source": "jira", "event_type": "jira:issue_created"}
-
-        success = await publisher.post_response(task, _success_result())
-
-        assert success is False
+        result = await post_completion("http://jira-api:3002", task, "output", True)
+        assert result is False
 
 
-class TestSlackResponsePosting:
-    @patch("services.response_publisher.httpx.AsyncClient")
-    async def test_slack_reply_posted(self, mock_client_cls, publisher):
-        mock_response = MagicMock()
-        mock_response.raise_for_status = MagicMock()
-        mock_client = AsyncMock()
-        mock_client.post = AsyncMock(return_value=mock_response)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
+class TestSlackCompletionPosting:
+    @patch("services.slack_responder.httpx.AsyncClient")
+    async def test_posts_threaded_reply(self, mock_cls):
+        from services.slack_responder import post_completion
 
-        success = await publisher.post_response(_slack_task(), _success_result())
+        mock_cls.return_value = _mock_http_client()
+        task = _slack_task()
 
-        assert success is True
-        url = mock_client.post.call_args[0][0]
-        assert "/chat/postMessage" in url
-        payload = mock_client.post.call_args[1]["json"]
+        result = await post_completion("http://slack-api:3003", task, "Done!", True)
+
+        assert result is True
+        payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
         assert payload["channel"] == "C123CHANNEL"
         assert payload["thread_ts"] == "1234567890.123456"
 
-    @patch("services.response_publisher.httpx.AsyncClient")
-    async def test_slack_without_thread_ts(self, mock_client_cls, publisher):
-        mock_response = MagicMock()
-        mock_response.raise_for_status = MagicMock()
-        mock_client = AsyncMock()
-        mock_client.post = AsyncMock(return_value=mock_response)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
+    @patch("services.slack_responder.httpx.AsyncClient")
+    async def test_posts_without_thread_ts(self, mock_cls):
+        from services.slack_responder import post_completion
 
+        mock_cls.return_value = _mock_http_client()
         task = _slack_task()
         del task["thread_ts"]
 
-        success = await publisher.post_response(task, _success_result())
+        result = await post_completion("http://slack-api:3003", task, "Done!", True)
 
-        assert success is True
-        payload = mock_client.post.call_args[1]["json"]
+        assert result is True
+        payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
         assert "thread_ts" not in payload
 
-    async def test_slack_missing_channel_returns_false(self, publisher):
+    async def test_missing_channel_returns_false(self):
+        from services.slack_responder import post_completion
+
         task = {"task_id": "t1", "source": "slack", "event_type": "app_mention"}
+        result = await post_completion("http://slack-api:3003", task, "output", True)
+        assert result is False
 
-        success = await publisher.post_response(task, _success_result())
+    @patch("services.slack_responder.httpx.AsyncClient")
+    async def test_long_output_truncated_at_4000(self, mock_cls):
+        from services.slack_responder import post_completion
 
-        assert success is False
+        mock_cls.return_value = _mock_http_client()
+        task = _slack_task()
+
+        await post_completion("http://slack-api:3003", task, "x" * 5000, True)
+
+        payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
+        assert len(payload["text"]) <= 4001
 
 
-class TestUnknownPlatform:
-    async def test_unknown_source_returns_false(self, publisher):
-        task = {"task_id": "t1", "source": "unknown_platform"}
+class TestSlackNotifier:
+    @patch("services.slack_notifier.httpx.AsyncClient")
+    async def test_notify_completed_sends_message(self, mock_cls):
+        from services.slack_notifier import notify_task_completed
 
-        success = await publisher.post_response(task, _success_result())
+        mock_cls.return_value = _mock_http_client()
 
-        assert success is False
+        result = await notify_task_completed(
+            "http://slack-api:3003", "#notifications", "github", "task-001", "Fixed the bug"
+        )
+
+        assert result is True
+        payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
+        assert payload["channel"] == "#notifications"
+        assert "Task Completed" in payload["text"]
+        assert "github" in payload["text"]
+
+    @patch("services.slack_notifier.httpx.AsyncClient")
+    async def test_notify_failed_sends_error(self, mock_cls):
+        from services.slack_notifier import notify_task_failed
+
+        mock_cls.return_value = _mock_http_client()
+
+        result = await notify_task_failed(
+            "http://slack-api:3003", "#notifications", "jira", "task-002", "Redis down"
+        )
+
+        assert result is True
+        payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
+        assert "Task Failed" in payload["text"]
+        assert "Redis down" in payload["text"]
+
+    async def test_empty_channel_skips_notification(self):
+        from services.slack_notifier import notify_task_completed
+
+        result = await notify_task_completed(
+            "http://slack-api:3003", "", "github", "task-001", "Done"
+        )
+        assert result is False
 
 
-class TestResponsePublisherErrorHandling:
-    @patch("services.response_publisher.httpx.AsyncClient")
-    async def test_http_error_returns_false(self, mock_client_cls, publisher):
+class TestHttpErrorHandling:
+    @patch("services.github_responder.httpx.AsyncClient")
+    async def test_github_http_error_returns_false(self, mock_cls):
         import httpx
+        from services.github_responder import post_completion
 
         mock_client = AsyncMock()
         mock_client.post = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
+        mock_cls.return_value = mock_client
 
-        success = await publisher.post_response(_github_task(), _success_result())
+        result = await post_completion("http://github-api:3001", _github_task(), "out", True)
+        assert result is False
 
-        assert success is False
+    @patch("services.jira_responder.httpx.AsyncClient")
+    async def test_jira_http_error_returns_false(self, mock_cls):
+        import httpx
+        from services.jira_responder import post_completion
+
+        mock_client = AsyncMock()
+        mock_client.post = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_cls.return_value = mock_client
+
+        result = await post_completion("http://jira-api:3002", _jira_task(), "out", True)
+        assert result is False
+
+    @patch("services.slack_responder.httpx.AsyncClient")
+    async def test_slack_http_error_returns_false(self, mock_cls):
+        import httpx
+        from services.slack_responder import post_completion
+
+        mock_client = AsyncMock()
+        mock_client.post = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_cls.return_value = mock_client
+
+        result = await post_completion("http://slack-api:3003", _slack_task(), "out", True)
+        assert result is False

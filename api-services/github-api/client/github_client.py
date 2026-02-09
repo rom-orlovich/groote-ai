@@ -72,6 +72,17 @@ class GitHubClient:
         response.raise_for_status()
         return response.json()
 
+    async def add_reaction(
+        self, owner: str, repo: str, comment_id: int, reaction: str
+    ) -> dict[str, Any]:
+        client = await self._get_client()
+        response = await client.post(
+            f"/repos/{owner}/{repo}/issues/comments/{comment_id}/reactions",
+            json={"content": reaction},
+        )
+        response.raise_for_status()
+        return response.json()
+
     async def get_pull_request(self, owner: str, repo: str, pr_number: int) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.get(f"/repos/{owner}/{repo}/pulls/{pr_number}")

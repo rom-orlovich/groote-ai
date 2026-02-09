@@ -42,7 +42,9 @@ class GitHubOAuthProvider(OAuthProvider):
                     logger.info("github_private_key_loaded_from_file")
                     return key
             except FileNotFoundError:
-                logger.warning("github_private_key_file_not_found", path=settings.github_private_key_path)
+                logger.warning(
+                    "github_private_key_file_not_found", path=settings.github_private_key_path
+                )
 
         inline_key = settings.github_private_key.replace("\\n", "\n")
         if inline_key.startswith("-----BEGIN"):

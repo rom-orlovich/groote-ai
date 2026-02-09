@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     github_api_url: str = "http://github-api:3001"
     jira_api_url: str = "http://jira-api:3002"
     slack_api_url: str = "http://slack-api:3003"
+    slack_notification_channel: str = ""
 
     knowledge_services_enabled: bool = False
     knowledge_graph_url: str = "http://gkg-service:4000"
