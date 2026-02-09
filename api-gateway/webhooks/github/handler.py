@@ -85,7 +85,7 @@ async def handle_github_webhook(
             content={"status": "acknowledged", "event": "installation", "action": action},
         )
 
-    if not should_process_event(x_github_event, action):
+    if not should_process_event(x_github_event, action, payload=data):
         logger.debug("github_event_skipped", event_type=x_github_event, action=action)
         return JSONResponse(
             status_code=200,

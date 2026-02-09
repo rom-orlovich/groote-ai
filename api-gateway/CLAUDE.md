@@ -65,6 +65,7 @@ DATABASE_URL=postgresql+asyncpg://agent:agent@postgres:5432/agent_system
 GITHUB_WEBHOOK_SECRET=xxx
 JIRA_WEBHOOK_SECRET=xxx
 SLACK_WEBHOOK_SECRET=xxx
+JIRA_AI_AGENT_NAME=ai-agent
 ```
 
 ## Development Rules

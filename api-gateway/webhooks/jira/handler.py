@@ -15,6 +15,8 @@ from .response import send_error_response, send_immediate_response
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/webhooks/jira", tags=["jira-webhook"])
 
+DEDUP_TTL_SECONDS = 60
+
 
 def _get_publisher(request: Request) -> EventPublisher | None:
     return getattr(request.app.state, "event_publisher", None)
@@ -50,16 +52,37 @@ async def handle_jira_webhook(request: Request):
             signature_valid=True,
         )
 
-    if not should_process_event(webhook_event, issue, ai_agent_name=settings.jira_ai_agent_name):
+    comment = data.get("comment")
+    if not should_process_event(
+        webhook_event, issue, ai_agent_name=settings.jira_ai_agent_name, comment_data=comment
+    ):
         logger.debug(
             "jira_event_skipped",
             event_type=webhook_event,
-            reason="Missing AI-Fix label or ai-agent assignee, or unsupported event",
+            reason="Bot comment, missing AI-Fix label, or unsupported event",
         )
         return JSONResponse(
             status_code=200,
             content={"status": "skipped", "reason": "Event not processed"},
         )
+
+    dedup_key = f"jira:dedup:{issue_key}:{webhook_event}"
+    try:
+        redis_client = redis.from_url(settings.redis_url)
+        already_processing = await redis_client.set(dedup_key, "1", nx=True, ex=DEDUP_TTL_SECONDS)
+        await redis_client.aclose()
+        if not already_processing:
+            logger.debug(
+                "jira_event_deduplicated",
+                issue_key=issue_key,
+                event_type=webhook_event,
+            )
+            return JSONResponse(
+                status_code=200,
+                content={"status": "skipped", "reason": "Duplicate event within cooldown"},
+            )
+    except Exception as e:
+        logger.warning("jira_dedup_check_failed", error=str(e))
 
     task_info = extract_task_info(webhook_event, data)
     task_id = str(uuid.uuid4())

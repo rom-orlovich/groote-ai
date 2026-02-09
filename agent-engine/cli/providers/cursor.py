@@ -35,6 +35,7 @@ class CursorCLIRunner:
             cwd=str(working_dir),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            limit=1024 * 1024,
             env={
                 **os.environ,
                 "CURSOR_TASK_ID": task_id,

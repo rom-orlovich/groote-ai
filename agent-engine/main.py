@@ -118,7 +118,9 @@ class TaskWorker:
 
         from cli.factory import run_cli
 
-        prompt = task.get("prompt", "")
+        from services.task_routing import build_prompt
+
+        prompt = build_prompt(task)
         repo_path = task.get("repo_path", "/app")
         task_id = task.get("task_id", "unknown")
 

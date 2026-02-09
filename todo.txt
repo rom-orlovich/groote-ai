@@ -1,4 +1,36 @@
-check the converasiton work propeorply
-check the intergration work with all th e services ad platrfrom also for the knowlage layer adn the api
-checkthe flow of the webhooks work properly
-check everything the knowladte based is  ingrgrate with differnte serives
+1. Build flow_id from task data
+2. Get or create conversation via conversation_bridge
+3. Register task in dashboard-api via POST /api/tasks
+4. Post system message with webhook context
+5. Fetch last 5 messages from conversation for context
+6. Build enriched prompt with context + platform instructions
+
+ה5 האחרונות עבור הפרומפט הודעות זה רק שמדברים איתו דרך השיחה בצאט בדשברוד לכל בכל פעם שנפתח טסקט
+חייב להיות stream של התשובה של המודל עבור הלוגים.
+שלא יגביל
+
+
+שלא יגביל את האאוטפוט "result": result.get("output", "")[:5000],
+
+שיקח דוגמא מפלו של פרוייקט שעובד /Users/romo/projects/agents-prod/claude-code-agent/workers/task_worker.py
+
+/Users/romo/projects/agents-prod/claude-code-agent/.log
+
+/Users/romo/projects/agents-prod/claude-code-agent/core/task_logger.py
+
+שיקח דוגמא ויכין תוכנית מלאה לפי הפרוייקט פה
+
+מה ששונה שהפרוייקט של הgroot ai מחולק למיקרו סרווסים
+
+ופה אני רוצה שיהיה יותר אחריות לcli שיפרסם בעצמו את התושבות חזרה למקורות הושנים
+במקום שיהיה באמצעות פונקיות
+
+למעט הפוקנציות המידיות או התהתראות או הכישלון
+
+צריך גם לבדוק שהapi של השירותים הושנים גם יודעים
+לקחת את המידע מהאינטגרציה שעישנו במאצעות oauth
+
+והcli ידע להתחבר לmcp.json
+שמתחבר לapן של המקורות האלו
+
+

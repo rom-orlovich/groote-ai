@@ -9,13 +9,48 @@ SUPPORTED_EVENTS = [
 AI_FIX_LABEL = "AI-Fix"
 DEFAULT_AI_AGENT_NAME = "ai-agent"
 
+BOT_COMMENT_MARKERS = [
+    "Agent is analyzing this issue",
+    "Failed to process:",
+]
+
+
+def is_bot_comment(
+    webhook_event: str,
+    comment_data: dict[str, Any],
+    ai_agent_name: str = DEFAULT_AI_AGENT_NAME,
+) -> bool:
+    if webhook_event != "comment_created":
+        return False
+
+    author = comment_data.get("author", {})
+    author_display = author.get("displayName", "")
+    if author_display.lower() == ai_agent_name.lower():
+        return True
+
+    author_type = author.get("accountType", "")
+    if author_type == "app":
+        return True
+
+    body = comment_data.get("body", "")
+    if isinstance(body, str):
+        for marker in BOT_COMMENT_MARKERS:
+            if body.startswith(marker):
+                return True
+
+    return False
+
 
 def should_process_event(
     webhook_event: str,
     issue_data: dict[str, Any],
     ai_agent_name: str = DEFAULT_AI_AGENT_NAME,
+    comment_data: dict[str, Any] | None = None,
 ) -> bool:
     if webhook_event not in SUPPORTED_EVENTS:
+        return False
+
+    if comment_data and is_bot_comment(webhook_event, comment_data, ai_agent_name):
         return False
 
     fields = issue_data.get("fields", {})

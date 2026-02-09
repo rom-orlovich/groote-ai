@@ -68,7 +68,7 @@ class WebhookRegistrationService:
                     json={
                         "webhooks": [
                             {
-                                "jqlFilter": "project is not EMPTY",
+                                "jqlFilter": "project != NULL",
                                 "events": [
                                     "jira:issue_created",
                                     "jira:issue_updated",
@@ -85,12 +85,44 @@ class WebhookRegistrationService:
                 response.raise_for_status()
                 data = response.json()
 
-            webhook_ids = [
-                str(wh.get("createdWebhookId", ""))
-                for wh in data.get("webhookRegistrationResult", [])
-                if wh.get("createdWebhookId")
-            ]
-            external_id = ",".join(webhook_ids) if webhook_ids else None
+            logger.info(
+                "jira_webhook_response",
+                cloud_id=cloud_id,
+                response_data=data,
+            )
+
+            results = data.get("webhookRegistrationResult", [])
+            webhook_ids = []
+            errors = []
+            for wh in results:
+                created_id = wh.get("createdWebhookId")
+                if created_id:
+                    webhook_ids.append(str(created_id))
+                wh_errors = wh.get("errors", [])
+                if wh_errors:
+                    errors.extend(wh_errors)
+
+            if errors:
+                logger.warning(
+                    "jira_webhook_registration_errors",
+                    cloud_id=cloud_id,
+                    errors=errors,
+                )
+
+            if not webhook_ids:
+                error_msg = "; ".join(errors) if errors else "No webhooks created"
+                logger.error(
+                    "jira_webhook_registration_empty",
+                    cloud_id=cloud_id,
+                    error=error_msg,
+                )
+                return WebhookRegistrationResult(
+                    success=False,
+                    webhook_url=webhook_url,
+                    error=error_msg,
+                )
+
+            external_id = ",".join(webhook_ids)
 
             logger.info(
                 "jira_webhook_registered",

@@ -9,15 +9,37 @@ SUPPORTED_EVENTS = {
 }
 
 
-def should_process_event(event_type: str, action: str | None) -> bool:
+def is_bot_sender(payload: dict[str, Any]) -> bool:
+    sender = payload.get("sender", {})
+    if sender.get("type") == "Bot":
+        return True
+
+    comment = payload.get("comment", {})
+    if comment.get("performed_via_github_app"):
+        return True
+
+    comment_user = comment.get("user", {})
+    if comment_user.get("type") == "Bot":
+        return True
+
+    return False
+
+
+def should_process_event(
+    event_type: str, action: str | None, payload: dict[str, Any] | None = None
+) -> bool:
     if event_type not in SUPPORTED_EVENTS:
         return False
 
     allowed_actions = SUPPORTED_EVENTS[event_type]
-    if allowed_actions is None:
-        return True
+    if allowed_actions is not None and action not in allowed_actions:
+        return False
 
-    return action in allowed_actions
+    if payload and event_type in ("issue_comment", "pull_request_review_comment"):
+        if is_bot_sender(payload):
+            return False
+
+    return True
 
 
 def extract_task_info(event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
