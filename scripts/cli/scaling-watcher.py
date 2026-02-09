@@ -8,7 +8,8 @@ from pathlib import Path
 import redis
 
 PROJECT_ROOT = Path(__file__).parents[2]
-SCRIPT_PATH = PROJECT_ROOT / "scripts" / "cli" / "start.sh"
+START_SCRIPT = PROJECT_ROOT / "scripts" / "cli" / "start.sh"
+STOP_SCRIPT = PROJECT_ROOT / "scripts" / "cli" / "stop.sh"
 QUEUE_KEY = "queue:cli:scaling"
 POLL_TIMEOUT = 5
 
@@ -31,25 +32,32 @@ def handle_scaling_message(data: str) -> None:
         return
 
     provider = payload.get("provider", "claude")
+    action = payload.get("action", "scale")
     agent_count = payload.get("agent_count", 1)
-    print(f"[watcher] Scaling {provider} to {agent_count} agent(s)...", flush=True)
+
+    if action == "stop" or agent_count == 0:
+        print(f"[watcher] Stopping {provider} CLI...", flush=True)
+        cmd = ["bash", str(STOP_SCRIPT), provider]
+    else:
+        print(f"[watcher] Scaling {provider} to {agent_count} agent(s)...", flush=True)
+        cmd = ["bash", str(START_SCRIPT), provider, str(agent_count)]
 
     try:
         result = subprocess.run(
-            ["bash", str(SCRIPT_PATH), provider, str(agent_count)],
+            cmd,
             cwd=str(PROJECT_ROOT),
             capture_output=True,
             text=True,
             timeout=120,
         )
         if result.returncode == 0:
-            print(f"[watcher] Scaling complete: {result.stdout.strip()}", flush=True)
+            print(f"[watcher] Command complete: {result.stdout.strip()}", flush=True)
         else:
-            print(f"[watcher] Scaling failed: {result.stderr.strip()}", file=sys.stderr, flush=True)
+            print(f"[watcher] Command failed: {result.stderr.strip()}", file=sys.stderr, flush=True)
     except subprocess.TimeoutExpired:
-        print("[watcher] Scaling timed out after 120s", file=sys.stderr, flush=True)
+        print("[watcher] Command timed out after 120s", file=sys.stderr, flush=True)
     except Exception as exc:
-        print(f"[watcher] Scaling error: {exc}", file=sys.stderr, flush=True)
+        print(f"[watcher] Command error: {exc}", file=sys.stderr, flush=True)
 
 
 def main() -> None:
