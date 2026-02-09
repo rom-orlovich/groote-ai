@@ -89,6 +89,55 @@ class EventPublisher:
         )
         logger.info("webhook_task_created", webhook_event_id=webhook_event_id, task_id=task_id)
 
+    async def publish_response_immediate(
+        self,
+        webhook_event_id: str,
+        task_id: str,
+        source: str,
+        response_type: str,
+        target: str,
+    ) -> None:
+        await self._publish(
+            "response:immediate",
+            webhook_event_id,
+            {
+                "task_id": task_id,
+                "source": source,
+                "response_type": response_type,
+                "target": target,
+            },
+        )
+        logger.info(
+            "response_immediate_published",
+            webhook_event_id=webhook_event_id,
+            source=source,
+            response_type=response_type,
+        )
+
+    async def publish_notification_ops(
+        self,
+        webhook_event_id: str,
+        task_id: str,
+        source: str,
+        notification_type: str,
+        channel: str,
+    ) -> None:
+        await self._publish(
+            "notification:ops",
+            webhook_event_id,
+            {
+                "task_id": task_id,
+                "source": source,
+                "notification_type": notification_type,
+                "channel": channel,
+            },
+        )
+        logger.info(
+            "notification_ops_published",
+            webhook_event_id=webhook_event_id,
+            notification_type=notification_type,
+        )
+
 
 def create_event_publisher(redis_url: str) -> EventPublisher:
     return EventPublisher(redis_url)

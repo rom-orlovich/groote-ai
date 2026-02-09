@@ -69,6 +69,14 @@ async def handle_slack_webhook(request: Request):
 
     try:
         await send_immediate_response(settings.slack_api_url, channel, thread_ts, event_ts)
+        if publisher:
+            await publisher.publish_response_immediate(
+                webhook_event_id=webhook_event_id,
+                task_id=task_id,
+                source="slack",
+                response_type="thread_reply",
+                target=f"channel={channel}",
+            )
     except Exception as e:
         logger.warning("slack_immediate_response_failed", error=str(e))
 
@@ -94,6 +102,14 @@ async def handle_slack_webhook(request: Request):
             task_id,
             str(e),
         )
+        if publisher:
+            await publisher.publish_notification_ops(
+                webhook_event_id=webhook_event_id,
+                task_id=task_id,
+                source="slack",
+                notification_type="task_failed",
+                channel=settings.slack_notification_channel,
+            )
         return JSONResponse(status_code=500, content={"status": "error", "error": str(e)})
 
     if publisher:
@@ -112,6 +128,14 @@ async def handle_slack_webhook(request: Request):
         task_id,
         f"channel={channel} {event.get('type', 'unknown')}",
     )
+    if publisher:
+        await publisher.publish_notification_ops(
+            webhook_event_id=webhook_event_id,
+            task_id=task_id,
+            source="slack",
+            notification_type="task_started",
+            channel=settings.slack_notification_channel,
+        )
 
     logger.info("slack_task_queued", task_id=task_id, channel=channel)
 

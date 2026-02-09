@@ -762,3 +762,297 @@ class TestKnowledgeEventProcessing:
         tools_used = [i["tool_name"] for i in task_logger.knowledge_interactions]
         assert "knowledge_query" in tools_used
         assert "code_search" in tools_used
+
+
+async def process_response_event_mock(event: dict):
+    data = event.get("data", {})
+    timestamp = event.get("timestamp", datetime.now(UTC).isoformat())
+    webhook_event_id = event.get("webhook_event_id")
+
+    if isinstance(data, str):
+        data = json.loads(data)
+
+    task_id = data.get("task_id")
+
+    if not task_id:
+        if webhook_event_id not in webhook_buffer:
+            webhook_buffer[webhook_event_id] = []
+        webhook_buffer[webhook_event_id].append(
+            {"timestamp": timestamp, "stage": "response_immediate", "data": data}
+        )
+        return
+
+    task_logger = get_or_create_mock_logger(task_id)
+
+    for buffered in webhook_buffer.pop(webhook_event_id, []):
+        task_logger.append_webhook_event(buffered)
+
+    task_logger.append_webhook_event(
+        {"timestamp": timestamp, "stage": "response_immediate", "data": data}
+    )
+
+
+async def process_notification_event_mock(event: dict):
+    task_id = event.get("task_id")
+    data = event.get("data", {})
+    timestamp = event.get("timestamp", datetime.now(UTC).isoformat())
+    webhook_event_id = event.get("webhook_event_id")
+
+    if isinstance(data, str):
+        data = json.loads(data)
+
+    task_id = task_id or data.get("task_id")
+    if not task_id:
+        return
+
+    task_logger = get_or_create_mock_logger(task_id)
+
+    if webhook_event_id:
+        for buffered in webhook_buffer.pop(webhook_event_id, []):
+            task_logger.append_webhook_event(buffered)
+
+    task_logger.append_webhook_event(
+        {"timestamp": timestamp, "stage": "notification_ops", "data": data}
+    )
+
+
+class TestResponseEventProcessing:
+    def setup_method(self):
+        reset_test_state()
+
+    async def test_response_immediate_logged_in_webhook_flow(self):
+        task_id = "task-001"
+        webhook_event_id = "webhook-001"
+
+        await process_webhook_event_mock(
+            {
+                "type": "webhook:received",
+                "webhook_event_id": webhook_event_id,
+                "timestamp": "2026-01-31T12:00:00Z",
+                "data": {"source": "github"},
+            }
+        )
+
+        await process_webhook_event_mock(
+            {
+                "type": "webhook:task_created",
+                "webhook_event_id": webhook_event_id,
+                "timestamp": "2026-01-31T12:00:01Z",
+                "data": {"task_id": task_id},
+            }
+        )
+
+        await process_response_event_mock(
+            {
+                "type": "response:immediate",
+                "webhook_event_id": webhook_event_id,
+                "timestamp": "2026-01-31T12:00:02Z",
+                "data": {
+                    "task_id": task_id,
+                    "source": "github",
+                    "response_type": "eyes_reaction",
+                    "target": "owner/repo#42",
+                },
+            }
+        )
+
+        task_logger = loggers_cache[task_id]
+        response_events = [
+            e for e in task_logger.webhook_events if e["stage"] == "response_immediate"
+        ]
+        assert len(response_events) == 1
+        assert response_events[0]["data"]["response_type"] == "eyes_reaction"
+
+    async def test_response_event_without_task_id_buffered(self):
+        webhook_event_id = "webhook-002"
+
+        await process_response_event_mock(
+            {
+                "type": "response:immediate",
+                "webhook_event_id": webhook_event_id,
+                "timestamp": "2026-01-31T12:00:00Z",
+                "data": {"source": "jira", "response_type": "processing_comment"},
+            }
+        )
+
+        assert webhook_event_id in webhook_buffer
+        assert len(webhook_buffer[webhook_event_id]) == 1
+
+
+class TestNotificationEventProcessing:
+    def setup_method(self):
+        reset_test_state()
+
+    async def test_notification_ops_logged_in_webhook_flow(self):
+        task_id = "task-001"
+
+        await process_notification_event_mock(
+            {
+                "type": "notification:ops",
+                "task_id": task_id,
+                "timestamp": "2026-01-31T12:00:00Z",
+                "data": json.dumps(
+                    {
+                        "task_id": task_id,
+                        "source": "github",
+                        "notification_type": "task_started",
+                        "channel": "#ops",
+                    }
+                ),
+            }
+        )
+
+        task_logger = loggers_cache[task_id]
+        notification_events = [
+            e for e in task_logger.webhook_events if e["stage"] == "notification_ops"
+        ]
+        assert len(notification_events) == 1
+        assert notification_events[0]["data"]["notification_type"] == "task_started"
+
+    async def test_notification_event_without_task_id_ignored(self):
+        await process_notification_event_mock(
+            {
+                "type": "notification:ops",
+                "timestamp": "2026-01-31T12:00:00Z",
+                "data": json.dumps({"source": "slack", "notification_type": "task_completed"}),
+            }
+        )
+
+        assert len(loggers_cache) == 0
+
+    async def test_notification_ops_task_completed_logged(self):
+        task_id = "task-003"
+
+        await process_notification_event_mock(
+            {
+                "type": "notification:ops",
+                "task_id": task_id,
+                "timestamp": "2026-01-31T12:05:00Z",
+                "data": json.dumps(
+                    {
+                        "task_id": task_id,
+                        "source": "jira",
+                        "notification_type": "task_completed",
+                        "channel": "#notifications",
+                    }
+                ),
+            }
+        )
+
+        task_logger = loggers_cache[task_id]
+        assert len(task_logger.webhook_events) == 1
+        assert task_logger.webhook_events[0]["data"]["notification_type"] == "task_completed"
+
+
+class TestFullLifecycleEventFlow:
+    def setup_method(self):
+        reset_test_state()
+
+    async def test_complete_lifecycle_all_events_captured(self):
+        task_id = "task-lifecycle"
+        webhook_event_id = "webhook-lifecycle"
+
+        await process_webhook_event_mock(
+            {
+                "type": "webhook:received",
+                "webhook_event_id": webhook_event_id,
+                "timestamp": "2026-01-31T12:00:00Z",
+                "data": {"source": "github"},
+            }
+        )
+        await process_webhook_event_mock(
+            {
+                "type": "webhook:validated",
+                "webhook_event_id": webhook_event_id,
+                "timestamp": "2026-01-31T12:00:01Z",
+                "data": {"valid": True},
+            }
+        )
+        await process_webhook_event_mock(
+            {
+                "type": "webhook:task_created",
+                "webhook_event_id": webhook_event_id,
+                "timestamp": "2026-01-31T12:00:02Z",
+                "data": {"task_id": task_id},
+            }
+        )
+        await process_response_event_mock(
+            {
+                "type": "response:immediate",
+                "webhook_event_id": webhook_event_id,
+                "timestamp": "2026-01-31T12:00:03Z",
+                "data": {
+                    "task_id": task_id,
+                    "source": "github",
+                    "response_type": "eyes_reaction",
+                    "target": "owner/repo#1",
+                },
+            }
+        )
+        await process_notification_event_mock(
+            {
+                "type": "notification:ops",
+                "task_id": task_id,
+                "timestamp": "2026-01-31T12:00:04Z",
+                "data": json.dumps(
+                    {
+                        "task_id": task_id,
+                        "source": "github",
+                        "notification_type": "task_started",
+                        "channel": "#ops",
+                    }
+                ),
+            }
+        )
+
+        await process_task_event_mock(
+            {
+                "type": "task:started",
+                "task_id": task_id,
+                "timestamp": "2026-01-31T12:00:05Z",
+                "data": {"task_id": task_id},
+            }
+        )
+        await process_task_event_mock(
+            {
+                "type": "task:output",
+                "task_id": task_id,
+                "timestamp": "2026-01-31T12:01:00Z",
+                "data": {"content": "Analyzing the code..."},
+            }
+        )
+        await process_task_event_mock(
+            {
+                "type": "task:completed",
+                "task_id": task_id,
+                "timestamp": "2026-01-31T12:02:00Z",
+                "data": {"result": "Bug fixed", "cost_usd": 0.05},
+            }
+        )
+        await process_notification_event_mock(
+            {
+                "type": "notification:ops",
+                "task_id": task_id,
+                "timestamp": "2026-01-31T12:02:01Z",
+                "data": json.dumps(
+                    {
+                        "task_id": task_id,
+                        "source": "github",
+                        "notification_type": "task_completed",
+                        "channel": "#ops",
+                    }
+                ),
+            }
+        )
+
+        task_logger = loggers_cache[task_id]
+
+        stages = [e["stage"] for e in task_logger.webhook_events]
+        assert "received" in stages
+        assert "validated" in stages
+        assert "task_created" in stages
+        assert "response_immediate" in stages
+        assert "notification_ops" in stages
+
+        assert len(task_logger.agent_outputs) == 1
+        assert task_logger.final_result["success"] is True

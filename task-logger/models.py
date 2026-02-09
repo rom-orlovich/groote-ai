@@ -10,6 +10,8 @@ class TaskEventType(StrEnum):
     WEBHOOK_VALIDATED = "webhook:validated"
     WEBHOOK_MATCHED = "webhook:matched"
     WEBHOOK_TASK_CREATED = "webhook:task_created"
+    RESPONSE_IMMEDIATE = "response:immediate"
+    NOTIFICATION_OPS = "notification:ops"
     TASK_CREATED = "task:created"
     TASK_STARTED = "task:started"
     TASK_OUTPUT = "task:output"

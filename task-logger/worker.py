@@ -170,11 +170,66 @@ async def process_knowledge_event(event: dict):
         )
 
 
+async def process_response_event(event: dict):
+    data = event.get("data", {})
+    timestamp = event.get("timestamp", datetime.now(UTC).isoformat())
+    webhook_event_id = event.get("webhook_event_id")
+
+    if isinstance(data, str):
+        data = json.loads(data)
+
+    task_id = data.get("task_id")
+
+    if not task_id:
+        webhook_buffer[webhook_event_id].append(
+            {"timestamp": timestamp, "stage": "response_immediate", "data": data}
+        )
+        return
+
+    task_logger = get_or_create_logger(task_id)
+
+    for buffered in webhook_buffer.pop(webhook_event_id, []):
+        task_logger.append_webhook_event(buffered)
+
+    task_logger.append_webhook_event(
+        {"timestamp": timestamp, "stage": "response_immediate", "data": data}
+    )
+
+
+async def process_notification_event(event: dict):
+    task_id = event.get("task_id")
+    data = event.get("data", {})
+    timestamp = event.get("timestamp", datetime.now(UTC).isoformat())
+    webhook_event_id = event.get("webhook_event_id")
+
+    if isinstance(data, str):
+        data = json.loads(data)
+
+    task_id = task_id or data.get("task_id")
+    if not task_id:
+        logger.warning("notification_event_missing_task_id event=%s", event)
+        return
+
+    task_logger = get_or_create_logger(task_id)
+
+    if webhook_event_id:
+        for buffered in webhook_buffer.pop(webhook_event_id, []):
+            task_logger.append_webhook_event(buffered)
+
+    task_logger.append_webhook_event(
+        {"timestamp": timestamp, "stage": "notification_ops", "data": data}
+    )
+
+
 async def process_event(event: dict):
     event_type = event.get("type")
 
     if event_type.startswith("webhook:"):
         await process_webhook_event(event)
+    elif event_type.startswith("response:"):
+        await process_response_event(event)
+    elif event_type.startswith("notification:"):
+        await process_notification_event(event)
     elif event_type.startswith("task:"):
         await process_task_event(event)
     elif event_type.startswith("knowledge:"):

@@ -67,6 +67,14 @@ async def handle_jira_webhook(request: Request):
 
     try:
         await send_immediate_response(settings.jira_api_url, issue_key)
+        if publisher:
+            await publisher.publish_response_immediate(
+                webhook_event_id=webhook_event_id,
+                task_id=task_id,
+                source="jira",
+                response_type="processing_comment",
+                target=issue_key,
+            )
     except Exception as e:
         logger.warning("jira_immediate_response_failed", error=str(e))
 
@@ -92,6 +100,14 @@ async def handle_jira_webhook(request: Request):
             task_id,
             str(e),
         )
+        if publisher:
+            await publisher.publish_notification_ops(
+                webhook_event_id=webhook_event_id,
+                task_id=task_id,
+                source="jira",
+                notification_type="task_failed",
+                channel=settings.slack_notification_channel,
+            )
         return JSONResponse(status_code=500, content={"status": "error", "error": str(e)})
 
     if publisher:
@@ -110,6 +126,14 @@ async def handle_jira_webhook(request: Request):
         task_id,
         f"{issue_key} {webhook_event}",
     )
+    if publisher:
+        await publisher.publish_notification_ops(
+            webhook_event_id=webhook_event_id,
+            task_id=task_id,
+            source="jira",
+            notification_type="task_started",
+            channel=settings.slack_notification_channel,
+        )
 
     logger.info("jira_task_queued", task_id=task_id, issue_key=issue_key)
 

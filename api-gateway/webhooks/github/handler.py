@@ -106,6 +106,14 @@ async def handle_github_webhook(
             comment_id=ctx["comment_id"],
             issue_number=ctx["issue_number"],
         )
+        if publisher:
+            await publisher.publish_response_immediate(
+                webhook_event_id=webhook_event_id,
+                task_id=task_id,
+                source="github",
+                response_type="eyes_reaction",
+                target=f"{ctx['full_name']}#{ctx['issue_number']}",
+            )
     except Exception as e:
         logger.warning("github_immediate_response_failed", error=str(e))
 
@@ -140,6 +148,14 @@ async def handle_github_webhook(
             task_id,
             str(e),
         )
+        if publisher:
+            await publisher.publish_notification_ops(
+                webhook_event_id=webhook_event_id,
+                task_id=task_id,
+                source="github",
+                notification_type="task_failed",
+                channel=settings.slack_notification_channel,
+            )
         return JSONResponse(status_code=500, content={"status": "error", "error": str(e)})
 
     if publisher:
@@ -158,6 +174,14 @@ async def handle_github_webhook(
         task_id,
         f"{ctx['full_name']} #{ctx['issue_number']} {x_github_event}",
     )
+    if publisher:
+        await publisher.publish_notification_ops(
+            webhook_event_id=webhook_event_id,
+            task_id=task_id,
+            source="github",
+            notification_type="task_started",
+            channel=settings.slack_notification_channel,
+        )
 
     logger.info("github_task_queued", task_id=task_id, event_type=x_github_event)
 

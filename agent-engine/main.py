@@ -70,6 +70,14 @@ class TaskWorker:
             result = await self._execute_task(task)
             await self._update_task_status(task_id, "completed", result)
 
+            output = result.get("output", "")
+            if output:
+                await self._publish_task_event(
+                    task_id,
+                    "task:output",
+                    {"task_id": task_id, "content": output[:5000]},
+                )
+
             await self._publish_task_event(
                 task_id,
                 "task:completed",
@@ -171,13 +179,24 @@ class TaskWorker:
         task_id = task.get("task_id", "unknown")
         output = result.get("output", "")
 
-        await notify_task_completed(
+        sent = await notify_task_completed(
             self._settings.slack_api_url,
             self._settings.slack_notification_channel,
             source,
             task_id,
             output[:200],
         )
+        if sent:
+            await self._publish_task_event(
+                task_id,
+                "notification:ops",
+                {
+                    "task_id": task_id,
+                    "source": source,
+                    "notification_type": "task_completed",
+                    "channel": self._settings.slack_notification_channel,
+                },
+            )
 
     async def _notify_platform_failure(self, task: dict, error: str) -> None:
         from services.slack_notifier import notify_task_failed
@@ -185,13 +204,24 @@ class TaskWorker:
         source = task.get("source")
         task_id = task.get("task_id", "unknown")
 
-        await notify_task_failed(
+        sent = await notify_task_failed(
             self._settings.slack_api_url,
             self._settings.slack_notification_channel,
             source or "unknown",
             task_id,
             error,
         )
+        if sent:
+            await self._publish_task_event(
+                task_id,
+                "notification:ops",
+                {
+                    "task_id": task_id,
+                    "source": source or "unknown",
+                    "notification_type": "task_failed",
+                    "channel": self._settings.slack_notification_channel,
+                },
+            )
 
     async def _update_task_status(
         self, task_id: str, status: str, result: dict[str, Any] | None = None

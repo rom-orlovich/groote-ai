@@ -139,8 +139,85 @@ class TestEventDataFormat:
         datetime.fromisoformat(event_data["timestamp"])
 
 
+class TestResponseImmediateEventPublishing:
+    async def test_response_immediate_published_to_stream(self, publisher, mock_redis):
+        webhook_event_id = EventPublisher.generate_webhook_event_id()
+
+        await publisher.publish_response_immediate(
+            webhook_event_id=webhook_event_id,
+            task_id="task-123",
+            source="github",
+            response_type="eyes_reaction",
+            target="owner/repo#42",
+        )
+
+        mock_redis.xadd.assert_called_once()
+        call_args = mock_redis.xadd.call_args
+        event_data = call_args[0][1]
+        assert event_data["type"] == "response:immediate"
+        assert event_data["webhook_event_id"] == webhook_event_id
+
+    async def test_response_immediate_data_contains_fields(self, publisher, mock_redis):
+        import json
+
+        webhook_event_id = EventPublisher.generate_webhook_event_id()
+
+        await publisher.publish_response_immediate(
+            webhook_event_id=webhook_event_id,
+            task_id="task-456",
+            source="jira",
+            response_type="processing_comment",
+            target="PROJ-123",
+        )
+
+        call_args = mock_redis.xadd.call_args
+        parsed = json.loads(call_args[0][1]["data"])
+        assert parsed["task_id"] == "task-456"
+        assert parsed["source"] == "jira"
+        assert parsed["response_type"] == "processing_comment"
+        assert parsed["target"] == "PROJ-123"
+
+
+class TestNotificationOpsEventPublishing:
+    async def test_notification_ops_published_to_stream(self, publisher, mock_redis):
+        webhook_event_id = EventPublisher.generate_webhook_event_id()
+
+        await publisher.publish_notification_ops(
+            webhook_event_id=webhook_event_id,
+            task_id="task-789",
+            source="slack",
+            notification_type="task_started",
+            channel="#ops",
+        )
+
+        mock_redis.xadd.assert_called_once()
+        call_args = mock_redis.xadd.call_args
+        event_data = call_args[0][1]
+        assert event_data["type"] == "notification:ops"
+
+    async def test_notification_ops_data_contains_fields(self, publisher, mock_redis):
+        import json
+
+        webhook_event_id = EventPublisher.generate_webhook_event_id()
+
+        await publisher.publish_notification_ops(
+            webhook_event_id=webhook_event_id,
+            task_id="task-789",
+            source="github",
+            notification_type="task_failed",
+            channel="#alerts",
+        )
+
+        call_args = mock_redis.xadd.call_args
+        parsed = json.loads(call_args[0][1]["data"])
+        assert parsed["task_id"] == "task-789"
+        assert parsed["source"] == "github"
+        assert parsed["notification_type"] == "task_failed"
+        assert parsed["channel"] == "#alerts"
+
+
 class TestFullWebhookEventFlow:
-    async def test_complete_webhook_flow_publishes_four_events(self, publisher, mock_redis):
+    async def test_complete_webhook_flow_publishes_all_events(self, publisher, mock_redis):
         webhook_event_id = EventPublisher.generate_webhook_event_id()
 
         await publisher.publish_webhook_received(
@@ -153,6 +230,13 @@ class TestFullWebhookEventFlow:
             webhook_event_id=webhook_event_id,
             source="github",
             signature_valid=True,
+        )
+        await publisher.publish_response_immediate(
+            webhook_event_id=webhook_event_id,
+            task_id="task-456",
+            source="github",
+            response_type="eyes_reaction",
+            target="owner/repo#1",
         )
         await publisher.publish_webhook_matched(
             webhook_event_id=webhook_event_id,
@@ -167,15 +251,24 @@ class TestFullWebhookEventFlow:
             event_type="issues",
             input_message="Fix bug",
         )
+        await publisher.publish_notification_ops(
+            webhook_event_id=webhook_event_id,
+            task_id="task-456",
+            source="github",
+            notification_type="task_started",
+            channel="#ops",
+        )
 
-        assert mock_redis.xadd.call_count == 4
+        assert mock_redis.xadd.call_count == 6
 
         event_types = [call[0][1]["type"] for call in mock_redis.xadd.call_args_list]
         assert event_types == [
             "webhook:received",
             "webhook:validated",
+            "response:immediate",
             "webhook:matched",
             "webhook:task_created",
+            "notification:ops",
         ]
 
     async def test_all_events_share_same_webhook_event_id(self, publisher, mock_redis):
