@@ -24,8 +24,6 @@ class Settings(BaseSettings):
     internal_dashboard_api_url: str = "http://internal-dashboard-api:5000"
     dashboard_api_url: str = "http://dashboard-api:5000"
 
-    github_api_url: str = "http://github-api:3001"
-    jira_api_url: str = "http://jira-api:3002"
     slack_api_url: str = "http://slack-api:3003"
     slack_notification_channel: str = ""
 

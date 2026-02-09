@@ -86,8 +86,9 @@ class TaskWorker:
             if conversation_id and result.get("output"):
                 await self._post_assistant_message(conversation_id, result["output"], task_id)
 
-            if result.get("output"):
-                await self._post_platform_response(task, result)
+            source = task.get("source")
+            if source in ("github", "jira", "slack"):
+                await self._notify_ops_completion(task, result)
 
             logger.info("task_completed", task_id=task_id)
         except Exception as e:
@@ -163,53 +164,30 @@ class TaskWorker:
                 error=str(e),
             )
 
-    async def _post_platform_response(self, task: dict, result: dict) -> None:
-        from services import github_responder, jira_responder, slack_responder
+    async def _notify_ops_completion(self, task: dict, result: dict) -> None:
         from services.slack_notifier import notify_task_completed
 
-        source = task.get("source")
-        output = result.get("output", "")
-        success = result.get("success", True)
+        source = task.get("source", "unknown")
         task_id = task.get("task_id", "unknown")
-        settings = self._settings
-
-        if source == "github":
-            await github_responder.post_completion(settings.github_api_url, task, output, success)
-        elif source == "jira":
-            await jira_responder.post_completion(settings.jira_api_url, task, output, success)
-        elif source == "slack":
-            await slack_responder.post_completion(settings.slack_api_url, task, output, success)
-        else:
-            return
+        output = result.get("output", "")
 
         await notify_task_completed(
-            settings.slack_api_url,
-            settings.slack_notification_channel,
+            self._settings.slack_api_url,
+            self._settings.slack_notification_channel,
             source,
             task_id,
             output[:200],
         )
 
     async def _notify_platform_failure(self, task: dict, error: str) -> None:
-        from services import github_responder, jira_responder, slack_responder
         from services.slack_notifier import notify_task_failed
 
         source = task.get("source")
         task_id = task.get("task_id", "unknown")
-        settings = self._settings
-
-        if source == "github":
-            await github_responder.post_completion(settings.github_api_url, task, error, False)
-        elif source == "jira":
-            await jira_responder.post_completion(settings.jira_api_url, task, error, False)
-        elif source == "slack":
-            await slack_responder.post_completion(settings.slack_api_url, task, error, False)
-        else:
-            return
 
         await notify_task_failed(
-            settings.slack_api_url,
-            settings.slack_notification_channel,
+            self._settings.slack_api_url,
+            self._settings.slack_notification_channel,
             source or "unknown",
             task_id,
             error,
