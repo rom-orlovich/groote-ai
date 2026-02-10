@@ -266,4 +266,4 @@ async def knowledge_delete(
 
 if __name__ == "__main__":
     settings = get_settings()
-    mcp.run(transport="sse", port=settings.port)
+    mcp.run(transport="sse", host="0.0.0.0", port=settings.port)

@@ -34,3 +34,7 @@
 שמתחבר לapן של המקורות האלו
 
 
+כל הסקילים של הagent-engine
+צריכים לקחת אותם מ.claued של התקייה
+של הagent-engine
+ולא מהroot ~/.claude

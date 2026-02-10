@@ -1,5 +1,7 @@
 import asyncio
+import os
 import signal
+import time
 from contextlib import asynccontextmanager, suppress
 from typing import Any
 
@@ -9,6 +11,7 @@ import uvicorn
 from config import get_settings
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from services import conversation_bridge, task_routing
 from services.knowledge import KnowledgeService, NoopKnowledgeService
 
 logger = structlog.get_logger(__name__)
@@ -58,6 +61,18 @@ class TaskWorker:
 
             await self._publish_task_event(
                 task_id,
+                "task:created",
+                {
+                    "task_id": task_id,
+                    "session_id": session_id,
+                    "input_message": task.get("prompt", ""),
+                    "source": task.get("source", "unknown"),
+                    "assigned_agent": task.get("assigned_agent", "brain"),
+                },
+            )
+
+            await self._publish_task_event(
+                task_id,
                 "task:started",
                 {
                     "task_id": task_id,
@@ -66,8 +81,51 @@ class TaskWorker:
                 },
             )
 
+            dashboard_url = os.getenv("DASHBOARD_API_URL", "http://dashboard-api:5000")
+            source = task.get("source", "unknown")
+            enriched_prompt = task.get("prompt", "")
+
+            if source in ("github", "jira", "slack"):
+                flow_id = conversation_bridge.build_flow_id(task)
+                logger.info("webhook_flow_started", task_id=task_id, flow_id=flow_id)
+
+                webhook_conversation_id = await conversation_bridge.get_or_create_flow_conversation(
+                    dashboard_url, task
+                )
+                logger.info(
+                    "webhook_conversation_ready",
+                    task_id=task_id,
+                    conversation_id=webhook_conversation_id,
+                )
+
+                await conversation_bridge.register_task(
+                    dashboard_url, task, webhook_conversation_id
+                )
+                logger.info("webhook_task_registered", task_id=task_id)
+
+                await conversation_bridge.post_system_message(
+                    dashboard_url, webhook_conversation_id, task
+                )
+
+                conversation_context = await conversation_bridge.fetch_conversation_context(
+                    dashboard_url, webhook_conversation_id, limit=5
+                )
+                logger.info(
+                    "webhook_context_fetched",
+                    task_id=task_id,
+                    messages_count=len(conversation_context),
+                )
+
+                enriched_prompt = task_routing.build_enriched_prompt(
+                    task, conversation_context
+                )
+
             await self._update_task_status(task_id, "in_progress")
-            result = await self._execute_task(task)
+            start_time = time.monotonic()
+
+            task_with_enriched_prompt = {**task, "prompt": enriched_prompt}
+            result = await self._execute_task(task_with_enriched_prompt)
+            duration = time.monotonic() - start_time
             await self._update_task_status(task_id, "completed", result)
 
             output = result.get("output", "")
@@ -75,7 +133,7 @@ class TaskWorker:
                 await self._publish_task_event(
                     task_id,
                     "task:output",
-                    {"task_id": task_id, "content": output[:5000]},
+                    {"task_id": task_id, "content": output},
                 )
 
             await self._publish_task_event(
@@ -85,6 +143,9 @@ class TaskWorker:
                     "task_id": task_id,
                     "session_id": session_id,
                     "conversation_id": conversation_id,
+                    "status": "completed" if result.get("success", True) else "failed",
+                    "result": output,
+                    "duration_seconds": round(duration, 2),
                     "cost_usd": result.get("cost_usd"),
                     "input_tokens": result.get("input_tokens"),
                     "output_tokens": result.get("output_tokens"),
@@ -96,6 +157,15 @@ class TaskWorker:
 
             source = task.get("source")
             if source in ("github", "jira", "slack"):
+                from services.response_poster import post_response_to_platform
+
+                posted = await post_response_to_platform(task, result)
+                logger.info(
+                    "platform_response_posted",
+                    task_id=task_id,
+                    source=source,
+                    posted=posted,
+                )
                 await self._notify_ops_completion(task, result)
 
             logger.info("task_completed", task_id=task_id)

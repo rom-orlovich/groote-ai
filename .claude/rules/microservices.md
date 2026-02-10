@@ -66,3 +66,33 @@ All secrets configured via `.env` file (created by `make init`):
 - `REDIS_URL` - Redis connection string
 - `GITHUB_TOKEN`, `JIRA_API_TOKEN`, `SLACK_BOT_TOKEN` - Service tokens
 - `*_WEBHOOK_SECRET` - Webhook verification secrets
+
+## Webhook Integration Flow
+
+Webhooks from Jira, GitHub, and Slack create conversations in the dashboard with full context tracking.
+
+```
+Webhook -> API Gateway (8000) -> Redis queue -> Agent Engine -> Conversation Bridge -> Dashboard API
+                                                     |
+                                                     v
+                                              CLI execution (Claude/Cursor)
+                                                     |
+                                                     v
+                                              MCP tool response (Jira/GitHub/Slack)
+```
+
+**Flow ID Format** (deterministic, used for conversation reuse):
+- Jira: `jira:KAN-6`
+- GitHub: `github:owner/repo#42`
+- Slack: `slack:C12345:1234567890.123456`
+
+**Conversation API Endpoints:**
+- `GET /api/conversations` - List conversations
+- `GET /api/conversations/by-flow/{flow_id}` - Find by flow_id
+- `POST /api/conversations` - Create conversation (with optional flow_id, source)
+- `POST /api/conversations/{id}/messages` - Add message
+- `GET /api/conversations/{id}/context` - Get last N messages for agent context
+- `GET /api/conversations/{id}/messages` - Get all messages
+- `POST /api/tasks` - Register external task from webhook
+
+**Real-time Updates:** Dashboard API broadcasts task status changes via WebSocket (`/ws`) using Redis pub/sub.

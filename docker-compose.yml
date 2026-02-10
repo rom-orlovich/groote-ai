@@ -275,7 +275,7 @@ services:
       - LOGS_DIR=/data/logs/tasks
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
-      - task_logs:/data/logs/tasks
+      - ./data/logs/tasks:/data/logs/tasks
     depends_on:
       redis:
         condition: service_healthy
@@ -474,7 +474,6 @@ volumes:
   postgres_data:
   agent_data:
   knowledge_graph_data:
-  task_logs:
   chroma_data:
   llama_cache:
   gkg_data:

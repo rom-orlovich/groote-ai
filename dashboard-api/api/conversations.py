@@ -39,6 +39,8 @@ class ConversationCreate(BaseModel):
     title: str
     user_id: str = "default-user"
     metadata: dict = {}
+    flow_id: str | None = None
+    source: str | None = None
 
 
 class ConversationUpdate(BaseModel):
@@ -91,12 +93,12 @@ class ConversationResponse(BaseModel):
     conversation_id: str
     user_id: str
     title: str
+    flow_id: str | None = None
     created_at: str
     updated_at: str
     is_archived: bool
     metadata: dict
     message_count: int
-    # Aggregated metrics
     total_cost_usd: float = 0.0
     total_tasks: int = 0
     total_duration_seconds: float = 0.0
@@ -110,6 +112,7 @@ class ConversationResponse(BaseModel):
             conversation_id=conv.conversation_id,
             user_id=conv.user_id,
             title=conv.title,
+            flow_id=conv.flow_id,
             created_at=conv.created_at.isoformat(),
             updated_at=conv.updated_at.isoformat(),
             is_archived=conv.is_archived,
@@ -149,11 +152,16 @@ async def create_conversation(data: ConversationCreate, db: AsyncSession = Depen
     """Create a new conversation."""
     conversation_id = f"conv-{uuid.uuid4().hex[:12]}"
 
+    metadata = {**data.metadata}
+    if data.source:
+        metadata["source"] = data.source
+
     conversation = ConversationDB(
         conversation_id=conversation_id,
         user_id=data.user_id,
         title=data.title,
-        metadata_json=json.dumps(data.metadata),
+        flow_id=data.flow_id,
+        metadata_json=json.dumps(metadata),
     )
 
     db.add(conversation)
@@ -163,6 +171,27 @@ async def create_conversation(data: ConversationCreate, db: AsyncSession = Depen
     logger.info("conversation_created", conversation_id=conversation_id, user_id=data.user_id)
 
     return ConversationResponse.from_db(conversation, message_count=0)
+
+
+@router.get("/conversations/by-flow/{flow_id:path}", response_model=ConversationResponse)
+async def get_conversation_by_flow(
+    flow_id: str,
+    db: AsyncSession = Depends(get_db_session),
+):
+    result = await db.execute(select(ConversationDB).where(ConversationDB.flow_id == flow_id))
+    conversation = result.scalar_one_or_none()
+
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    count_query = (
+        select(func.count())
+        .select_from(ConversationMessageDB)
+        .where(ConversationMessageDB.conversation_id == conversation.conversation_id)
+    )
+    count = (await db.execute(count_query)).scalar() or 0
+
+    return ConversationResponse.from_db(conversation, message_count=count)
 
 
 @router.get("/conversations", response_model=list[ConversationResponse])
@@ -538,19 +567,11 @@ async def get_conversation_context(
     messages_result = await db.execute(query)
     messages = list(reversed(messages_result.scalars().all()))  # Reverse to chronological order
 
-    # Format for Claude
-    context = {
-        "conversation_id": conversation_id,
-        "title": conversation.title,
-        "message_count": len(messages),
-        "messages": [
-            {
-                "role": msg.role,
-                "content": msg.content,
-                "timestamp": msg.created_at.isoformat(),
-            }
-            for msg in messages
-        ],
-    }
-
-    return context
+    return [
+        {
+            "role": msg.role,
+            "content": msg.content,
+            "created_at": msg.created_at.isoformat() if msg.created_at else None,
+        }
+        for msg in messages
+    ]

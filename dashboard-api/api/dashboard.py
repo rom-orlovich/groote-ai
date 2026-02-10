@@ -74,6 +74,18 @@ class TaskTableResponse(BaseModel):
     total_pages: int
 
 
+class ExternalTaskCreate(BaseModel):
+    """Request model for external task creation (from webhooks)."""
+
+    task_id: str
+    source: str
+    source_metadata: dict
+    input_message: str
+    assigned_agent: str = "brain"
+    conversation_id: str | None = None
+    flow_id: str | None = None
+
+
 @router.get("/status")
 async def get_status(request: Request):
     """Get machine status."""
@@ -201,20 +213,34 @@ async def get_task(task_id: str, db: AsyncSession = Depends(get_db_session)):
 
 @router.get("/tasks/{task_id}/logs")
 async def get_task_logs(task_id: str, db: AsyncSession = Depends(get_db_session)):
-    """Get task logs/output stream."""
+    """Get task logs/output stream with task-logger fallback."""
+    import httpx
+    import os
+
     result = await db.execute(select(TaskDB).where(TaskDB.task_id == task_id))
     task = result.scalar_one_or_none()
 
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    # Try to get live output from Redis first (for running tasks)
     redis_output = await redis_client.get_output(task_id)
+    output = redis_output or task.output_stream or ""
+
+    if not output:
+        task_logger_url = os.getenv("TASK_LOGGER_URL", "http://task-logger:8090")
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(f"{task_logger_url}/tasks/{task_id}/logs")
+                if response.status_code == 200:
+                    data = response.json()
+                    output = data.get("output", "")
+        except Exception as e:
+            logger.warning("task_logger_fallback_failed", task_id=task_id, error=str(e))
 
     return {
         "task_id": task.task_id,
         "status": task.status,
-        "output": redis_output or task.output_stream or "",
+        "output": output,
         "error": task.error,
         "is_live": task.status == TaskStatus.RUNNING,
     }
@@ -242,6 +268,51 @@ async def stop_task(task_id: str, db: AsyncSession = Depends(get_db_session)):
     logger.info("Task stopped", task_id=task_id)
 
     return APIResponse(success=True, message="Task stopped successfully")
+
+
+@router.post("/tasks")
+async def create_external_task(
+    payload: ExternalTaskCreate, db: AsyncSession = Depends(get_db_session)
+):
+    """Register external task (from webhooks) in TaskDB."""
+    from core.database.models import SessionDB as SessionDBModel
+
+    session_result = await db.execute(
+        select(SessionDBModel).where(SessionDBModel.session_id == "webhook-system")
+    )
+    webhook_session = session_result.scalar_one_or_none()
+
+    if not webhook_session:
+        webhook_session = SessionDBModel(
+            session_id="webhook-system",
+            user_id="system",
+            machine_id="webhook",
+            active=True,
+        )
+        db.add(webhook_session)
+        await db.flush()
+
+    task = TaskDB(
+        task_id=payload.task_id,
+        session_id="webhook-system",
+        user_id="system",
+        input_message=payload.input_message,
+        source=payload.source,
+        source_metadata=json.dumps(
+            {
+                **payload.source_metadata,
+                "conversation_id": payload.conversation_id,
+                "flow_id": payload.flow_id,
+            }
+        ),
+        assigned_agent=payload.assigned_agent,
+        agent_type="webhook",
+        status=TaskStatus.QUEUED,
+    )
+    db.add(task)
+    await db.commit()
+
+    return {"task_id": payload.task_id, "conversation_id": payload.conversation_id}
 
 
 @router.post("/chat")
@@ -462,7 +533,9 @@ async def chat_with_brain(
             "task_id": task_id,
             "session_id": session_id,
             "conversation_id": conversation_id,
+            "input_message": full_input_message,
             "source": "dashboard",
+            "assigned_agent": "brain",
         },
         task_id=task_id,
     )
