@@ -156,10 +156,17 @@ class TestCLIHandlesResponsesViaMCP:
 
 class TestTaskOutputEventPublishing:
     @patch("services.slack_notifier.httpx.AsyncClient")
-    async def test_task_output_published_after_cli_completes(self, mock_http_cls):
+    @patch("worker.conversation_bridge.post_fallback_notice", new_callable=AsyncMock)
+    @patch("worker.conversation_bridge.fetch_conversation_context", new_callable=AsyncMock, return_value=[])
+    @patch("worker.conversation_bridge.post_system_message", new_callable=AsyncMock)
+    @patch("worker.conversation_bridge.register_task", new_callable=AsyncMock)
+    @patch("worker.conversation_bridge.get_or_create_flow_conversation", new_callable=AsyncMock, return_value="conv-123")
+    async def test_task_output_published_after_cli_completes(
+        self, mock_get_conv, mock_register, mock_sys_msg, mock_fetch_ctx, mock_fallback, mock_http_cls
+    ):
         import json
 
-        from main import TaskWorker
+        from worker import TaskWorker
 
         mock_http_cls.return_value = _mock_http_client()
 
@@ -167,8 +174,6 @@ class TestTaskOutputEventPublishing:
         mock_settings.redis_url = "redis://localhost:6379/0"
         mock_settings.max_concurrent_tasks = 5
         mock_settings.task_timeout_seconds = 60
-        mock_settings.slack_api_url = "http://slack-api:3003"
-        mock_settings.slack_notification_channel = "#ops"
         mock_settings.dashboard_api_url = "http://dashboard-api:5000"
 
         worker = TaskWorker(mock_settings, MagicMock())
@@ -203,14 +208,12 @@ class TestTaskOutputEventPublishing:
     async def test_empty_output_skips_task_output_event(self):
         import json
 
-        from main import TaskWorker
+        from worker import TaskWorker
 
         mock_settings = MagicMock()
         mock_settings.redis_url = "redis://localhost:6379/0"
         mock_settings.max_concurrent_tasks = 5
         mock_settings.task_timeout_seconds = 60
-        mock_settings.slack_api_url = "http://slack-api:3003"
-        mock_settings.slack_notification_channel = ""
         mock_settings.dashboard_api_url = "http://dashboard-api:5000"
 
         worker = TaskWorker(mock_settings, MagicMock())
@@ -237,76 +240,3 @@ class TestTaskOutputEventPublishing:
         assert "task:output" not in event_types
 
 
-class TestNotificationOpsEventPublishing:
-    @patch("services.slack_notifier.httpx.AsyncClient")
-    async def test_ops_completion_publishes_notification_event(self, mock_cls):
-        import json
-
-        from main import TaskWorker
-
-        mock_cls.return_value = _mock_http_client()
-
-        mock_settings = MagicMock()
-        mock_settings.slack_api_url = "http://slack-api:3003"
-        mock_settings.slack_notification_channel = "#ops"
-
-        worker = TaskWorker(mock_settings, MagicMock())
-        worker._redis = AsyncMock()
-        worker._redis.xadd = AsyncMock()
-
-        task = {"task_id": "task-notif-test", "source": "github"}
-        result = {"output": "Bug fixed"}
-
-        await worker._notify_ops_completion(task, result)
-
-        worker._redis.xadd.assert_called_once()
-        call_args = worker._redis.xadd.call_args
-        assert call_args[0][1]["type"] == "notification:ops"
-        data = json.loads(call_args[0][1]["data"])
-        assert data["notification_type"] == "task_completed"
-        assert data["source"] == "github"
-
-    @patch("services.slack_notifier.httpx.AsyncClient")
-    async def test_ops_failure_publishes_notification_event(self, mock_cls):
-        import json
-
-        from main import TaskWorker
-
-        mock_cls.return_value = _mock_http_client()
-
-        mock_settings = MagicMock()
-        mock_settings.slack_api_url = "http://slack-api:3003"
-        mock_settings.slack_notification_channel = "#ops"
-
-        worker = TaskWorker(mock_settings, MagicMock())
-        worker._redis = AsyncMock()
-        worker._redis.xadd = AsyncMock()
-
-        task = {"task_id": "task-fail-test", "source": "jira"}
-
-        await worker._notify_platform_failure(task, "Redis timeout")
-
-        worker._redis.xadd.assert_called_once()
-        call_args = worker._redis.xadd.call_args
-        assert call_args[0][1]["type"] == "notification:ops"
-        data = json.loads(call_args[0][1]["data"])
-        assert data["notification_type"] == "task_failed"
-        assert data["source"] == "jira"
-
-    async def test_no_notification_event_when_slack_send_fails(self):
-        from main import TaskWorker
-
-        mock_settings = MagicMock()
-        mock_settings.slack_api_url = "http://slack-api:3003"
-        mock_settings.slack_notification_channel = ""
-
-        worker = TaskWorker(mock_settings, MagicMock())
-        worker._redis = AsyncMock()
-        worker._redis.xadd = AsyncMock()
-
-        task = {"task_id": "task-no-notif", "source": "github"}
-        result = {"output": "Done"}
-
-        await worker._notify_ops_completion(task, result)
-
-        worker._redis.xadd.assert_not_called()

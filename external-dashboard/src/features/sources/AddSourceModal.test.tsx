@@ -72,6 +72,7 @@ function renderModal(overrides?: { onSubmit?: (req: unknown) => void; onClose?: 
     onClose: vi.fn(),
     onSubmit: vi.fn(),
     isSubmitting: false,
+    error: null,
   };
   const props = { ...defaults, ...overrides };
   return { ...props, result: render(<AddSourceModal {...props} />, { wrapper: createWrapper() }) };

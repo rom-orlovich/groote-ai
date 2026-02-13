@@ -1,60 +1,41 @@
 ---
 name: github-operations
-description: GitHub API operations and repository workflow for issues, PRs, commits, and branch management. Use when working with GitHub repositories, creating issues/PRs, posting comments, or managing repository workflows.
+description: GitHub API operations using MCP tools. Use for reading files, searching code, managing issues/PRs, and posting comments. All operations go through the GitHub MCP server.
 ---
 
-GitHub operations using MCP tools for API interactions and local git commands for repository management.
+GitHub operations using MCP tools (`github:*`) for ALL interactions.
 
-> **IMPORTANT:** Always use MCP tools (`github:*`) for API operations. Use local git commands for repository management only.
+> **CRITICAL:** NEVER use local git commands (`git clone`, `git push`, `git checkout`, etc.). You have NO git credentials in the container. ALL GitHub operations MUST go through MCP tools.
 
-## Quick Reference
+## MCP Tools Available
 
-- **Workflow**: See [flow.md](flow.md) for complete workflow guide and templates
+| Tool | Purpose |
+|------|---------|
+| `github:get_file_contents` | Read file contents (specify `ref` for branch/SHA) |
+| `github:search_code` | Search code across repositories |
+| `github:get_repository` | Get repository metadata (do NOT use `list_repos` without filters) |
+| `github:get_issue` | Get issue details |
+| `github:create_issue` | Create new issues |
+| `github:add_issue_comment` | Post comments on issues/PRs |
+| `github:add_reaction` | React to comments (+1, -1, laugh, heart, rocket, eyes) |
+| `github:get_pull_request` | Get PR details and diff |
+| `github:create_pull_request` | Create PR (branch must already exist) |
+| `github:create_pr_review_comment` | Comment on specific PR line |
+| `github:list_branches` | List repository branches |
 
-## Key Principles
+### NOT Available
 
-1. **Always use MCP tools** (`github:*`) for API operations
-2. **Use local git commands** for repository management
-3. **Post responses** using MCP tools after task completion
-
-## Environment
-
-- `GITHUB_TOKEN` - GitHub personal access token (required for MCP authentication)
-
-## MCP Operations
-
-**Always use MCP tools for GitHub API operations:**
-
-- `github:get_file_content` - Get file contents
-- `github:search_code` - Search code across repositories
-- `github:create_pull_request` - Create PRs
-- `github:add_issue_comment` - Post comments on issues/PRs
-- `github:get_pull_request` - Get PR details
-- `github:create_or_update_file` - Commit file changes
-
-**MCP tools are documented in [flow.md](flow.md) with examples.**
-
-## Repository Workflow
-
-Repositories are pre-cloned by Docker at startup (via `GITHUB_REPOS` env var). If repository doesn't exist, clone it first.
-
-**Workflow:** Check repository → Update (`git pull`) → Create feature branch → Make changes → Commit → Push → Create PR
-
-**Branch naming:** `fix/issue-123`, `feature/add-auth`, `refactor/cleanup-module`
-
-See [flow.md](flow.md) for complete workflow details.
-
-### Response Posting
-
-**IMPORTANT**: Always post responses after task completion using `github:add_issue_comment`.
-
-See [flow.md](flow.md) for workflow examples and [templates.md](templates.md) for response templates.
+- `create_or_update_file` — cannot commit files via API
+- `git clone` / `git push` — no git credentials in container
+- `list_repos` without owner — returns ALL repos, wastes tokens. Use `get_repository` with specific owner/repo instead
 
 ## Workflows
 
-See [flow.md](flow.md) for complete workflow examples including:
+See [flow.md](flow.md) for complete workflow guide and [templates.md](templates.md) for response templates.
 
-- Complexity-based approach selection (MCP tools vs cloned repository)
-- Repository management
-- Creating pull requests
-- Posting responses
+## Key Rules
+
+1. **MCP tools only** — never use bash for git or GitHub API calls
+2. **Post responses** after every task using `github:add_issue_comment`
+3. **Use `get_repository`** with specific owner/repo, never `list_repos` unfiltered
+4. **Code changes are read-only** — you can analyze code but cannot push changes. For fix requests, post the fix as an issue comment with code blocks

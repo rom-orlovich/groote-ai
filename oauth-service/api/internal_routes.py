@@ -53,6 +53,9 @@ async def get_internal_token(
     metadata: dict[str, Any] = {}
     if platform == "jira" and installation.external_org_id:
         metadata["cloud_id"] = installation.external_org_id
+    if platform == "slack" and installation.metadata_json:
+        metadata["notification_channel_id"] = installation.metadata_json.get("notification_channel_id")
+        metadata["notification_channel_name"] = installation.metadata_json.get("notification_channel_name")
 
     logger.info(
         "internal_token_retrieved",

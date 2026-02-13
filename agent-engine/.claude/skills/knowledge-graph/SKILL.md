@@ -160,6 +160,8 @@ Get statistics about the knowledge graph.
 
 This skill integrates with the knowledge-graph MCP server running on port 9005. The MCP server provides the following tools:
 
+### Code Graph Tools
+
 | MCP Tool                 | Skill Action           |
 | ------------------------ | ---------------------- |
 | `search_codebase`        | search_codebase        |
@@ -169,6 +171,18 @@ This skill integrates with the knowledge-graph MCP server running on port 9005. 
 | `find_code_path`         | find_code_path         |
 | `get_code_neighbors`     | get_code_neighbors     |
 | `get_graph_stats`        | get_graph_stats        |
+
+### Knowledge Store Tools (ChromaDB)
+
+| MCP Tool                  | Purpose                                |
+| ------------------------- | -------------------------------------- |
+| `knowledge_store`         | Store a document in a collection       |
+| `knowledge_query`         | Semantic search across stored documents |
+| `knowledge_collections`   | List or create collections             |
+| `knowledge_update`        | Update a stored document               |
+| `knowledge_delete`        | Delete a stored document               |
+
+Use knowledge store tools to persist findings, analysis results, and learned patterns across tasks.
 
 ## Node Types
 

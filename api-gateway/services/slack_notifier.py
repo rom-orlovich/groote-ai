@@ -1,7 +1,44 @@
+import time
+
 import httpx
 import structlog
 
 logger = structlog.get_logger(__name__)
+
+_cached_channel: str | None = None
+_cache_expires_at: float = 0
+_CACHE_TTL_SECONDS = 300
+
+
+async def get_notification_channel(
+    oauth_internal_url: str,
+    service_key: str,
+    fallback_channel: str,
+) -> str:
+    global _cached_channel, _cache_expires_at
+
+    if _cached_channel and time.monotonic() < _cache_expires_at:
+        return _cached_channel
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(
+                f"{oauth_internal_url}/internal/token/slack",
+                headers={"X-Internal-Service-Key": service_key},
+            )
+            response.raise_for_status()
+            data = response.json()
+
+        channel_id = data.get("metadata", {}).get("notification_channel_id")
+        if channel_id:
+            _cached_channel = channel_id
+            _cache_expires_at = time.monotonic() + _CACHE_TTL_SECONDS
+            logger.info("slack_channel_fetched_from_oauth", channel_id=channel_id)
+            return channel_id
+    except Exception as e:
+        logger.warning("slack_channel_fetch_failed", error=str(e))
+
+    return fallback_channel
 
 
 async def notify_task_started(

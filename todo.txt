@@ -1,40 +1,31 @@
-1. Build flow_id from task data
-2. Get or create conversation via conversation_bridge
-3. Register task in dashboard-api via POST /api/tasks
-4. Post system message with webhook context
-5. Fetch last 5 messages from conversation for context
-6. Build enriched prompt with context + platform instructions
+run again make up
+run again  zork tunnel run
 
-ה5 האחרונות עבור הפרומפט הודעות זה רק שמדברים איתו דרך השיחה בצאט בדשברוד לכל בכל פעם שנפתח טסקט
-חייב להיות stream של התשובה של המודל עבור הלוגים.
-שלא יגביל
+you must allocate teams agents and trggier all the webhooks flow on this ticket
+https://agents-system-poc.atlassian.net/jira/software/projects/KAN/boards/2?selectedIssue=KAN-18
+and all the flow form this ticket (github,slack)
 
+  process and answer these:
 
-שלא יגביל את האאוטפוט "result": result.get("output", "")[:5000],
+ you must check all the webhhooks flow
+inclduing aswhen change ticket asssinee that is will open pr in github with already detials plan
+and all the flow there?
 
-שיקח דוגמא מפלו של פרוייקט שעובד /Users/romo/projects/agents-prod/claude-code-agent/workers/task_worker.py
+what i want to post on github and jira or slack is final reuslt output not all the thinking process
+the jira when analyiss and create pr should contain the summery with link to pr wit plan as draft
 
-/Users/romo/projects/agents-prod/claude-code-agent/.log
-
-/Users/romo/projects/agents-prod/claude-code-agent/core/task_logger.py
-
-שיקח דוגמא ויכין תוכנית מלאה לפי הפרוייקט פה
-
-מה ששונה שהפרוייקט של הgroot ai מחולק למיקרו סרווסים
-
-ופה אני רוצה שיהיה יותר אחריות לcli שיפרסם בעצמו את התושבות חזרה למקורות הושנים
-במקום שיהיה באמצעות פונקיות
-
-למעט הפוקנציות המידיות או התהתראות או הכישלון
-
-צריך גם לבדוק שהapi של השירותים הושנים גם יודעים
-לקחת את המידע מהאינטגרציה שעישנו במאצעות oauth
-
-והcli ידע להתחבר לmcp.json
-שמתחבר לapן של המקורות האלו
+github mentionin the comment if it trggier reivew or imporve reivew it add comment with the final revew and imrpove its make changes and push and  approve it exuecte the change ald push the changes
 
 
-כל הסקילים של הagent-engine
-צריכים לקחת אותם מ.claued של התקייה
-של הagent-engine
-ולא מהroot ~/.claude
+where is all the notifation to slack in end process?
+
+
+the agent enigne must that the purpose of the platform is cross paltform assiatnat
+that can manage the dailyw workflow in these paltform
+
+also does it uses teams agent corrcetly and other agents it alwys uses brain and the claude code not allocate other agents?
+
+in the end after the webhooks flow trigger correectly you must analysis the /Users/romo/projects/groote-ai/data/logs/tasks with cirtcal thinker if it really fuliful my requreiemnt and the purpose of the skils and the agent and the busnisn requreiment
+
+the agent-enigne must be dependent and post to the paltform the final output by itself
+the the thinkin gprocess its only for the log monitor not for posting the platform

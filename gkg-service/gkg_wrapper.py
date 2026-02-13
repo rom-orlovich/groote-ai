@@ -48,20 +48,23 @@ class GKGWrapper:
     async def index_repo(self, org_id: str, repo_path: str) -> dict:
         logger.info("gkg_indexing_repo", org_id=org_id, repo_path=repo_path)
 
-        output_dir = self.data_dir / org_id
-        output_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            import httpx
 
-        stdout, stderr, code = await self._run_gkg_command(
-            ["index", "--output", str(output_dir)],
-            cwd=repo_path,
-        )
-
-        if code != 0:
-            logger.error("gkg_index_failed", stderr=stderr)
-            return {"success": False, "error": stderr}
-
-        logger.info("gkg_index_completed", org_id=org_id)
-        return {"success": True, "output": stdout}
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    "http://localhost:27495/api/workspace/index",
+                    json={"workspace_folder_path": repo_path},
+                    timeout=300.0,
+                )
+                if response.status_code < 300:
+                    logger.info("gkg_index_completed", org_id=org_id, repo_path=repo_path)
+                    return {"success": True}
+                logger.error("gkg_index_failed", status=response.status_code, body=response.text)
+                return {"success": False, "error": response.text}
+        except Exception as e:
+            logger.error("gkg_index_failed", error=str(e))
+            return {"success": False, "error": str(e)}
 
     async def query_dependencies(
         self,

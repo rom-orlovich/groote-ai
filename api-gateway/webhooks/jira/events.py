@@ -9,10 +9,31 @@ SUPPORTED_EVENTS = [
 AI_FIX_LABEL = "AI-Fix"
 DEFAULT_AI_AGENT_NAME = "ai-agent"
 
-BOT_COMMENT_MARKERS = [
+BOT_COMMENT_PREFIX_MARKERS = [
     "Agent is analyzing this issue",
     "Failed to process:",
+    "Implementation started",
 ]
+
+BOT_COMMENT_SECTION_MARKERS = [
+    "## Implementation Plan",
+    "## Agent Analysis",
+    "## PR Review",
+    "## Jira Task Complete",
+    "**Scope**:",
+    "**Intent**:",
+    "**Verdict**:",
+]
+
+
+def _body_matches_bot_pattern(body: str) -> bool:
+    for marker in BOT_COMMENT_PREFIX_MARKERS:
+        if body.startswith(marker):
+            return True
+    for marker in BOT_COMMENT_SECTION_MARKERS:
+        if marker in body:
+            return True
+    return False
 
 
 def is_bot_comment(
@@ -33,10 +54,8 @@ def is_bot_comment(
         return True
 
     body = comment_data.get("body", "")
-    if isinstance(body, str):
-        for marker in BOT_COMMENT_MARKERS:
-            if body.startswith(marker):
-                return True
+    if isinstance(body, str) and _body_matches_bot_pattern(body):
+        return True
 
     return False
 
@@ -76,12 +95,21 @@ def extract_task_info(webhook_event: str, payload: dict[str, Any]) -> dict[str, 
     assignee = fields.get("assignee")
     assignee_name = assignee.get("displayName") if assignee else None
 
+    issue_self_url = issue.get("self", "")
+    jira_base_url = ""
+    if issue_self_url:
+        parts = issue_self_url.split("/rest/")
+        if len(parts) >= 2:
+            jira_base_url = parts[0]
+
     task_info: dict[str, Any] = {
         "source": "jira",
         "event_type": webhook_event,
+        "jira_base_url": jira_base_url,
         "issue": {
             "key": issue.get("key"),
             "id": issue.get("id"),
+            "self": issue_self_url,
             "summary": summary,
             "description": description,
             "issue_type": fields.get("issuetype", {}).get("name"),

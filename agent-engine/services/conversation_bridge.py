@@ -3,10 +3,16 @@ import httpx
 
 def _extract_jira_metadata(task: dict) -> dict:
     issue = task.get("issue", {})
-    return {
-        "key": issue.get("key", "unknown"),
+    jira_base_url = task.get("jira_base_url", "")
+    key = issue.get("key", "unknown")
+    metadata: dict = {
+        "key": key,
         "summary": issue.get("summary", ""),
     }
+    if jira_base_url:
+        metadata["jira_base_url"] = jira_base_url
+        metadata["ticket_url"] = f"{jira_base_url}/browse/{key}"
+    return metadata
 
 
 def _extract_github_metadata(task: dict) -> dict:
@@ -101,11 +107,14 @@ def build_conversation_title(task: dict) -> str:
 async def get_or_create_flow_conversation(
     dashboard_url: str, task: dict
 ) -> str:
+    from urllib.parse import quote
+
     flow_id = build_flow_id(task)
+    encoded_flow_id = quote(flow_id, safe="")
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         response = await client.get(
-            f"{dashboard_url}/api/conversations/by-flow/{flow_id}"
+            f"{dashboard_url}/api/conversations/by-flow/{encoded_flow_id}"
         )
 
         if response.status_code == 200:
@@ -162,7 +171,9 @@ async def register_task(
 def _build_jira_system_message(metadata: dict) -> str:
     key = metadata.get("key", "unknown")
     summary = metadata.get("summary", "")
-    return f"🎫 **Jira Webhook Triggered**\n\nTicket: {key}\nSummary: {summary}"
+    ticket_url = metadata.get("ticket_url", "")
+    ticket_ref = f"[{key}]({ticket_url})" if ticket_url else key
+    return f"🎫 **Jira Webhook Triggered**\n\nTicket: {ticket_ref}\nSummary: {summary}"
 
 
 def _build_github_system_message(metadata: dict) -> str:
@@ -178,7 +189,7 @@ def _build_slack_system_message(metadata: dict) -> str:
 
 
 async def post_system_message(
-    dashboard_url: str, conversation_id: str, task: dict
+    dashboard_url: str, conversation_id: str, task: dict, task_id: str | None = None
 ) -> None:
     source = task.get("source", "unknown")
     metadata = get_source_metadata(task)
@@ -192,9 +203,39 @@ async def post_system_message(
     else:
         content = f"🔔 **Webhook Triggered**\n\nSource: {source}"
 
+    body: dict = {"role": "system", "content": content}
+    if task_id:
+        body["task_id"] = task_id
+
     async with httpx.AsyncClient(timeout=10.0) as client:
         response = await client.post(
             f"{dashboard_url}/api/conversations/{conversation_id}/messages",
-            json={"role": "system", "content": content},
+            json=body,
         )
         response.raise_for_status()
+
+
+async def post_fallback_notice(
+    dashboard_url: str, conversation_id: str, source: str, posted: bool,
+    task_id: str | None = None,
+) -> None:
+    if posted:
+        content = (
+            f"MCP tools unavailable - Response was posted to {source} "
+            f"via fallback (direct API). Check the platform for the response."
+        )
+    else:
+        content = (
+            f"Response delivery failed - MCP tools unavailable and "
+            f"fallback to {source} also failed. Manual intervention needed."
+        )
+
+    body: dict = {"role": "system", "content": content}
+    if task_id:
+        body["task_id"] = task_id
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        await client.post(
+            f"{dashboard_url}/api/conversations/{conversation_id}/messages",
+            json=body,
+        )

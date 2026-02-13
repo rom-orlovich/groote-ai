@@ -24,12 +24,9 @@ class Settings(BaseSettings):
     internal_dashboard_api_url: str = "http://internal-dashboard-api:5000"
     dashboard_api_url: str = "http://dashboard-api:5000"
 
-    slack_api_url: str = "http://slack-api:3003"
-    slack_notification_channel: str = ""
-
-    knowledge_services_enabled: bool = False
+    knowledge_services_enabled: bool = True
     knowledge_graph_url: str = "http://gkg-service:4000"
-    llamaindex_url: str = "http://llamaindex-service:8100"
+    llamaindex_url: str = "http://llamaindex-service:8002"
     knowledge_timeout_seconds: float = 10.0
     knowledge_retry_count: int = 2
 

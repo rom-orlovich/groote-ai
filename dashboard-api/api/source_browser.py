@@ -132,9 +132,7 @@ async def browse_confluence_spaces():
         PlatformResource(
             id=space.get("key", ""),
             name=space.get("name", ""),
-            description=space.get("description", {}).get("plain", {}).get("value", "")
-            if isinstance(space.get("description"), dict)
-            else "",
+            description=space.get("description", "") if isinstance(space.get("description"), str) else "",
             metadata={
                 "key": space.get("key", ""),
                 "type": space.get("type", ""),

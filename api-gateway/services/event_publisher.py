@@ -139,5 +139,24 @@ class EventPublisher:
         )
 
 
+    async def publish_webhook_payload(
+        self, webhook_event_id: str, source: str, event_type: str, payload: dict
+    ) -> None:
+        await self._publish(
+            "webhook:payload",
+            webhook_event_id,
+            {"source": source, "event_type": event_type, "payload": payload},
+        )
+
+    async def publish_webhook_skipped(
+        self, webhook_event_id: str, source: str, event_type: str, reason: str
+    ) -> None:
+        await self._publish(
+            "webhook:skipped",
+            webhook_event_id,
+            {"source": source, "event_type": event_type, "reason": reason},
+        )
+
+
 def create_event_publisher(redis_url: str) -> EventPublisher:
     return EventPublisher(redis_url)

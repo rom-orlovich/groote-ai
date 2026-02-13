@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     jira_api_url: str = "http://jira-api:3002"
     slack_api_url: str = "http://slack-api:3003"
     slack_notification_channel: str = ""
+    oauth_service_url: str = "http://oauth-service:8010"
+    internal_service_key: str = ""
 
     @property
     def redis_url(self) -> str:

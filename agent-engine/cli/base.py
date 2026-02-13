@@ -13,6 +13,8 @@ class CLIResult:
     input_tokens: int
     output_tokens: int
     error: str | None = None
+    tool_events: list[dict] | None = None
+    thinking_blocks: list[dict] | None = None
 
 
 @runtime_checkable

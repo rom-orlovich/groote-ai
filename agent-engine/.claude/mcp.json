@@ -1,35 +1,28 @@
 {
   "mcpServers": {
     "github": {
-      "type": "http",
-      "url": "https://api.githubcopilot.com/mcp/",
-      "headers": {
-        "Authorization": "Bearer ${GITHUB_TOKEN}"
-      }
+      "type": "sse",
+      "url": "http://github-mcp:9001/sse"
     },
     "jira": {
-      "url": "http://jira-mcp:9002/sse",
-      "transport": "sse"
+      "type": "sse",
+      "url": "http://jira-mcp:9002/sse"
     },
     "slack": {
-      "url": "http://slack-mcp:9003/sse",
-      "transport": "sse"
-    },
-    "sentry": {
-      "url": "http://sentry-mcp:9004/sse",
-      "transport": "sse"
+      "type": "sse",
+      "url": "http://slack-mcp:9003/sse"
     },
     "knowledge-graph": {
-      "url": "http://knowledge-graph-mcp:9005/sse",
-      "transport": "sse"
+      "type": "sse",
+      "url": "http://knowledge-graph-mcp:9005/sse"
     },
     "llamaindex": {
-      "url": "http://llamaindex-mcp:9006/sse",
-      "transport": "sse"
+      "type": "sse",
+      "url": "http://llamaindex-mcp:9006/sse"
     },
     "gkg": {
-      "url": "http://gkg-mcp:9007/sse",
-      "transport": "sse"
+      "type": "sse",
+      "url": "http://gkg-mcp:9007/sse"
     }
   }
 }

@@ -3,7 +3,7 @@ from typing import Any
 SUPPORTED_EVENTS = {
     "issues": ["opened", "edited", "labeled"],
     "issue_comment": ["created"],
-    "pull_request": ["opened", "synchronize", "reopened"],
+    "pull_request": ["opened", "synchronize", "reopened", "review_requested"],
     "pull_request_review_comment": ["created"],
     "push": None,
 }
@@ -19,10 +19,7 @@ def is_bot_sender(payload: dict[str, Any]) -> bool:
         return True
 
     comment_user = comment.get("user", {})
-    if comment_user.get("type") == "Bot":
-        return True
-
-    return False
+    return comment_user.get("type") == "Bot"
 
 
 def should_process_event(

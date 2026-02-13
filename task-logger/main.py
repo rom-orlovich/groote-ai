@@ -61,27 +61,39 @@ async def get_task_logs(task_id: str):
     if input_file.exists():
         logs["input"] = json.loads(input_file.read_text())
 
-    webhook_flow_file = task_dir / "02-webhook-flow.jsonl"
-    if webhook_flow_file.exists():
-        logs["webhook_flow"] = [
-            json.loads(line) for line in webhook_flow_file.read_text().splitlines()
-        ]
-
-    agent_output_file = task_dir / "03-agent-output.jsonl"
-    if agent_output_file.exists():
-        logs["agent_output"] = [
-            json.loads(line) for line in agent_output_file.read_text().splitlines()
-        ]
-
-    user_inputs_file = task_dir / "03-user-inputs.jsonl"
+    user_inputs_file = task_dir / "02-user-inputs.jsonl"
     if user_inputs_file.exists():
         logs["user_inputs"] = [
             json.loads(line) for line in user_inputs_file.read_text().splitlines()
         ]
 
-    final_result_file = task_dir / "04-final-result.json"
+    webhook_flow_file = task_dir / "03-webhook-flow.jsonl"
+    if webhook_flow_file.exists():
+        logs["webhook_flow"] = [
+            json.loads(line) for line in webhook_flow_file.read_text().splitlines()
+        ]
+
+    agent_output_file = task_dir / "04-agent-output.jsonl"
+    if agent_output_file.exists():
+        logs["agent_output"] = [
+            json.loads(line) for line in agent_output_file.read_text().splitlines()
+        ]
+
+    knowledge_file = task_dir / "05-knowledge-interactions.jsonl"
+    if knowledge_file.exists():
+        logs["knowledge_interactions"] = [
+            json.loads(line) for line in knowledge_file.read_text().splitlines()
+        ]
+
+    final_result_file = task_dir / "06-final-result.json"
     if final_result_file.exists():
         logs["final_result"] = json.loads(final_result_file.read_text())
+
+    response_posting_file = task_dir / "07-response-posting.jsonl"
+    if response_posting_file.exists():
+        logs["response_posting"] = [
+            json.loads(line) for line in response_posting_file.read_text().splitlines()
+        ]
 
     return JSONResponse(content=logs)
 

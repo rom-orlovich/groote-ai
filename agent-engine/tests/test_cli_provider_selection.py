@@ -43,5 +43,7 @@ class TestAgentFrontmatter:
 
     def test_all_agent_files_have_model(self):
         for agent_file in AGENTS_DIR.glob("*.md"):
+            if agent_file.name == "MANIFEST.md":
+                continue
             model = _parse_frontmatter_model(agent_file)
             assert model is not None, f"{agent_file.name} is missing 'model:' in frontmatter"

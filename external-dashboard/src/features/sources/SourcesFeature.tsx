@@ -1,4 +1,4 @@
-import { Activity, Database, Plus, RefreshCw } from "lucide-react";
+import { Activity, Database, Plus, RefreshCw, Square } from "lucide-react";
 import { useState } from "react";
 import { AddSourceModal } from "./AddSourceModal";
 import { useSources } from "./hooks/useSources";
@@ -16,12 +16,16 @@ export function SourcesFeature() {
     refetchJobs,
     create,
     isCreating,
+    createError,
+    resetCreateError,
     update,
     isUpdating,
     remove,
     isDeleting,
     sync,
     isSyncing,
+    cancelJob,
+    isCancelling,
   } = useSources();
 
   if (isLoading) {
@@ -176,6 +180,7 @@ export function SourcesFeature() {
                   <th className="text-left py-2 px-2 font-heading text-gray-400">STATUS</th>
                   <th className="text-left py-2 px-2 font-heading text-gray-400">PROGRESS</th>
                   <th className="text-left py-2 px-2 font-heading text-gray-400">CREATED</th>
+                  <th className="text-right py-2 px-2 font-heading text-gray-400" />
                 </tr>
               </thead>
               <tbody>
@@ -212,6 +217,19 @@ export function SourcesFeature() {
                     <td className="py-2 px-2 font-mono text-gray-500">
                       {new Date(job.created_at).toLocaleString()}
                     </td>
+                    <td className="py-2 px-2 text-right">
+                      {(job.status === "queued" || job.status === "running") && (
+                        <button
+                          type="button"
+                          onClick={() => cancelJob(job.job_id)}
+                          disabled={isCancelling}
+                          className="p-1 border border-red-300 hover:bg-red-50 text-red-500 hover:text-red-700 disabled:opacity-50"
+                          title="Cancel job"
+                        >
+                          <Square size={10} />
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -241,13 +259,17 @@ export function SourcesFeature() {
 
       <AddSourceModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          resetCreateError();
+          setIsModalOpen(false);
+        }}
         onSubmit={(request) => {
           create(request, {
             onSuccess: () => setIsModalOpen(false),
           });
         }}
         isSubmitting={isCreating}
+        error={createError instanceof Error ? createError.message : null}
       />
     </div>
   );

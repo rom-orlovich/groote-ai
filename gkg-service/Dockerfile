@@ -10,8 +10,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -fsSL https://gitlab.com/gitlab-org/rust/knowledge-graph/-/raw/main/install.sh | bash || \
     echo "GKG installation skipped - will use mock mode"
 
-RUN mkdir -p /root/.cargo/bin && touch /root/.cargo/bin/gkg
-
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -20,9 +18,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     git \
+    socat \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /root/.cargo/bin/gkg /usr/local/bin/gkg
+COPY --from=builder /root/.local/bin/gkg /usr/local/bin/gkg
 
 RUN pip install uv
 
@@ -33,6 +32,9 @@ COPY . .
 
 RUN mkdir -p /data/gkg /data/repos
 
-EXPOSE 8003
+EXPOSE 8003 27495
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003"]
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+CMD ["/app/entrypoint.sh"]

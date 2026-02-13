@@ -36,7 +36,7 @@ Execute the requested task (code analysis, bug fix, etc.)
 **Use MCP tool:**
 
 ```
-slack:post_message
+slack:send_slack_message
 ```
 
 **Required Parameters:**
@@ -49,7 +49,7 @@ slack:post_message
 
 ```json
 {
-  "tool": "slack:post_message",
+  "tool": "slack:send_slack_message",
   "arguments": {
     "channel": "C123456",
     "thread_ts": "1234567890.123456",
@@ -64,7 +64,7 @@ Use `blocks` parameter for rich formatting:
 
 ```json
 {
-  "tool": "slack:post_message",
+  "tool": "slack:send_slack_message",
   "arguments": {
     "channel": "C123456",
     "thread_ts": "1234567890.123456",
@@ -98,7 +98,7 @@ Use `blocks` parameter for rich formatting:
 
 ```json
 {
-  "tool": "slack:post_message",
+  "tool": "slack:send_slack_message",
   "arguments": {
     "channel": "C123456",
     "text": "🚀 *Job Started*\n*Source:* {source}\n*Command:* {command}\n*Task ID:* `{task_id}`\n*Agent:* {agent}"
@@ -114,7 +114,7 @@ Use `blocks` parameter for rich formatting:
 
 ```json
 {
-  "tool": "slack:post_message",
+  "tool": "slack:send_slack_message",
   "arguments": {
     "channel": "C123456",
     "text": "✅ *Task Completed*\n*Task ID:* `{task_id}`\n*Summary:* {summary}\n*Cost:* ${cost}"
@@ -126,7 +126,7 @@ Use `blocks` parameter for rich formatting:
 
 ```json
 {
-  "tool": "slack:post_message",
+  "tool": "slack:send_slack_message",
   "arguments": {
     "channel": "C123456",
     "text": "❌ *Task Failed*\n*Task ID:* `{task_id}`\n*Error:* {error_message}"
@@ -142,7 +142,7 @@ Use `blocks` parameter for rich formatting:
 
 ```json
 {
-  "tool": "slack:post_message",
+  "tool": "slack:send_slack_message",
   "arguments": {
     "channel": "C123456",
     "blocks": [
@@ -194,7 +194,7 @@ Use `blocks` parameter for rich formatting:
 
 ````json
 {
-  "tool": "slack:post_message",
+  "tool": "slack:send_slack_message",
   "arguments": {
     "channel": "C123456",
     "thread_ts": "1234567890.123456",

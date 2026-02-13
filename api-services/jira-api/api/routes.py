@@ -2,7 +2,7 @@ from typing import Annotated, Any
 
 from client import JiraClient
 from config import Settings, get_settings
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, ConfigDict
 from token_provider import TokenProvider  # noqa: TC002
 
@@ -52,6 +52,9 @@ class SearchIssuesRequest(BaseModel):
     jql: str
     max_results: int = 50
     start_at: int = 0
+    expand: str = ""
+    next_page_token: str = ""
+    fields: list[str] | None = None
 
 
 class TransitionIssueRequest(BaseModel):
@@ -103,7 +106,14 @@ async def search_issues(
     request: SearchIssuesRequest,
     client: Annotated[JiraClient, Depends(get_jira_client)],
 ):
-    return await client.search_issues(request.jql, request.max_results, request.start_at)
+    return await client.search_issues(
+        request.jql,
+        request.max_results,
+        request.start_at,
+        request.expand,
+        request.next_page_token,
+        request.fields,
+    )
 
 
 @router.get("/issues/{issue_key}/transitions")
@@ -128,6 +138,17 @@ async def get_projects(
     client: Annotated[JiraClient, Depends(get_jira_client)],
 ):
     return await client.get_projects()
+
+
+@router.get("/confluence/pages")
+async def get_confluence_pages(
+    space_key: Annotated[str, Query()],
+    start: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=250)] = 50,
+    expand: Annotated[str, Query()] = "body.storage,metadata.labels,version",
+    client: Annotated[JiraClient, Depends(get_jira_client)] = None,
+):
+    return await client.get_confluence_pages(space_key, start, limit, expand)
 
 
 @router.get("/confluence/spaces")

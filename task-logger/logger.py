@@ -34,6 +34,26 @@ class TaskLogger:
         knowledge_file = self.log_dir / "05-knowledge-interactions.jsonl"
         self._atomic_append_jsonl(knowledge_file, interaction)
 
+    def enrich_input(self, data: dict):
+        input_file = self.log_dir / "01-input.json"
+        existing = {}
+        if input_file.exists():
+            existing = json.loads(input_file.read_text())
+        existing.update(data)
+        self._atomic_write_json(input_file, existing)
+
+    def enrich_metadata(self, data: dict):
+        metadata_file = self.log_dir / "metadata.json"
+        existing = {}
+        if metadata_file.exists():
+            existing = json.loads(metadata_file.read_text())
+        existing.update(data)
+        self._atomic_write_json(metadata_file, existing)
+
+    def append_response_posting(self, event: dict):
+        posting_file = self.log_dir / "07-response-posting.jsonl"
+        self._atomic_append_jsonl(posting_file, event)
+
     def write_final_result(self, data: dict):
         result_file = self.log_dir / "06-final-result.json"
         self._atomic_write_json(result_file, data)

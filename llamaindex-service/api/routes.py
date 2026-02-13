@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from collections.abc import Callable
+
 import structlog
 from core.interfaces import VectorStoreProtocol
 from core.models import (
@@ -128,8 +132,8 @@ def create_health_router(
     vector_store: VectorStoreProtocol,
     graph_store_enabled: bool,
     cache_enabled: bool,
-    check_graph_store: callable | None = None,
-    check_cache: callable | None = None,
+    check_graph_store: Callable | None = None,
+    check_cache: Callable | None = None,
 ) -> APIRouter:
     """Create health check routes."""
     router = APIRouter()

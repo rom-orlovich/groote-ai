@@ -108,11 +108,23 @@ class JiraClient:
         return response.json()
 
     async def search_issues(
-        self, jql: str, max_results: int = 50, start_at: int = 0
+        self,
+        jql: str,
+        max_results: int = 50,
+        start_at: int = 0,
+        expand: str = "",
+        next_page_token: str = "",
+        fields: list[str] | None = None,
     ) -> dict[str, Any]:
         client = await self._get_client()
-        payload = {"jql": jql, "maxResults": max_results, "startAt": start_at}
-        response = await client.post("/search", json=payload)
+        payload: dict[str, Any] = {"jql": jql, "maxResults": max_results}
+        if next_page_token:
+            payload["nextPageToken"] = next_page_token
+        if expand:
+            payload["expand"] = expand
+        if fields:
+            payload["fields"] = fields
+        response = await client.post("/search/jql", json=payload)
         response.raise_for_status()
         return response.json()
 
@@ -137,9 +149,28 @@ class JiraClient:
         response.raise_for_status()
         return response.json()
 
+    async def get_confluence_pages(
+        self, space_key: str, start: int = 0, limit: int = 50, expand: str = ""
+    ) -> dict[str, Any]:
+        confluence_base = self._base_url.replace("/ex/jira/", "/ex/confluence/")
+        url = f"{confluence_base}/wiki/api/v2/pages"
+        params: dict[str, str | int] = {"spaceKey": space_key, "start": start, "limit": limit}
+        if expand:
+            params["expand"] = expand
+        async with httpx.AsyncClient(
+            headers={
+                "Authorization": self._get_auth_header(),
+                "Accept": "application/json",
+            },
+            timeout=self._timeout,
+        ) as client:
+            response = await client.get(url, params=params)
+            response.raise_for_status()
+            return response.json()
+
     async def get_confluence_spaces(self) -> list[dict[str, Any]]:
         confluence_base = self._base_url.replace("/ex/jira/", "/ex/confluence/")
-        url = f"{confluence_base}/wiki/rest/api/space"
+        url = f"{confluence_base}/wiki/api/v2/spaces"
         async with httpx.AsyncClient(
             headers={
                 "Authorization": self._get_auth_header(),

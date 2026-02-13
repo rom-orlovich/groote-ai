@@ -1,10 +1,11 @@
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 from services.conversation_bridge import (
-    build_flow_id,
     build_conversation_title,
-    get_or_create_flow_conversation,
+    build_flow_id,
     fetch_conversation_context,
+    get_or_create_flow_conversation,
 )
 
 

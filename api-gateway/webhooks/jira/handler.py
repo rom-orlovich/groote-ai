@@ -7,7 +7,11 @@ from config import get_settings
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from services.event_publisher import EventPublisher
-from services.slack_notifier import notify_task_failed, notify_task_started
+from services.slack_notifier import (
+    get_notification_channel,
+    notify_task_failed,
+    notify_task_started,
+)
 
 from .events import extract_task_info, should_process_event
 from .response import send_error_response, send_immediate_response
@@ -51,6 +55,12 @@ async def handle_jira_webhook(request: Request):
             source="jira",
             signature_valid=True,
         )
+        await publisher.publish_webhook_payload(
+            webhook_event_id=webhook_event_id,
+            source="jira",
+            event_type=webhook_event,
+            payload=data,
+        )
 
     comment = data.get("comment")
     if not should_process_event(
@@ -61,6 +71,13 @@ async def handle_jira_webhook(request: Request):
             event_type=webhook_event,
             reason="Bot comment, missing AI-Fix label, or unsupported event",
         )
+        if publisher:
+            await publisher.publish_webhook_skipped(
+                webhook_event_id=webhook_event_id,
+                source="jira",
+                event_type=webhook_event,
+                reason="event_not_processed",
+            )
         return JSONResponse(
             status_code=200,
             content={"status": "skipped", "reason": "Event not processed"},
@@ -77,12 +94,25 @@ async def handle_jira_webhook(request: Request):
                 issue_key=issue_key,
                 event_type=webhook_event,
             )
+            if publisher:
+                await publisher.publish_webhook_skipped(
+                    webhook_event_id=webhook_event_id,
+                    source="jira",
+                    event_type=webhook_event,
+                    reason="duplicate_within_cooldown",
+                )
             return JSONResponse(
                 status_code=200,
                 content={"status": "skipped", "reason": "Duplicate event within cooldown"},
             )
     except Exception as e:
         logger.warning("jira_dedup_check_failed", error=str(e))
+
+    notification_channel = await get_notification_channel(
+        settings.oauth_service_url,
+        settings.internal_service_key,
+        settings.slack_notification_channel,
+    )
 
     task_info = extract_task_info(webhook_event, data)
     task_id = str(uuid.uuid4())
@@ -118,7 +148,7 @@ async def handle_jira_webhook(request: Request):
         await send_error_response(settings.jira_api_url, issue_key, str(e))
         await notify_task_failed(
             settings.slack_api_url,
-            settings.slack_notification_channel,
+            notification_channel,
             "jira",
             task_id,
             str(e),
@@ -129,7 +159,7 @@ async def handle_jira_webhook(request: Request):
                 task_id=task_id,
                 source="jira",
                 notification_type="task_failed",
-                channel=settings.slack_notification_channel,
+                channel=notification_channel,
             )
         return JSONResponse(status_code=500, content={"status": "error", "error": str(e)})
 
@@ -144,7 +174,7 @@ async def handle_jira_webhook(request: Request):
 
     await notify_task_started(
         settings.slack_api_url,
-        settings.slack_notification_channel,
+        notification_channel,
         "jira",
         task_id,
         f"{issue_key} {webhook_event}",
@@ -155,7 +185,7 @@ async def handle_jira_webhook(request: Request):
             task_id=task_id,
             source="jira",
             notification_type="task_started",
-            channel=settings.slack_notification_channel,
+            channel=notification_channel,
         )
 
     logger.info("jira_task_queued", task_id=task_id, issue_key=issue_key)

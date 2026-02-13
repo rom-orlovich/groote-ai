@@ -29,7 +29,7 @@ Find files by name pattern.
   "action": "search_files",
   "parameters": {
     "pattern": "*.py",
-    "working_dir": "/app/repos/groote-ai"
+    "working_dir": "/app"
   }
 }
 ```

@@ -8,7 +8,11 @@ from config import get_settings
 from fastapi import APIRouter, Header, Request
 from fastapi.responses import JSONResponse
 from services.event_publisher import EventPublisher
-from services.slack_notifier import notify_task_failed, notify_task_started
+from services.slack_notifier import (
+    get_notification_channel,
+    notify_task_failed,
+    notify_task_started,
+)
 
 from .events import extract_task_info, should_process_event
 from .response import send_error_response, send_immediate_response
@@ -73,6 +77,12 @@ async def handle_github_webhook(
             source="github",
             signature_valid=True,
         )
+        await publisher.publish_webhook_payload(
+            webhook_event_id=webhook_event_id,
+            source="github",
+            event_type=x_github_event,
+            payload=data,
+        )
 
     if x_github_event == "installation":
         logger.info(
@@ -80,6 +90,13 @@ async def handle_github_webhook(
             action=action,
             installation_id=data.get("installation", {}).get("id"),
         )
+        if publisher:
+            await publisher.publish_webhook_skipped(
+                webhook_event_id=webhook_event_id,
+                source="github",
+                event_type="installation",
+                reason="installation_event",
+            )
         return JSONResponse(
             status_code=200,
             content={"status": "acknowledged", "event": "installation", "action": action},
@@ -87,10 +104,23 @@ async def handle_github_webhook(
 
     if not should_process_event(x_github_event, action, payload=data):
         logger.debug("github_event_skipped", event_type=x_github_event, action=action)
+        if publisher:
+            await publisher.publish_webhook_skipped(
+                webhook_event_id=webhook_event_id,
+                source="github",
+                event_type=x_github_event,
+                reason="event_type_not_processed",
+            )
         return JSONResponse(
             status_code=200,
             content={"status": "skipped", "reason": "Event type not processed"},
         )
+
+    notification_channel = await get_notification_channel(
+        settings.oauth_service_url,
+        settings.internal_service_key,
+        settings.slack_notification_channel,
+    )
 
     ctx = _extract_github_context(data, x_github_event)
     task_info = extract_task_info(x_github_event, data)
@@ -143,7 +173,7 @@ async def handle_github_webhook(
         )
         await notify_task_failed(
             settings.slack_api_url,
-            settings.slack_notification_channel,
+            notification_channel,
             "github",
             task_id,
             str(e),
@@ -154,7 +184,7 @@ async def handle_github_webhook(
                 task_id=task_id,
                 source="github",
                 notification_type="task_failed",
-                channel=settings.slack_notification_channel,
+                channel=notification_channel,
             )
         return JSONResponse(status_code=500, content={"status": "error", "error": str(e)})
 
@@ -169,7 +199,7 @@ async def handle_github_webhook(
 
     await notify_task_started(
         settings.slack_api_url,
-        settings.slack_notification_channel,
+        notification_channel,
         "github",
         task_id,
         f"{ctx['full_name']} #{ctx['issue_number']} {x_github_event}",
@@ -180,7 +210,7 @@ async def handle_github_webhook(
             task_id=task_id,
             source="github",
             notification_type="task_started",
-            channel=settings.slack_notification_channel,
+            channel=notification_channel,
         )
 
     logger.info("github_task_queued", task_id=task_id, event_type=x_github_event)

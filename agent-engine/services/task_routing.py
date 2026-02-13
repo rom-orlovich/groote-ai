@@ -1,44 +1,58 @@
+import os
+import re
 from typing import Any
 
+from services.conversation_bridge import get_source_metadata
 
-def build_prompt(task: dict[str, Any]) -> str:
-    source = task.get("source", "")
-    base_prompt = task.get("prompt", "")
+POSTING_TOOLS = {"add_jira_comment", "add_issue_comment", "send_slack_message"}
 
-    if source == "jira":
-        issue = task.get("issue", {})
-        issue_key = issue.get("key", "")
-        return (
-            f"Jira ticket: {issue_key}\n\n"
-            f"{base_prompt}\n\n"
-            f"Provide a clear, actionable analysis. Your response will be "
-            f"automatically posted back to Jira ticket {issue_key}."
-        )
+GITHUB_PR_EVENTS = {"pull_request", "pull_request_review_comment"}
+GITHUB_ISSUE_EVENTS = {"issues", "issue_comment"}
 
-    if source == "github":
-        repo = task.get("repository", {})
-        repo_name = repo.get("full_name", "")
-        issue = task.get("issue", {})
-        pr = task.get("pull_request", {})
-        number = issue.get("number") or pr.get("number", "")
-        return (
-            f"GitHub {repo_name}#{number}\n\n"
-            f"{base_prompt}\n\n"
-            f"Provide a clear, actionable analysis. Your response will be "
-            f"automatically posted back to {repo_name}#{number}."
-        )
+IMPROVE_KEYWORDS = {"improve", "fix", "update", "refactor", "change", "implement", "address"}
 
-    return base_prompt
+AGENT_ROUTING: dict[str, str | dict[str, str]] = {
+    "jira": "jira-code-plan",
+    "github": {
+        "issues": "github-issue-handler",
+        "issue_comment": "github-issue-handler",
+        "pull_request": "github-pr-review",
+        "pull_request_review_comment": "github-pr-review",
+    },
+    "slack": "slack-inquiry",
+}
 
 
-def build_enriched_prompt(
-    task: dict, conversation_context: list[dict] | None = None
+def _is_pr_improve_request(task: dict[str, Any]) -> bool:
+    metadata = task.get("source_metadata", {})
+    has_pr = bool(metadata.get("pr_number") or metadata.get("pull_request"))
+    if not has_pr:
+        return False
+    prompt = task.get("prompt", "").lower()
+    return any(kw in prompt for kw in IMPROVE_KEYWORDS)
+
+
+def resolve_target_agent(source: str, event_type: str, task: dict[str, Any] | None = None) -> str:
+    if source == "github" and event_type == "issue_comment" and task and _is_pr_improve_request(task):
+        return "github-pr-review"
+
+    route = AGENT_ROUTING.get(source)
+    if isinstance(route, str):
+        return route
+    if isinstance(route, dict):
+        return route.get(event_type, "brain")
+    return "brain"
+
+
+def build_task_context(
+    task: dict[str, Any], conversation_context: list[dict] | None = None
 ) -> str:
-    from services.conversation_bridge import get_source_metadata
-
     source = task.get("source", "unknown")
-    base_prompt = task.get("prompt", "")
+    event_type = task.get("event_type", "unknown")
     metadata = get_source_metadata(task)
+    base_prompt = task.get("prompt", "")
+    target_agent = resolve_target_agent(source, event_type, task)
+    org_id = os.getenv("ORG_ID", "default-org")
 
     context_section = ""
     if conversation_context:
@@ -48,56 +62,24 @@ def build_enriched_prompt(
             content = msg.get("content", "")
             context_section += f"**{role.title()}**: {content}\n\n"
 
-    source_context = _build_source_context(source, metadata)
-    platform_instructions = _build_platform_instructions(source)
+    metadata_lines = "\n".join(f"- {k}: {v}" for k, v in metadata.items() if v)
 
-    return f"""
-{source_context}
-
+    return f"""## Task
+Source: {source}
+Event: {event_type}
+Target-Agent: {target_agent}
+Knowledge-Org-ID: {org_id}
+{metadata_lines}
 {context_section}
-
-## Task
-
-{base_prompt}
-
-{platform_instructions}
-""".strip()
+{base_prompt}""".strip()
 
 
-def _build_source_context(source: str, metadata: dict) -> str:
-    if source == "jira":
-        key = metadata.get("key", "unknown")
-        return f"## Jira Ticket: {key}\n"
-    if source == "github":
-        repo = metadata.get("repo", "unknown")
-        number = metadata.get("number", "unknown")
-        return f"## GitHub Issue/PR: {repo}#{number}\n"
-    if source == "slack":
-        channel = metadata.get("channel_name", "unknown")
-        return f"## Slack Channel: #{channel}\n"
-    return f"## Source: {source}\n"
+MCP_CALL_PATTERNS = [
+    re.compile(r"\[TOOL\]\s*Using\s+\S*" + tool) for tool in POSTING_TOOLS
+]
 
 
-def _build_platform_instructions(source: str) -> str:
-    if source == "jira":
-        return """
-## Response Instructions
-
-Provide a clear, actionable analysis. Your response will be automatically posted as a comment on the Jira ticket.
-Do NOT manually post comments - the system handles this for you.
-"""
-    if source == "github":
-        return """
-## Response Instructions
-
-Provide a clear, actionable analysis. Your response will be automatically posted as a comment on the GitHub issue/PR.
-Do NOT manually post comments - the system handles this for you.
-"""
-    if source == "slack":
-        return """
-## Response Instructions
-
-Provide a clear, concise summary (max 3000 chars). Your response will be automatically posted to the Slack thread.
-Do NOT manually post messages - the system handles this for you.
-"""
-    return ""
+def detect_mcp_posting(output: str | None) -> bool:
+    if not output:
+        return False
+    return any(pattern.search(output) for pattern in MCP_CALL_PATTERNS)

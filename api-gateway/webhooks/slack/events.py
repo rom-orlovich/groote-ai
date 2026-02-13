@@ -11,6 +11,9 @@ def should_process_event(event: dict[str, Any], bot_user_id: str | None = None) 
     if event.get("subtype") == "bot_message":
         return False
 
+    if event.get("bot_id"):
+        return False
+
     if bot_user_id and event.get("user") == bot_user_id:
         return False
 

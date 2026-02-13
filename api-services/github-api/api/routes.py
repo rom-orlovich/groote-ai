@@ -42,6 +42,15 @@ class CreatePRReviewCommentRequest(BaseModel):
     line: int
 
 
+class CreatePullRequestRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+    title: str
+    head: str
+    base: str
+    body: str | None = None
+    draft: bool = False
+
+
 class AddReactionRequest(BaseModel):
     model_config = ConfigDict(strict=True)
     content: str
@@ -127,6 +136,18 @@ async def create_pr_review_comment(
     )
 
 
+@router.post("/repos/{owner}/{repo}/pulls")
+async def create_pull_request(
+    owner: str,
+    repo: str,
+    request: CreatePullRequestRequest,
+    client: Annotated[GitHubClient, Depends(get_github_client)],
+):
+    return await client.create_pull_request(
+        owner, repo, request.title, request.head, request.base, request.body, request.draft
+    )
+
+
 @router.get("/repos/{owner}/{repo}/contents/{path:path}")
 async def get_file_contents(
     owner: str,
@@ -166,3 +187,23 @@ async def list_installation_repos(
     client: Annotated[GitHubClient, Depends(get_github_client)] = None,
 ):
     return await client.list_installation_repos(per_page, page)
+
+
+@router.get("/users/{username}/repos")
+async def list_user_repos(
+    username: str,
+    per_page: Annotated[int, Query(ge=1, le=100)] = 100,
+    page: Annotated[int, Query(ge=1)] = 1,
+    client: Annotated[GitHubClient, Depends(get_github_client)] = None,
+):
+    return await client.list_user_repos(username, per_page, page)
+
+
+@router.get("/search/repositories")
+async def search_repositories(
+    q: Annotated[str, Query()],
+    per_page: Annotated[int, Query(ge=1, le=100)] = 30,
+    page: Annotated[int, Query(ge=1)] = 1,
+    client: Annotated[GitHubClient, Depends(get_github_client)] = None,
+):
+    return await client.search_repositories(q, per_page, page)

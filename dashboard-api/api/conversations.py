@@ -178,7 +178,12 @@ async def get_conversation_by_flow(
     flow_id: str,
     db: AsyncSession = Depends(get_db_session),
 ):
-    result = await db.execute(select(ConversationDB).where(ConversationDB.flow_id == flow_id))
+    result = await db.execute(
+        select(ConversationDB)
+        .where(ConversationDB.flow_id == flow_id)
+        .order_by(ConversationDB.created_at.desc())
+        .limit(1)
+    )
     conversation = result.scalar_one_or_none()
 
     if not conversation:

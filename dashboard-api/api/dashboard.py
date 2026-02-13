@@ -214,8 +214,9 @@ async def get_task(task_id: str, db: AsyncSession = Depends(get_db_session)):
 @router.get("/tasks/{task_id}/logs")
 async def get_task_logs(task_id: str, db: AsyncSession = Depends(get_db_session)):
     """Get task logs/output stream with task-logger fallback."""
-    import httpx
     import os
+
+    import httpx
 
     result = await db.execute(select(TaskDB).where(TaskDB.task_id == task_id))
     task = result.scalar_one_or_none()
@@ -233,7 +234,15 @@ async def get_task_logs(task_id: str, db: AsyncSession = Depends(get_db_session)
                 response = await client.get(f"{task_logger_url}/tasks/{task_id}/logs")
                 if response.status_code == 200:
                     data = response.json()
-                    output = data.get("output", "")
+                    parts = []
+                    for entry in data.get("agent_output", []):
+                        content = entry.get("content", "")
+                        if content:
+                            parts.append(content)
+                    final = data.get("final_result", {})
+                    if final.get("result"):
+                        parts.append(final["result"])
+                    output = "\n".join(parts)
         except Exception as e:
             logger.warning("task_logger_fallback_failed", task_id=task_id, error=str(e))
 
@@ -313,6 +322,61 @@ async def create_external_task(
     await db.commit()
 
     return {"task_id": payload.task_id, "conversation_id": payload.conversation_id}
+
+
+class TaskUpdatePayload(BaseModel):
+    status: str | None = None
+    output: str | None = None
+    error: str | None = None
+    cost_usd: float | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    duration_seconds: float | None = None
+    result: str | None = None
+
+
+@router.patch("/tasks/{task_id}")
+async def update_task(
+    task_id: str,
+    payload: TaskUpdatePayload,
+    db: AsyncSession = Depends(get_db_session),
+):
+    result = await db.execute(select(TaskDB).where(TaskDB.task_id == task_id))
+    task = result.scalar_one_or_none()
+
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    if payload.status:
+        task.status = payload.status
+        if payload.status in (TaskStatus.RUNNING,) and not task.started_at:
+            task.started_at = datetime.now(UTC)
+        if payload.status in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED):
+            task.completed_at = datetime.now(UTC)
+
+    if payload.output is not None:
+        task.output_stream = payload.output
+    if payload.error is not None:
+        task.error = payload.error
+    if payload.cost_usd is not None:
+        task.cost_usd = payload.cost_usd
+    if payload.input_tokens is not None:
+        task.input_tokens = payload.input_tokens
+    if payload.output_tokens is not None:
+        task.output_tokens = payload.output_tokens
+    if payload.duration_seconds is not None:
+        task.duration_seconds = payload.duration_seconds
+    if payload.result is not None:
+        task.result = payload.result
+
+    await db.commit()
+
+    source_meta = json.loads(task.source_metadata or "{}")
+    conv_id = source_meta.get("conversation_id")
+    if conv_id and payload.status in (TaskStatus.COMPLETED, TaskStatus.FAILED):
+        await update_conversation_metrics(conv_id, task, db)
+
+    return {"task_id": task_id, "status": task.status}
 
 
 @router.post("/chat")

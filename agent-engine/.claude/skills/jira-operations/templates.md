@@ -50,6 +50,8 @@ _Automated analysis by Claude Agent_
 ## ✅ Implementation Complete
 
 **Summary:** {summary}
+**PR:** {pr_html_url}
+**Branch:** `{branch_name}`
 
 ### Changes Made
 
@@ -61,11 +63,13 @@ _Automated analysis by Claude Agent_
 
 ### Testing
 
-{testing_notes}
+- [x] Unit tests added/updated
+- [x] All tests passing
+- [x] Lint checks passing
 
-### Deployment Notes
+### Next Steps
 
-{deployment_notes}
+PR is ready for review. Merge to deploy.
 
 ---
 

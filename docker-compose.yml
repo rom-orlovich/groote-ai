@@ -63,12 +63,15 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - DATABASE_URL=postgresql+asyncpg://agent:${POSTGRES_PASSWORD:-agent}@postgres:5432/agent_system
       - KNOWLEDGE_GRAPH_URL=http://knowledge-graph:4000
+      - KNOWLEDGE_SERVICES_ENABLED=${KNOWLEDGE_SERVICES_ENABLED:-true}
+      - LLAMAINDEX_URL=http://llamaindex-service:8002
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - CURSOR_API_KEY=${CURSOR_API_KEY:-}
+      - DASHBOARD_API_URL=${DASHBOARD_API_URL:-http://dashboard-api:5000}
     volumes:
       - agent_data:/data
-      - ~/.claude/.credentials.json:/home/agent/.claude/.credentials.json:ro
       - ~/.claude/.claude.json:/home/agent/.claude/.claude.json:ro
+      - ~/.claude/.credentials.json:/home/agent/.claude/.credentials.json:ro
     depends_on:
       redis:
         condition: service_healthy
@@ -77,15 +80,19 @@ services:
     networks:
       - agent-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,json; r=urllib.request.urlopen('http://localhost:9100/health/auth'); d=json.loads(r.read()); exit(0 if d.get('authenticated') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   github-mcp:
-    image: ghcr.io/github/github-mcp-server:latest
+    build: ./mcp-servers/github-mcp
+    ports:
+      - "9001:9001"
     environment:
-      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_TOKEN:-}
-      - GITHUB_TOOLSETS=${GITHUB_TOOLSETS:-repos,issues,pull_requests}
-      - GITHUB_HOST=${GITHUB_HOST:-}
-    stdin_open: true
-    tty: true
+      - PORT=9001
+      - GITHUB_API_URL=http://github-api:3001
     networks:
       - agent-network
     restart: unless-stopped
@@ -194,6 +201,9 @@ services:
       - JIRA_CLIENT_SECRET=${JIRA_CLIENT_SECRET:-}
       - SLACK_CLIENT_ID=${SLACK_CLIENT_ID:-}
       - SLACK_CLIENT_SECRET=${SLACK_CLIENT_SECRET:-}
+      - TASK_LOGS_DIR=/data/logs/tasks
+    volumes:
+      - ./data/logs/tasks:/data/logs/tasks
     depends_on:
       redis:
         condition: service_healthy
@@ -388,6 +398,7 @@ services:
     container_name: agent-gkg
     ports:
       - "8003:8003"
+      - "27495:27496"
     environment:
       - DATA_DIR=/data/gkg
       - REPOS_DIR=/data/repos
@@ -439,13 +450,11 @@ services:
       - GKG_URL=http://gkg-service:8003
       - REDIS_URL=redis://redis:6379/0
       - POSTGRES_URL=postgresql+asyncpg://agent:${POSTGRES_PASSWORD:-agent}@postgres:5432/agent_system
+      - JIRA_API_URL=http://jira-api:3002
+      - GITHUB_API_URL=http://github-api:3001
+      - OAUTH_SERVICE_URL=http://oauth-service:8010
+      - INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY:-}
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
-      - JIRA_URL=${JIRA_URL:-}
-      - JIRA_EMAIL=${JIRA_EMAIL:-}
-      - JIRA_API_TOKEN=${JIRA_API_TOKEN:-}
-      - CONFLUENCE_URL=${CONFLUENCE_URL:-${JIRA_URL}}
-      - CONFLUENCE_EMAIL=${CONFLUENCE_EMAIL:-${JIRA_EMAIL}}
-      - CONFLUENCE_API_TOKEN=${CONFLUENCE_API_TOKEN:-${JIRA_API_TOKEN}}
       - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
       - REPOS_DIR=/data/repos
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
@@ -456,6 +465,10 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      jira-api:
+        condition: service_started
+      github-api:
+        condition: service_started
     volumes:
       - repos_data:/data/repos
       - indexer_cache:/app/cache

@@ -1,27 +1,22 @@
 import hashlib
 
+import httpx
 import structlog
-from atlassian import Jira
-from config import settings
 from models import DocumentChunk, JiraSourceConfig
 
 logger = structlog.get_logger()
 
 
 class JiraIndexer:
-    def __init__(self, org_id: str, config: JiraSourceConfig):
+    def __init__(self, org_id: str, config: JiraSourceConfig, jira_api_url: str):
         self.org_id = org_id
         self.config = config
-        self.client = Jira(
-            url=settings.jira_url,
-            username=settings.jira_email,
-            password=settings.jira_api_token,
-        )
+        self._api_url = jira_api_url.rstrip("/")
 
     async def fetch_tickets(self) -> list[dict]:
-        tickets = []
-        start_at = 0
+        tickets: list[dict] = []
         max_results = 100
+        next_page_token = ""
 
         jql = self.config.jql
         if not jql:
@@ -29,28 +24,41 @@ class JiraIndexer:
 
         logger.info("fetching_jira_tickets", jql=jql, org_id=self.org_id)
 
-        while len(tickets) < self.config.max_results:
-            try:
-                result = self.client.jql(
-                    jql,
-                    start=start_at,
-                    limit=min(max_results, self.config.max_results - len(tickets)),
-                    expand="renderedFields",
-                )
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            while len(tickets) < self.config.max_results:
+                try:
+                    payload: dict[str, str | int | list[str]] = {
+                        "jql": jql,
+                        "max_results": min(max_results, self.config.max_results - len(tickets)),
+                        "expand": "renderedFields",
+                        "fields": [
+                            "summary", "description", "status", "issuetype",
+                            "priority", "labels", "comment", "created", "updated", "project",
+                        ],
+                    }
+                    if next_page_token:
+                        payload["next_page_token"] = next_page_token
 
-                issues = result.get("issues", [])
-                if not issues:
+                    response = await client.post(
+                        f"{self._api_url}/api/v1/search",
+                        json=payload,
+                    )
+                    response.raise_for_status()
+                    result = response.json()
+
+                    issues = result.get("issues", [])
+                    if not issues:
+                        break
+
+                    tickets.extend(issues)
+
+                    next_page_token = result.get("nextPageToken", "")
+                    if not next_page_token:
+                        break
+
+                except Exception as e:
+                    logger.error("jira_fetch_failed", error=str(e))
                     break
-
-                tickets.extend(issues)
-                start_at += len(issues)
-
-                if len(issues) < max_results:
-                    break
-
-            except Exception as e:
-                logger.error("jira_fetch_failed", error=str(e))
-                break
 
         logger.info("jira_tickets_fetched", count=len(tickets), org_id=self.org_id)
         return tickets

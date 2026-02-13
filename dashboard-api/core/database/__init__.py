@@ -26,7 +26,13 @@ async_session_factory = async_sessionmaker(
 
 async def init_db() -> None:
     """Initialize database tables and run migrations."""
-    from core.setup.models import SetupConfigDB, SetupStateDB
+    from core.database.knowledge_models import (  # noqa: F401
+        DataSourceDB,
+        IndexedItemDB,
+        IndexingJobDB,
+        OrganizationDB,
+    )
+    from core.setup.models import SetupConfigDB, SetupStateDB  # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

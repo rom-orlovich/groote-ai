@@ -23,7 +23,7 @@ if [ "$PROVIDER" = "claude" ]; then
   if [ -n "$ANTHROPIC_API_KEY" ]; then
     echo "  ✅ ANTHROPIC_API_KEY is set"
   elif [ -f "$CREDS_FILE" ]; then
-    EXPIRED=$(python3 -c "
+    EXPIRED=$(/usr/bin/python3 -c "
 import json, time
 try:
     d = json.load(open('$CREDS_FILE'))

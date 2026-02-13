@@ -7,13 +7,19 @@ from config import get_settings
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from services.event_publisher import EventPublisher
-from services.slack_notifier import notify_task_failed, notify_task_started
+from services.slack_notifier import (
+    get_notification_channel,
+    notify_task_failed,
+    notify_task_started,
+)
 
 from .events import extract_task_info, should_process_event
 from .response import send_error_response, send_immediate_response
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/webhooks/slack", tags=["slack-webhook"])
+
+DEDUP_TTL_SECONDS = 60
 
 
 def _get_publisher(request: Request) -> EventPublisher | None:
@@ -55,13 +61,54 @@ async def handle_slack_webhook(request: Request):
             source="slack",
             signature_valid=True,
         )
+        await publisher.publish_webhook_payload(
+            webhook_event_id=webhook_event_id,
+            source="slack",
+            event_type=event.get("type", "unknown"),
+            payload=data,
+        )
 
     if not should_process_event(event):
         logger.debug("slack_event_skipped", event_type=event.get("type"))
+        if publisher:
+            await publisher.publish_webhook_skipped(
+                webhook_event_id=webhook_event_id,
+                source="slack",
+                event_type=event.get("type", "unknown"),
+                reason="event_not_processed",
+            )
         return JSONResponse(
             status_code=200,
             content={"status": "skipped", "reason": "Event not processed"},
         )
+
+    event_id = data.get("event_id", event_ts)
+    dedup_key = f"slack:dedup:{event_id}"
+    try:
+        redis_client = redis.from_url(settings.redis_url)
+        already_processing = await redis_client.set(dedup_key, "1", nx=True, ex=DEDUP_TTL_SECONDS)
+        await redis_client.aclose()
+        if not already_processing:
+            logger.debug("slack_event_deduplicated", event_id=event_id)
+            if publisher:
+                await publisher.publish_webhook_skipped(
+                    webhook_event_id=webhook_event_id,
+                    source="slack",
+                    event_type=event.get("type", "unknown"),
+                    reason="duplicate_within_cooldown",
+                )
+            return JSONResponse(
+                status_code=200,
+                content={"status": "skipped", "reason": "Duplicate event within cooldown"},
+            )
+    except Exception as e:
+        logger.warning("slack_dedup_check_failed", error=str(e))
+
+    notification_channel = await get_notification_channel(
+        settings.oauth_service_url,
+        settings.internal_service_key,
+        settings.slack_notification_channel,
+    )
 
     task_info = extract_task_info(event, team_id)
     task_id = str(uuid.uuid4())
@@ -97,7 +144,7 @@ async def handle_slack_webhook(request: Request):
         await send_error_response(settings.slack_api_url, channel, thread_ts, event_ts, str(e))
         await notify_task_failed(
             settings.slack_api_url,
-            settings.slack_notification_channel,
+            notification_channel,
             "slack",
             task_id,
             str(e),
@@ -108,7 +155,7 @@ async def handle_slack_webhook(request: Request):
                 task_id=task_id,
                 source="slack",
                 notification_type="task_failed",
-                channel=settings.slack_notification_channel,
+                channel=notification_channel,
             )
         return JSONResponse(status_code=500, content={"status": "error", "error": str(e)})
 
@@ -123,7 +170,7 @@ async def handle_slack_webhook(request: Request):
 
     await notify_task_started(
         settings.slack_api_url,
-        settings.slack_notification_channel,
+        notification_channel,
         "slack",
         task_id,
         f"channel={channel} {event.get('type', 'unknown')}",
@@ -134,7 +181,7 @@ async def handle_slack_webhook(request: Request):
             task_id=task_id,
             source="slack",
             notification_type="task_started",
-            channel=settings.slack_notification_channel,
+            channel=notification_channel,
         )
 
     logger.info("slack_task_queued", task_id=task_id, channel=channel)
