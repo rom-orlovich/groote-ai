@@ -65,9 +65,23 @@ class BaseFlow(ABC):
     def requires_knowledge(self) -> bool:
         return True
 
+    def _infer_source(self) -> str:
+        name = self.name.lower()
+        if "slack" in name:
+            return "slack"
+        if "jira" in name:
+            return "jira"
+        if "github" in name:
+            return "github"
+        return ""
+
     async def run(self) -> FlowResult:
         start = time.monotonic()
         try:
+            source = self._infer_source()
+            if source:
+                self._monitor.clear_source_events(source)
+
             trigger_result = await self.trigger()
             logger.info(
                 "flow_triggered",
@@ -80,6 +94,7 @@ class BaseFlow(ABC):
 
             task_id = await self._discover_task_id(trigger_result)
             await self._wait_for_completion(task_id)
+            await self._wait_for_response_posted(task_id)
             conversation_id = await self._extract_conversation_id(task_id)
             components = await self._run_component_audit(
                 task_id, trigger_result, conversation_id
@@ -141,6 +156,16 @@ class BaseFlow(ABC):
                 f"task:completed not received for {task_id} within {timeout}s"
             )
         logger.info("task_completed", extra={"task_id": task_id})
+
+    async def _wait_for_response_posted(self, task_id: str) -> None:
+        timeout = self._config.timeout_response * self._config.timeout_multiplier
+        event = await self._monitor.wait_for_event(
+            task_id, "task:response_posted", timeout
+        )
+        if event:
+            logger.info("response_posted_received", extra={"task_id": task_id})
+        else:
+            logger.warning("response_posted_timeout", extra={"task_id": task_id})
 
     async def _extract_conversation_id(self, task_id: str) -> str | None:
         events = await self._monitor.get_events_for_task(task_id)

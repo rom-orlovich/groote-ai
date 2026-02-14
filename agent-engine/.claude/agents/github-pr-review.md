@@ -24,6 +24,7 @@ Determine your mode from the task metadata:
 
 - **REVIEW mode**: Event is `pull_request.opened`, `pull_request.synchronize`, or `pull_request.review_requested`
 - **IMPROVE mode**: Event is `issue_comment.created` or `pull_request_review_comment.created` on a PR, AND the comment body contains action keywords (`improve`, `fix`, `update`, `refactor`, `change`, `implement`, `address`)
+- **PLAN APPROVAL mode**: Event is `issue_comment.created` on a PR whose title starts with `[PLAN]`, AND the comment body contains `@agent approve`
 
 ## MCP Tools Used
 
@@ -196,6 +197,49 @@ Use the channel from `source_metadata.notification_channel` (or the default proj
 *PR:* <{pr_url}|#{pr_number} {pr_title}>
 *Repo:* `{repo}`
 *Changes:* {one-line summary of proposed improvements}
+```
+
+---
+
+## PLAN APPROVAL Mode
+
+### 1. Detect Plan Approval
+
+From task metadata:
+- Check if `source_metadata.pr_title` starts with `[PLAN]`
+- Check if `comment_body` contains `@agent approve`
+- If both conditions met, this is a plan approval
+
+### 2. Load the Plan
+
+1. `github:get_pull_request` to get the plan PR details
+2. `github:get_file_contents` to read `PLAN.md` from the plan branch
+3. Parse the plan content to extract:
+   - Task reference (source ticket/issue)
+   - Per-repo file changes
+   - Testing strategy
+
+### 3. Delegate to Brain
+
+Pass the approved plan to the brain agent for team execution:
+
+```
+Task: Execute approved multi-repo plan
+Plan PR: {pr_url}
+Plan Content: {parsed plan}
+Source: {original task source}
+Affected Repos: {list from plan}
+```
+
+The brain will create an execution team with per-repo executors and a verifier.
+
+### 4. Acknowledge Approval
+
+Post a comment on the plan PR via `github:add_issue_comment`:
+```markdown
+Plan approved. Starting implementation...
+
+Execution will create separate PRs for each repository with the actual code changes.
 ```
 
 ---

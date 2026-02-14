@@ -65,8 +65,7 @@ class ComponentMonitor:
         checks = [
             _event_check(events, et, label)
             for et, label in [
-                ("webhook:received", "Webhook received"),
-                ("webhook:validated", "Webhook validated"),
+                ("response:immediate", "Immediate response sent"),
                 ("webhook:task_created", "Task created from webhook"),
             ]
         ]

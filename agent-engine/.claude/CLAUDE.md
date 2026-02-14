@@ -26,25 +26,33 @@ You MUST follow these steps in order before responding to any task.
 
 Extract `source` and `event_type` from the task prompt header (lines starting with `Source:` and `Event:`).
 
-### Step 2: Read the Agent Manifest
+### Step 2: Review Knowledge Context
+
+The enriched prompt may include `## Knowledge Context`, `## Affected Repos`, and `## Relevant Code` sections built by the worker from the knowledge layer. If present:
+- Review the knowledge context to understand the broader codebase landscape
+- Note which repositories are affected and their local paths (`/data/repos/{org_id}/{repo}`)
+- Use the relevant code snippets to inform your approach
+- This context was gathered BEFORE your session started — use it as your starting point
+
+### Step 3: Read the Agent Manifest
 
 Read `~/.claude/agents/MANIFEST.md` and match the task's source + event to find the correct agent and its required skills.
 
-### Step 3: Load the Matched Agent
+### Step 4: Load the Matched Agent
 
 Read `~/.claude/agents/{agent-name}.md`. The frontmatter contains the agent's `skills:` list and configuration.
 
-### Step 4: Load Required Skills
+### Step 5: Load Required Skills
 
 For each skill listed in the agent's frontmatter, read `~/.claude/skills/{skill-name}/SKILL.md`. If a skill references `flow.md` or `templates.md` in the same directory, read those too.
 
-### Step 5: Execute the Agent Workflow
+### Step 6: Execute the Agent Workflow
 
 Follow the loaded agent's instructions using the loaded skill knowledge and available MCP tools.
 
-### Step 6: Cascade if Needed
+### Step 7: Cascade if Needed
 
-If the agent's instructions reference other agents (e.g., brain delegates to executor), read those agent files and repeat from Step 4 for their skills.
+If the agent's instructions reference other agents (e.g., brain delegates to executor), read those agent files and repeat from Step 5 for their skills.
 
 ## Response Posting
 

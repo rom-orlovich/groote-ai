@@ -30,7 +30,7 @@ class JiraCommentFlow(BaseFlow):
                 description=(
                     "Review the manga-creator panel generator for edge cases."
                 ),
-                labels=["AI-Fix"],
+                labels=["ai-agent"],
             )
             self._ticket_key = ticket.artifact_id
             self._created_ticket = True

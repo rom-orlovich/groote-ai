@@ -551,8 +551,8 @@ async def get_conversation_context(
     conversation_id: str,
     db: AsyncSession = Depends(get_db_session),
     max_messages: int = Query(20, ge=1, le=100),
+    roles: str | None = Query(None),
 ):
-    """Get conversation context for the agent (recent messages formatted for Claude)."""
     result = await db.execute(
         select(ConversationDB).where(ConversationDB.conversation_id == conversation_id)
     )
@@ -561,13 +561,14 @@ async def get_conversation_context(
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    # Get recent messages
     query = (
         select(ConversationMessageDB)
         .where(ConversationMessageDB.conversation_id == conversation_id)
-        .order_by(ConversationMessageDB.created_at.desc())
-        .limit(max_messages)
     )
+    if roles:
+        role_list = [r.strip() for r in roles.split(",")]
+        query = query.where(ConversationMessageDB.role.in_(role_list))
+    query = query.order_by(ConversationMessageDB.created_at.desc()).limit(max_messages)
 
     messages_result = await db.execute(query)
     messages = list(reversed(messages_result.scalars().all()))  # Reverse to chronological order

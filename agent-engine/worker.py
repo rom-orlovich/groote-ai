@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import time
 from typing import Any
 
@@ -10,10 +11,35 @@ from services.dashboard_client import post_assistant_message, update_dashboard_t
 from services.knowledge import KnowledgeService, NoopKnowledgeService
 from services.output_validation import clean_agent_output, detect_auth_failure
 from services.redis_ops import persist_output, publish_task_event, update_task_status
+from services.slack_notifier import get_notification_channel, notify_task_completed, notify_task_failed
 
 logger = structlog.get_logger(__name__)
 
 POSTING_TOOL_NAMES = {"send_slack_message", "add_issue_comment", "add_jira_comment"}
+
+
+_PR_URL_PATTERN = re.compile(r"https://github\.com/[^\s\)\]]+/pull/\d+")
+
+
+def _extract_pr_url(output: str) -> str:
+    match = _PR_URL_PATTERN.search(output)
+    return match.group(0) if match else ""
+
+
+def _build_view_url(task: dict[str, Any], output: str = "") -> str:
+    pr_url = _extract_pr_url(output) if output else ""
+    if pr_url:
+        return pr_url
+
+    source = task.get("source", "")
+    if source == "github":
+        full_name = task.get("repository", {}).get("full_name", "")
+        pr = task.get("pull_request", {})
+        issue = task.get("issue", {})
+        number = pr.get("number") or issue.get("number")
+        if full_name and number:
+            return f"https://github.com/{full_name}/issues/{number}"
+    return ""
 
 
 def _extract_mcp_posted_content(tool_events: list[dict] | None) -> str | None:
@@ -119,7 +145,7 @@ class TaskWorker:
             duration = time.monotonic() - start_time
             await update_task_status(self._redis, task_id, "completed", result)
 
-            await self._publish_structured_events(task_id, result)
+            await self._publish_raw_output(task_id, result)
 
             raw_output = result.get("output", "")
             full_output = result.get("raw_output", raw_output)
@@ -177,6 +203,17 @@ class TaskWorker:
                     webhook_conversation_id, dashboard_url,
                 )
 
+            slack_url = self._settings.slack_api_url
+            slack_ch = await get_notification_channel(
+                self._settings.oauth_service_url,
+                self._settings.internal_service_key,
+                self._settings.slack_notification_channel,
+            )
+            if status == "completed":
+                view_url = _build_view_url(task, output)
+                await notify_task_completed(slack_url, slack_ch, source, task_id, output[:500] or "Done", view_url)
+            elif status == "failed":
+                await notify_task_failed(slack_url, slack_ch, source, task_id, result.get("error", ""))
             logger.info("task_completed", task_id=task_id)
         except Exception as e:
             logger.exception("task_failed", error=str(e))
@@ -189,7 +226,13 @@ class TaskWorker:
                     self._redis, task_id, "task:failed",
                     {"task_id": task_id, "error": str(e)},
                 )
-                logger.error("task_failed_no_ops_notification", task_id=task_id)
+                await notify_task_failed(
+                    self._settings.slack_api_url,
+                    self._settings.slack_notification_channel,
+                    locals().get("source", "unknown"),
+                    task_id,
+                    str(e),
+                )
 
     async def _build_webhook_context(
         self, task: dict, dashboard_url: str, task_id: str, session_id: str | None
@@ -210,29 +253,17 @@ class TaskWorker:
         )
 
         conversation_context = await conversation_bridge.fetch_conversation_context(
-            dashboard_url, webhook_conversation_id, limit=5
+            dashboard_url, webhook_conversation_id, limit=5,
+            roles="user,assistant",
         )
         logger.info("webhook_context_fetched", task_id=task_id, messages_count=len(conversation_context))
 
         task["_webhook_conversation_id"] = webhook_conversation_id
-        return task_routing.build_task_context(task, conversation_context)
+        return await task_routing.build_task_context(task, conversation_context)
 
-    async def _publish_structured_events(
+    async def _publish_raw_output(
         self, task_id: str, result: dict[str, Any]
     ) -> None:
-        for block in result.get("thinking_blocks") or []:
-            await publish_task_event(self._redis, task_id, "task:thinking", {
-                "task_id": task_id, "content": block.get("content", ""),
-            })
-
-        for event in result.get("tool_events") or []:
-            event_type_name = (
-                "task:tool_call" if event.get("type") == "tool_call" else "task:tool_result"
-            )
-            await publish_task_event(self._redis, task_id, event_type_name, {
-                "task_id": task_id, **event,
-            })
-
         raw_for_event = result.get("raw_output", result.get("output", ""))
         await publish_task_event(self._redis, task_id, "task:raw_output", {
             "task_id": task_id, "raw_output": raw_for_event[:204800],
@@ -278,6 +309,11 @@ class TaskWorker:
 
         output_queue: asyncio.Queue[str | None] = asyncio.Queue()
 
+        async def _stream_event(event_type: str, event_data: dict[str, Any]) -> None:
+            await publish_task_event(self._redis, task_id, event_type, {
+                "task_id": task_id, **event_data,
+            })
+
         try:
             result = await run_cli(
                 prompt=prompt,
@@ -286,6 +322,7 @@ class TaskWorker:
                 task_id=task_id,
                 timeout_seconds=self._settings.task_timeout_seconds,
                 agents=target_agent,
+                event_callback=_stream_event,
             )
 
             return {

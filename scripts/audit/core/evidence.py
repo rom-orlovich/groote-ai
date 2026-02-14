@@ -28,8 +28,9 @@ class EvidenceCollector:
     async def save_component_status(self, statuses: list[dict]) -> Path:
         return self._write_json("component_status.json", statuses)
 
-    async def save_quality_report(self, report: QualityReport) -> Path:
-        return self._write_json("quality_report.json", report.model_dump())
+    async def save_quality_report(self, report: QualityReport | dict) -> Path:
+        data = report.model_dump() if hasattr(report, "model_dump") else report
+        return self._write_json("quality_report.json", data)
 
     async def save_checkpoints(self, checkpoints: list[dict]) -> Path:
         return self._write_json("checkpoints.json", checkpoints)

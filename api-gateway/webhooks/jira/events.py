@@ -6,11 +6,12 @@ SUPPORTED_EVENTS = [
     "comment_created",
 ]
 
-AI_FIX_LABEL = "AI-Fix"
+AI_AGENT_LABEL = "ai-agent"
 DEFAULT_AI_AGENT_NAME = "ai-agent"
 
 BOT_COMMENT_PREFIX_MARKERS = [
     "Agent is analyzing this issue",
+    "Event skipped:",
     "Failed to process:",
     "Implementation started",
 ]
@@ -23,15 +24,39 @@ BOT_COMMENT_SECTION_MARKERS = [
     "**Scope**:",
     "**Intent**:",
     "**Verdict**:",
+    "_Automated by Groote AI_",
+    "_Automated by Claude Agent_",
+    "<!-- FINAL_RESPONSE -->",
+    "Status: Plan Already Exists",
+    "Status: Plan Created",
+    "Status: Implementation Complete",
 ]
 
 
-def _body_matches_bot_pattern(body: str) -> bool:
+def _extract_text_from_adf(node: dict[str, Any]) -> str:
+    if node.get("type") == "text":
+        return node.get("text", "")
+    parts: list[str] = []
+    for child in node.get("content", []):
+        if isinstance(child, dict):
+            parts.append(_extract_text_from_adf(child))
+    return " ".join(parts)
+
+
+def _get_body_text(body: str | dict[str, Any]) -> str:
+    if isinstance(body, str):
+        return body
+    if isinstance(body, dict):
+        return _extract_text_from_adf(body)
+    return ""
+
+
+def _body_matches_bot_pattern(body_text: str) -> bool:
     for marker in BOT_COMMENT_PREFIX_MARKERS:
-        if body.startswith(marker):
+        if body_text.startswith(marker):
             return True
     for marker in BOT_COMMENT_SECTION_MARKERS:
-        if marker in body:
+        if marker in body_text:
             return True
     return False
 
@@ -54,7 +79,8 @@ def is_bot_comment(
         return True
 
     body = comment_data.get("body", "")
-    if isinstance(body, str) and _body_matches_bot_pattern(body):
+    body_text = _get_body_text(body)
+    if body_text and _body_matches_bot_pattern(body_text):
         return True
 
     return False
@@ -73,18 +99,13 @@ def should_process_event(
         return False
 
     fields = issue_data.get("fields", {})
-
-    assignee = fields.get("assignee")
-    if assignee:
-        assignee_display = assignee.get("displayName", "")
-        if assignee_display.lower() == ai_agent_name.lower():
-            return True
-
     labels = fields.get("labels", [])
-    return AI_FIX_LABEL in labels
+    return AI_AGENT_LABEL in labels
 
 
-def extract_task_info(webhook_event: str, payload: dict[str, Any]) -> dict[str, Any]:
+def extract_task_info(
+    webhook_event: str, payload: dict[str, Any], jira_site_url: str = ""
+) -> dict[str, Any]:
     issue = payload.get("issue", {})
     fields = issue.get("fields", {})
 
@@ -96,8 +117,8 @@ def extract_task_info(webhook_event: str, payload: dict[str, Any]) -> dict[str, 
     assignee_name = assignee.get("displayName") if assignee else None
 
     issue_self_url = issue.get("self", "")
-    jira_base_url = ""
-    if issue_self_url:
+    jira_base_url = jira_site_url.rstrip("/") if jira_site_url else ""
+    if not jira_base_url and issue_self_url:
         parts = issue_self_url.split("/rest/")
         if len(parts) >= 2:
             jira_base_url = parts[0]

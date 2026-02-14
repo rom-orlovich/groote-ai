@@ -19,6 +19,8 @@ class RedisEventMonitor:
         self._last_id = "$"
         self._events: dict[str, list[dict]] = {}
         self._source_events: dict[str, list[dict]] = {}
+        self._source_epoch: dict[str, int] = {}
+        self._epoch_counter = 0
         self._waiters: dict[tuple[str, str], asyncio.Event] = {}
         self._waiter_data: dict[tuple[str, str], dict] = {}
         self._source_waiters: dict[tuple[str, str], asyncio.Event] = {}
@@ -83,6 +85,7 @@ class RedisEventMonitor:
             "webhook_event_id": fields.get("webhook_event_id"),
             "timestamp": fields.get("timestamp"),
             "data": data,
+            "_epoch": self._epoch_counter,
         }
 
         task_id = data.get("task_id", "")
@@ -135,8 +138,9 @@ class RedisEventMonitor:
         self, source: str, event_type: str, timeout: float
     ) -> dict | None:
         key = (source, event_type)
+        min_epoch = self._source_epoch.get(source, 0)
 
-        existing = self._find_existing_source_event(source, event_type)
+        existing = self._find_fresh_source_event(source, event_type, min_epoch)
         if existing:
             return existing
 
@@ -145,7 +149,10 @@ class RedisEventMonitor:
 
         try:
             await asyncio.wait_for(event.wait(), timeout=timeout)
-            return self._source_waiter_data.get(key)
+            result = self._source_waiter_data.pop(key, None)
+            if result and result.get("_epoch", 0) < min_epoch:
+                return None
+            return result
         except asyncio.TimeoutError:
             logger.warning(
                 "wait_for_source_event_timeout",
@@ -161,9 +168,11 @@ class RedisEventMonitor:
                 return evt
         return None
 
-    def _find_existing_source_event(self, source: str, event_type: str) -> dict | None:
+    def _find_fresh_source_event(
+        self, source: str, event_type: str, min_epoch: int
+    ) -> dict | None:
         for evt in self._source_events.get(source, []):
-            if evt["type"] == event_type:
+            if evt["type"] == event_type and evt.get("_epoch", 0) >= min_epoch:
                 return evt
         return None
 
@@ -176,3 +185,11 @@ class RedisEventMonitor:
             for evt in self._events.get(task_id, [])
             if evt["type"] == "task:tool_call"
         ]
+
+    def clear_source_events(self, source: str) -> None:
+        self._epoch_counter += 1
+        self._source_epoch[source] = self._epoch_counter
+        self._source_events.pop(source, None)
+        keys_to_remove = [k for k in self._source_waiter_data if k[0] == source]
+        for k in keys_to_remove:
+            self._source_waiter_data.pop(k, None)

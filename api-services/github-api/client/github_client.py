@@ -188,3 +188,42 @@ class GitHubClient:
         )
         response.raise_for_status()
         return response.json()
+
+    async def get_branch_sha(self, owner: str, repo: str, branch: str) -> dict[str, Any]:
+        client = await self._get_client()
+        response = await client.get(f"/repos/{owner}/{repo}/git/ref/heads/{branch}")
+        response.raise_for_status()
+        return response.json()
+
+    async def create_branch(self, owner: str, repo: str, ref: str, sha: str) -> dict[str, Any]:
+        client = await self._get_client()
+        response = await client.post(
+            f"/repos/{owner}/{repo}/git/refs",
+            json={"ref": f"refs/heads/{ref}", "sha": sha},
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def create_or_update_file(
+        self,
+        owner: str,
+        repo: str,
+        path: str,
+        content: str,
+        message: str,
+        branch: str,
+        sha: str | None = None,
+    ) -> dict[str, Any]:
+        import base64
+
+        client = await self._get_client()
+        payload: dict[str, Any] = {
+            "message": message,
+            "content": base64.b64encode(content.encode()).decode(),
+            "branch": branch,
+        }
+        if sha:
+            payload["sha"] = sha
+        response = await client.put(f"/repos/{owner}/{repo}/contents/{path}", json=payload)
+        response.raise_for_status()
+        return response.json()

@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 import structlog
 from core.config import settings
 from core.database import get_session as get_db_session
-from core.database.models import SessionDB, TaskDB, WebhookConfigDB, WebhookEventDB
+from core.database.models import SessionDB, TaskDB, WebhookConfigDB, WebhookEventDB, update_conversation_metrics
 from core.database.redis_client import redis_client
 from core.webhook_configs import WEBHOOK_CONFIGS
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -772,11 +772,24 @@ async def get_webhook_stats(db: AsyncSession = Depends(get_db_session)):
 # Task Log Endpoints
 
 
+def _resolve_task_log_dir(task_id: str) -> "Path":
+    from pathlib import Path
+
+    base = settings.task_logs_dir
+    direct = base / task_id
+    if direct.exists():
+        return direct
+    symlink = base / ".by-id" / task_id
+    if symlink.exists():
+        return symlink.resolve()
+    return direct
+
+
 @router.get("/tasks/{task_id}/logs/metadata")
 async def get_task_log_metadata(task_id: str):
     """Get task metadata.json."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         metadata_file = log_dir / "metadata.json"
 
         if not metadata_file.exists():
@@ -785,6 +798,8 @@ async def get_task_log_metadata(task_id: str):
         with open(metadata_file) as f:
             return json.load(f)
 
+    except HTTPException:
+        raise
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Task logs not found")
     except json.JSONDecodeError:
@@ -798,7 +813,7 @@ async def get_task_log_metadata(task_id: str):
 async def get_task_log_input(task_id: str):
     """Get task input (01-input.json)."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         input_file = log_dir / "01-input.json"
 
         if not input_file.exists():
@@ -807,6 +822,8 @@ async def get_task_log_input(task_id: str):
         with open(input_file) as f:
             return json.load(f)
 
+    except HTTPException:
+        raise
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Task input log not found")
     except json.JSONDecodeError:
@@ -820,7 +837,7 @@ async def get_task_log_input(task_id: str):
 async def get_task_log_user_inputs(task_id: str):
     """Get user inputs (02-user-inputs.jsonl) as JSON array."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         user_inputs_file = log_dir / "02-user-inputs.jsonl"
 
         if not user_inputs_file.exists():
@@ -849,7 +866,7 @@ async def get_task_log_user_inputs(task_id: str):
 async def get_task_log_webhook_flow(task_id: str):
     """Get webhook flow events (03-webhook-flow.jsonl) as JSON array."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         webhook_file = log_dir / "03-webhook-flow.jsonl"
 
         if not webhook_file.exists():
@@ -864,6 +881,8 @@ async def get_task_log_webhook_flow(task_id: str):
 
         return events
 
+    except HTTPException:
+        raise
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Webhook flow log not found")
     except json.JSONDecodeError as e:
@@ -878,7 +897,7 @@ async def get_task_log_webhook_flow(task_id: str):
 async def get_task_log_agent_output(task_id: str):
     """Get agent output (04-agent-output.jsonl) as JSON array."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         output_file = log_dir / "04-agent-output.jsonl"
 
         if not output_file.exists():
@@ -893,6 +912,8 @@ async def get_task_log_agent_output(task_id: str):
 
         return outputs
 
+    except HTTPException:
+        raise
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Agent output log not found")
     except json.JSONDecodeError as e:
@@ -907,7 +928,7 @@ async def get_task_log_agent_output(task_id: str):
 async def get_task_log_final_result(task_id: str):
     """Get final result (06-final-result.json)."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         result_file = log_dir / "06-final-result.json"
 
         if not result_file.exists():
@@ -916,6 +937,8 @@ async def get_task_log_final_result(task_id: str):
         with open(result_file) as f:
             return json.load(f)
 
+    except HTTPException:
+        raise
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Final result log not found")
     except json.JSONDecodeError:
@@ -929,7 +952,7 @@ async def get_task_log_final_result(task_id: str):
 async def get_task_logs_full(task_id: str):
     """Get all task logs in a single combined response."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
 
         if not log_dir.exists():
             raise HTTPException(status_code=404, detail="Task logs not found")
@@ -1000,6 +1023,8 @@ async def get_task_logs_full(task_id: str):
 
         return result
 
+    except HTTPException:
+        raise
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Task logs not found")
     except json.JSONDecodeError as e:
@@ -1014,7 +1039,7 @@ async def get_task_logs_full(task_id: str):
 async def get_task_log_knowledge_interactions(task_id: str):
     """Get knowledge interactions (05-knowledge-interactions.jsonl) as JSON array."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         knowledge_file = log_dir / "05-knowledge-interactions.jsonl"
 
         if not knowledge_file.exists():
@@ -1043,7 +1068,7 @@ async def get_task_log_knowledge_interactions(task_id: str):
 async def get_task_knowledge_summary(task_id: str):
     """Get a summary of knowledge service usage for a task."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         knowledge_file = log_dir / "05-knowledge-interactions.jsonl"
 
         if not knowledge_file.exists():

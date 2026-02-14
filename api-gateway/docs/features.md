@@ -88,7 +88,7 @@ Only processes relevant event types and actions. Ignores unsupported events to r
 
 **Processed Events:**
 - GitHub: issues (opened, edited, labeled), issue_comment (created), pull_request (opened, synchronize, reopened), push
-- Jira: `jira:issue_created`, `jira:issue_updated`, `comment_created` (only when assignee matches `JIRA_AI_AGENT_NAME` or issue has `AI-Fix` label)
+- Jira: `jira:issue_created`, `jira:issue_updated`, `comment_created` (only when issue has `ai-agent` label)
 - Slack: app_mention, message (DM only)
 
 ### Agent Routing

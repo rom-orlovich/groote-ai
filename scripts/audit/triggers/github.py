@@ -80,6 +80,31 @@ class GitHubTrigger:
             raw_response=data,
         )
 
+    async def create_pr_comment(
+        self,
+        pr_number: int,
+        body: str,
+    ) -> TriggerResult:
+        path = f"{self._repo_prefix()}/issues/{pr_number}/comments"
+        response = await self._client.post_github_api(path, json={"body": body})
+        data = response.json()
+        flow_id = f"github:{self._owner}/{self._repo}#{pr_number}"
+
+        logger.info(
+            "github_pr_comment_created",
+            extra={"pr_number": pr_number, "flow_id": flow_id},
+        )
+
+        return TriggerResult(
+            platform="github",
+            artifact_type="pr_comment",
+            artifact_id=str(data.get("id", pr_number)),
+            artifact_url=data.get("html_url"),
+            trigger_time=datetime.now(UTC),
+            expected_flow_id=flow_id,
+            raw_response=data,
+        )
+
     async def create_branch_and_pr(
         self,
         title: str,

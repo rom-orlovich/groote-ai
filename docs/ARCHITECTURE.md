@@ -1071,7 +1071,7 @@ KNOWLEDGE_SERVICES_ENABLED=true docker-compose up -d
 | --------- | ----------------------- | -------------------- |
 | GitHub    | Issue opened/commented  | github-issue-handler |
 | GitHub    | PR opened/reviewed      | github-pr-review     |
-| Jira      | Issue with AI-Fix label | jira-code-plan       |
+| Jira      | Issue with `ai-agent` label | jira-code-plan       |
 | Slack     | @agent mention          | slack-inquiry        |
 | Dashboard | Discovery request       | planning             |
 | Dashboard | Implementation          | executor             |

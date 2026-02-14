@@ -1,7 +1,10 @@
 import asyncio
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
+
+EventCallback = Callable[[str, dict[str, Any]], Coroutine[Any, Any, None]]
 
 
 @dataclass
@@ -30,4 +33,5 @@ class CLIRunner(Protocol):
         allowed_tools: str | None = None,
         agents: str | None = None,
         debug_mode: str | None = None,
+        event_callback: EventCallback | None = None,
     ) -> CLIResult: ...

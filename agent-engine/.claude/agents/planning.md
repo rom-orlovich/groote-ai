@@ -8,6 +8,7 @@ skills:
   - github-operations
   - knowledge-graph
   - knowledge-query
+  - multi-repo-plan
 ---
 
 # Planning Agent
@@ -61,7 +62,7 @@ Use a layered search approach:
 
 ### 4. Create Plan
 
-**MUST** produce a structured plan:
+**MUST** produce a structured plan with parallel micro-subtasks. Each subtask must be self-contained so a sonnet executor can implement it without additional discovery or code reading.
 
 ```markdown
 ## Summary
@@ -70,28 +71,80 @@ Use a layered search approach:
 ## Scope
 {small | medium | large} — {N} files affected
 
-## Affected Files
-- `path/to/file.py` (L{start}-L{end}): {specific change description}
-- `path/to/test_file.py`: {test to add/modify}
+## Shared Context
+{Architecture decisions, naming conventions, shared interfaces that all subtasks must follow}
 
-## Implementation Steps
-1. {step — specific file, specific function, specific change}
-2. {step — specific file, specific function, specific change}
-3. {step — specific file, specific function, specific change}
-
-## Testing Strategy
-- Unit: {what to test, which file}
-- Integration: {if cross-service, what to test}
-
-## Risks
-- {risk}: {mitigation}
-
-## Dependencies
-- Blocked by: {nothing | other task/agent}
-- Blocks: {executor, verifier}
+```typescript
+// Shared types all subtasks reference
+export interface SharedType { ... }
 ```
 
-Each step must be specific enough that the executor can implement it without additional discovery.
+## Subtasks
+
+### Subtask 1: {Title} — `path/to/file.ts`
+**Can run in parallel with**: Subtask 2, Subtask 3
+**Blocked by**: nothing
+
+**Current code** (lines X-Y):
+```typescript
+// existing code that will change
+export function existingFunc(): void { ... }
+```
+
+**Target code**:
+```typescript
+// exact replacement code
+export function existingFunc(config: Config): Result { ... }
+```
+
+**Tests** (`path/to/file.test.ts`):
+```typescript
+describe("existingFunc", () => {
+  it("should return Result when config is valid", () => { ... });
+  it("should throw when config.limit < 0", () => { ... });
+});
+```
+
+**Acceptance criteria**:
+- [ ] Function signature matches target
+- [ ] All test cases pass
+- [ ] No existing callers break
+
+### Subtask 2: {Title} — `path/to/other.ts`
+**Can run in parallel with**: Subtask 1, Subtask 3
+**Blocked by**: nothing
+
+{same structure as above}
+
+### Subtask 3: {Title} — `path/to/integration.ts`
+**Can run in parallel with**: nothing
+**Blocked by**: Subtask 1, Subtask 2
+
+{same structure — this subtask wires the others together}
+
+## Parallelism Map
+```
+Subtask 1 ──┐
+             ├──→ Subtask 3 (integration) ──→ Subtask 4 (tests)
+Subtask 2 ──┘
+```
+
+## Risks
+- {risk}: {concrete mitigation with code approach}
+
+## Verification
+- Run: `{test command}`
+- Check: `{lint command}`
+- Verify: {specific behavior to confirm manually}
+```
+
+**CRITICAL RULES FOR SUBTASKS**:
+1. Each subtask owns exactly ONE file (no shared file edits across subtasks)
+2. Include the FULL current code and FULL target code — no placeholders
+3. Include complete test code — not descriptions, actual test functions
+4. Mark parallelism explicitly: which subtasks can run simultaneously
+5. Integration subtasks (wiring things together) MUST be blocked by their dependencies
+6. Every subtask must be implementable by a sonnet executor with ZERO additional code reading
 
 ### 5. Post Plan
 
@@ -99,6 +152,13 @@ Post the plan to the appropriate source:
 - GitHub → `github:add_issue_comment`
 - Jira → `jira:add_jira_comment`
 - Internal → write to PLAN.md in the repository
+
+### 6. Multi-Repo Plans
+
+When the task affects multiple repositories (identified via Knowledge Context):
+1. Load the `multi-repo-plan` skill from `~/.claude/skills/multi-repo-plan/SKILL.md`
+2. Follow the skill workflow to create per-repo Plan PRs
+3. Notify human for approval before any code is written
 
 ## Error Handling
 

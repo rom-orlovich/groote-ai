@@ -43,13 +43,11 @@
                                           ↓
                                  [Parse Issue Data]
                                           ↓
-                               [Check for AI-Fix label]
+                               [Check for ai-agent label]
                                     ↓          ↓
                               [No Label]   [Has Label]
                                   ↓             ↓
-                             [200 OK]     [Check Assignee]
-                                               ↓
-                                        [Create Task]
+                             [200 OK]     [Create Task]
                                                ↓
                                     [Enqueue to Redis]
                                                ↓
@@ -60,12 +58,11 @@
 1. Receive POST request with Jira webhook payload
 2. Middleware validates signature using `JIRA_WEBHOOK_SECRET`
 3. Parse issue data: key, summary, description, labels
-4. Check if issue has "AI-Fix" label
-5. Skip if no AI-Fix label → Return 200 OK
-6. Check if assignee matches AI agent configuration
-7. Create task with ticket metadata
-8. Enqueue task to Redis for `jira-code-plan` agent
-9. Return 202 Accepted with task_id
+4. Check if issue has `ai-agent` label
+5. Skip if no `ai-agent` label → Return 200 OK
+6. Create task with ticket metadata (assignee is optional metadata)
+7. Enqueue task to Redis for `jira-code-plan` agent
+8. Return 202 Accepted with task_id
 
 ### Slack Webhook Flow
 

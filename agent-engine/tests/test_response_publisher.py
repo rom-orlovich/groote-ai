@@ -13,7 +13,7 @@ def _mock_http_client():
 
 class TestSlackOpsNotificationOnCompletion:
     @patch("services.slack_notifier.httpx.AsyncClient")
-    async def test_notify_completed_sends_to_ops_channel(self, mock_cls):
+    async def test_notify_completed_sends_blocks_with_buttons(self, mock_cls):
         from services.slack_notifier import notify_task_completed
 
         mock_cls.return_value = _mock_http_client()
@@ -30,11 +30,34 @@ class TestSlackOpsNotificationOnCompletion:
         payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
         assert payload["channel"] == "#notifications"
         assert "Task Completed" in payload["text"]
-        assert "github" in payload["text"]
-        assert "task-001" in payload["text"]
+        assert "blocks" in payload
+        context_block = payload["blocks"][1]
+        assert context_block["type"] == "context"
 
     @patch("services.slack_notifier.httpx.AsyncClient")
-    async def test_notify_failed_sends_error_to_ops_channel(self, mock_cls):
+    async def test_notify_completed_with_view_url_adds_link_button(self, mock_cls):
+        from services.slack_notifier import notify_task_completed
+
+        mock_cls.return_value = _mock_http_client()
+
+        await notify_task_completed(
+            "http://slack-api:3003",
+            "#notifications",
+            "github",
+            "task-001",
+            "Fixed the bug",
+            view_url="https://github.com/org/repo/issues/42",
+        )
+
+        payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
+        actions_block = payload["blocks"][1]
+        assert actions_block["type"] == "actions"
+        button = actions_block["elements"][0]
+        assert button["url"] == "https://github.com/org/repo/issues/42"
+        assert button["text"]["text"] == "View"
+
+    @patch("services.slack_notifier.httpx.AsyncClient")
+    async def test_notify_failed_sends_blocks(self, mock_cls):
         from services.slack_notifier import notify_task_failed
 
         mock_cls.return_value = _mock_http_client()
@@ -50,7 +73,8 @@ class TestSlackOpsNotificationOnCompletion:
         assert result is True
         payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
         assert "Task Failed" in payload["text"]
-        assert "Redis connection refused" in payload["text"]
+        assert "blocks" in payload
+        assert ":x:" in payload["blocks"][0]["text"]["text"]
 
     async def test_empty_channel_skips_completion_notification(self):
         from services.slack_notifier import notify_task_completed
@@ -112,7 +136,7 @@ class TestCLIHandlesResponsesViaMCP:
     """
 
     @patch("services.slack_notifier.httpx.AsyncClient")
-    async def test_github_task_gets_ops_notification_only(self, mock_cls):
+    async def test_github_task_gets_ops_notification_with_blocks(self, mock_cls):
         from services.slack_notifier import notify_task_completed
 
         mock_cls.return_value = _mock_http_client()
@@ -123,10 +147,11 @@ class TestCLIHandlesResponsesViaMCP:
 
         payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
         assert payload["channel"] == "#ops"
-        assert "github" in payload["text"]
+        assert "Task Completed" in payload["text"]
+        assert "blocks" in payload
 
     @patch("services.slack_notifier.httpx.AsyncClient")
-    async def test_jira_task_gets_ops_notification_only(self, mock_cls):
+    async def test_jira_task_gets_ops_notification_with_blocks(self, mock_cls):
         from services.slack_notifier import notify_task_completed
 
         mock_cls.return_value = _mock_http_client()
@@ -137,10 +162,10 @@ class TestCLIHandlesResponsesViaMCP:
 
         payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
         assert payload["channel"] == "#ops"
-        assert "jira" in payload["text"]
+        assert "blocks" in payload
 
     @patch("services.slack_notifier.httpx.AsyncClient")
-    async def test_slack_task_gets_ops_notification_only(self, mock_cls):
+    async def test_slack_task_gets_ops_notification_with_blocks(self, mock_cls):
         from services.slack_notifier import notify_task_completed
 
         mock_cls.return_value = _mock_http_client()
@@ -151,7 +176,7 @@ class TestCLIHandlesResponsesViaMCP:
 
         payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
         assert payload["channel"] == "#ops"
-        assert "slack" in payload["text"]
+        assert "blocks" in payload
 
 
 class TestTaskOutputEventPublishing:
@@ -240,3 +265,47 @@ class TestTaskOutputEventPublishing:
         assert "task:output" not in event_types
 
 
+class TestBuildViewUrl:
+    def test_pr_url_extracted_from_output(self):
+        from worker import _build_view_url
+
+        task = {"source": "jira"}
+        output = "PR created: https://github.com/rom-orlovich/manga-creator/pull/103"
+        assert _build_view_url(task, output) == "https://github.com/rom-orlovich/manga-creator/pull/103"
+
+    def test_pr_url_extracted_from_markdown_link(self):
+        from worker import _build_view_url
+
+        task = {"source": "jira"}
+        output = "**PR**: [#103](https://github.com/org/repo/pull/103) created"
+        assert _build_view_url(task, output) == "https://github.com/org/repo/pull/103"
+
+    def test_github_issue_fallback(self):
+        from worker import _build_view_url
+
+        task = {
+            "source": "github",
+            "repository": {"full_name": "org/repo"},
+            "issue": {"number": 42},
+        }
+        assert _build_view_url(task) == "https://github.com/org/repo/issues/42"
+
+    def test_github_pr_fallback(self):
+        from worker import _build_view_url
+
+        task = {
+            "source": "github",
+            "repository": {"full_name": "org/repo"},
+            "pull_request": {"number": 98},
+        }
+        assert _build_view_url(task) == "https://github.com/org/repo/issues/98"
+
+    def test_no_pr_in_output_no_metadata_returns_empty(self):
+        from worker import _build_view_url
+
+        assert _build_view_url({"source": "jira"}, "Task completed successfully") == ""
+
+    def test_missing_fields_returns_empty(self):
+        from worker import _build_view_url
+
+        assert _build_view_url({"source": "github"}) == ""

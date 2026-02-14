@@ -4,8 +4,6 @@ import structlog
 logger = structlog.get_logger(__name__)
 
 MESSAGE_PROCESSING = "Agent is analyzing this issue and will respond shortly."
-
-
 async def send_jira_comment(jira_api_url: str, issue_key: str, body: str) -> bool:
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:

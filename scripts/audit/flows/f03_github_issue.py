@@ -29,11 +29,17 @@ class GitHubIssueFlow(BaseFlow):
         return "github-issue-handler"
 
     def flow_criteria(self) -> FlowCriteria:
+        repo = self._config.github_repo
         return FlowCriteria(
             expected_agent="github-issue-handler",
             required_tools=["knowledge_query", "code_search"],
             required_response_tools=["add_issue_comment"],
             required_output_patterns=["Agent Analysis", "##"],
+            negative_terms=[
+                "groote-ai", "groote", "api-gateway",
+                "agent-engine", "dashboard-api",
+            ],
+            target_repo=repo,
             min_output_length=200,
             max_execution_seconds=180.0,
             requires_knowledge=True,

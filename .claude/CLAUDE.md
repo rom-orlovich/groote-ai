@@ -40,6 +40,14 @@ make tunnel                  # Start ngrok tunnel (alternative)
 make tunnel-setup            # First-time zrok setup
 ```
 
+## Docker Workflow
+
+- **Rebuild after code changes**: After modifying code in any service, rebuild its container to apply the changes:
+  ```bash
+  docker-compose up -d --build <service-name>
+  ```
+- Use `make up` only for full rebuilds of all services
+
 ## Architecture
 
 See `.claude/rules/microservices.md` for full service map, ports, health checks, and environment variables.

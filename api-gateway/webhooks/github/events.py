@@ -3,10 +3,12 @@ from typing import Any
 SUPPORTED_EVENTS = {
     "issues": ["opened", "edited", "labeled"],
     "issue_comment": ["created"],
-    "pull_request": ["opened", "synchronize", "reopened", "review_requested"],
+    "pull_request": ["review_requested"],
     "pull_request_review_comment": ["created"],
     "push": None,
 }
+
+BOT_MENTION_PATTERNS = ("@agent", "@groote")
 
 
 def is_bot_sender(payload: dict[str, Any]) -> bool:
@@ -22,6 +24,16 @@ def is_bot_sender(payload: dict[str, Any]) -> bool:
     return comment_user.get("type") == "Bot"
 
 
+def _has_bot_mention(payload: dict[str, Any]) -> bool:
+    comment_body = payload.get("comment", {}).get("body", "").lower()
+    return any(mention in comment_body for mention in BOT_MENTION_PATTERNS)
+
+
+def _is_pr_comment(payload: dict[str, Any]) -> bool:
+    issue = payload.get("issue", {})
+    return bool(issue.get("pull_request"))
+
+
 def should_process_event(
     event_type: str, action: str | None, payload: dict[str, Any] | None = None
 ) -> bool:
@@ -34,6 +46,10 @@ def should_process_event(
 
     if payload and event_type in ("issue_comment", "pull_request_review_comment"):
         if is_bot_sender(payload):
+            return False
+
+    if payload and event_type == "issue_comment" and _is_pr_comment(payload):
+        if not _has_bot_mention(payload):
             return False
 
     return True

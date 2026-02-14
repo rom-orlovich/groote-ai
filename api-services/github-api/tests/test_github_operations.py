@@ -209,7 +209,7 @@ class TestGitHubIssueOperations:
             repo="test-repo",
             title="New Issue",
             body="Issue description",
-            labels=["bug", "AI-Fix"],
+            labels=["bug", "ai-agent"],
         )
 
         assert result["title"] == "New Issue"

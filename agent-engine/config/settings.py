@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     internal_dashboard_api_url: str = "http://internal-dashboard-api:5000"
     dashboard_api_url: str = "http://dashboard-api:5000"
 
+    slack_api_url: str = "http://slack-api:3003"
+    slack_notification_channel: str = ""
+    oauth_service_url: str = "http://oauth-service:8010"
+    internal_service_key: str = ""
+
     knowledge_services_enabled: bool = True
     knowledge_graph_url: str = "http://gkg-service:4000"
     llamaindex_url: str = "http://llamaindex-service:8002"

@@ -2,6 +2,8 @@ import asyncio
 
 from cli.sanitization import contains_sensitive_data, sanitize_sensitive_content
 
+EventCallbackType = object
+
 
 async def handle_assistant_message(
     data: dict,
@@ -12,6 +14,7 @@ async def handle_assistant_message(
     tool_events: list[dict],
     thinking_blocks: list[dict],
     last_tool_name: list[str],
+    event_callback: object | None = None,
 ) -> None:
     message = data.get("message", {})
     content_blocks = message.get("content", [])
@@ -24,7 +27,10 @@ async def handle_assistant_message(
         if block_type == "text":
             text_content = block.get("text", "")
             if text_content:
-                thinking_blocks.append({"type": "thinking", "content": text_content})
+                event = {"type": "thinking", "content": text_content}
+                thinking_blocks.append(event)
+                if event_callback:
+                    await event_callback("task:thinking", event)
                 if not has_streaming_output:
                     clean_output.append(text_content)
 
@@ -32,12 +38,15 @@ async def handle_assistant_message(
             tool_name = block.get("name", "unknown")
             tool_input = block.get("input", {})
             tool_use_id = block.get("id", "")
-            tool_events.append({
+            event = {
                 "type": "tool_call",
                 "name": tool_name,
                 "input": tool_input,
                 "_tool_use_id": tool_use_id,
-            })
+            }
+            tool_events.append(event)
+            if event_callback:
+                await event_callback("task:tool_call", event)
             last_tool_name[0] = tool_name
             tool_log = f"\n[TOOL] Using {tool_name}\n"
             if isinstance(tool_input, dict):
@@ -55,6 +64,7 @@ async def handle_user_message(
     output_queue: asyncio.Queue[str | None],
     tool_events: list[dict],
     last_tool_name: list[str],
+    event_callback: object | None = None,
 ) -> None:
     message = data.get("message", {})
     content = message.get("content", []) if isinstance(message, dict) else []
@@ -80,12 +90,15 @@ async def handle_user_message(
                 unmatched_calls[result_index]["_matched"] = True
                 result_index += 1
             if tool_content:
-                tool_events.append({
+                event = {
                     "type": "tool_result",
                     "name": resolved_name,
                     "content": str(tool_content)[:5000],
                     "is_error": is_error,
-                })
+                }
+                tool_events.append(event)
+                if event_callback:
+                    await event_callback("task:tool_result", event)
                 if contains_sensitive_data(tool_content):
                     tool_content = sanitize_sensitive_content(tool_content)
                 prefix = "[TOOL ERROR] " if is_error else "[TOOL RESULT]\n"

@@ -44,11 +44,21 @@ async def health():
     return {"status": "healthy", "service": "task-logger"}
 
 
+def _resolve_task_dir(task_id: str):
+    symlink_dir = settings.logs_dir / ".by-id" / task_id
+    if symlink_dir.exists():
+        return symlink_dir.resolve()
+    direct_dir = settings.logs_dir / task_id
+    if direct_dir.exists():
+        return direct_dir
+    return None
+
+
 @app.get("/tasks/{task_id}/logs")
 async def get_task_logs(task_id: str):
-    task_dir = settings.logs_dir / task_id
+    task_dir = _resolve_task_dir(task_id)
 
-    if not task_dir.exists():
+    if not task_dir:
         raise HTTPException(status_code=404, detail="Task not found")
 
     logs = {}
@@ -113,7 +123,10 @@ async def get_metrics():
                 lag = group.get("lag", 0)
                 break
 
-        tasks_processed = len(list(settings.logs_dir.glob("*")))
+        tasks_processed = len([
+            d for d in settings.logs_dir.iterdir()
+            if d.is_dir() and d.name != ".by-id"
+        ])
 
         return {
             "queue_depth": stream_length,

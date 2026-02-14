@@ -19,7 +19,7 @@ from .response import send_error_response, send_immediate_response
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/webhooks/slack", tags=["slack-webhook"])
 
-DEDUP_TTL_SECONDS = 60
+DEDUP_TTL_SECONDS = 3600
 
 
 def _get_publisher(request: Request) -> EventPublisher | None:
@@ -168,12 +168,14 @@ async def handle_slack_webhook(request: Request):
             input_message=task_info.get("prompt", ""),
         )
 
+    user_text = event.get("text", "")
+    started_title = user_text[:120] if user_text else f"channel={channel} {event.get('type', 'unknown')}"
     await notify_task_started(
         settings.slack_api_url,
         notification_channel,
         "slack",
         task_id,
-        f"channel={channel} {event.get('type', 'unknown')}",
+        started_title,
     )
     if publisher:
         await publisher.publish_notification_ops(

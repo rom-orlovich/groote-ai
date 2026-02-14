@@ -31,7 +31,7 @@ class JiraTrigger:
         issue_key = data["key"]
 
         if labels:
-            label_fields = {"labels": [{"name": label} for label in labels]}
+            label_fields = {"labels": labels}
             await self._client.http.put(
                 f"{self._config.jira_api_url}/api/v1/issues/{issue_key}",
                 json={"fields": label_fields},
@@ -52,6 +52,64 @@ class JiraTrigger:
             trigger_time=datetime.now(UTC),
             expected_flow_id=flow_id,
             raw_response=data,
+        )
+
+    async def fire_existing_ticket_webhook(
+        self,
+        issue_key: str,
+        client: AuditClient,
+        config: AuditConfig,
+    ) -> TriggerResult:
+        issue_resp = await client.get_jira_api(f"/api/v1/issues/{issue_key}")
+        issue_data = issue_resp.json()
+
+        fields = issue_data.get("fields", {})
+        webhook_payload = {
+            "webhookEvent": "jira:issue_created",
+            "timestamp": int(datetime.now(UTC).timestamp() * 1000),
+            "issue": {
+                "id": issue_data.get("id", ""),
+                "key": issue_key,
+                "self": issue_data.get("self", ""),
+                "fields": {
+                    "summary": fields.get("summary", ""),
+                    "description": fields.get("description", ""),
+                    "labels": fields.get("labels", []),
+                    "project": fields.get("project", {}),
+                    "issuetype": fields.get("issuetype", {}),
+                    "priority": fields.get("priority", {}),
+                    "reporter": fields.get("reporter", {}),
+                    "assignee": fields.get("assignee"),
+                    "status": fields.get("status", {}),
+                    "created": fields.get("created", ""),
+                    "updated": fields.get("updated", ""),
+                },
+            },
+            "user": fields.get("reporter", {}),
+        }
+
+        await client.clear_dedup_key("jira:dedup", issue_key)
+
+        resp = await client.http.post(
+            f"{config.api_gateway_url}/webhooks/jira",
+            json=webhook_payload,
+        )
+        resp.raise_for_status()
+
+        flow_id = f"jira:{issue_key}"
+        logger.info(
+            "jira_existing_ticket_webhook_fired",
+            extra={"issue_key": issue_key, "flow_id": flow_id},
+        )
+
+        return TriggerResult(
+            platform="jira",
+            artifact_type="ticket",
+            artifact_id=issue_key,
+            artifact_url=issue_data.get("self"),
+            trigger_time=datetime.now(UTC),
+            expected_flow_id=flow_id,
+            raw_response=resp.json(),
         )
 
     async def add_comment(self, issue_key: str, body: str) -> TriggerResult:

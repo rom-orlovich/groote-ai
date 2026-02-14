@@ -41,6 +41,10 @@ services:
       - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-}
       - JIRA_WEBHOOK_SECRET=${JIRA_WEBHOOK_SECRET:-}
       - SLACK_WEBHOOK_SECRET=${SLACK_WEBHOOK_SECRET:-}
+      - SLACK_NOTIFICATION_CHANNEL=${SLACK_NOTIFICATION_CHANNEL:-}
+      - SLACK_API_URL=http://slack-api:3003
+      - OAUTH_SERVICE_URL=http://oauth-service:8010
+      - INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY:-}
       - KNOWLEDGE_GRAPH_URL=http://knowledge-graph:4000
     depends_on:
       redis:
@@ -68,8 +72,13 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - CURSOR_API_KEY=${CURSOR_API_KEY:-}
       - DASHBOARD_API_URL=${DASHBOARD_API_URL:-http://dashboard-api:5000}
+      - SLACK_NOTIFICATION_CHANNEL=${SLACK_NOTIFICATION_CHANNEL:-}
+      - SLACK_API_URL=http://slack-api:3003
+      - OAUTH_SERVICE_URL=http://oauth-service:8010
+      - INTERNAL_SERVICE_KEY=${INTERNAL_SERVICE_KEY:-}
     volumes:
       - agent_data:/data
+      - repos_data:/data/repos:ro
       - ~/.claude/.claude.json:/home/agent/.claude/.claude.json:ro
       - ~/.claude/.credentials.json:/home/agent/.claude/.credentials.json:ro
     depends_on:

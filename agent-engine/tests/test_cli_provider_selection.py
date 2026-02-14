@@ -16,8 +16,8 @@ EXPECTED_MODELS = {
     "github-pr-review": "opus",
     "verifier": "opus",
     "executor": "sonnet",
-    "github-issue-handler": "sonnet",
-    "jira-code-plan": "sonnet",
+    "github-issue-handler": "opus",
+    "jira-code-plan": "opus",
     "slack-inquiry": "sonnet",
     "service-integrator": "sonnet",
 }

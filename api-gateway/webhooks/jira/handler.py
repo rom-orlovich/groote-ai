@@ -7,6 +7,7 @@ from config import get_settings
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from services.event_publisher import EventPublisher
+from services.oauth_config import get_jira_site_url
 from services.slack_notifier import (
     get_notification_channel,
     notify_task_failed,
@@ -19,7 +20,7 @@ from .response import send_error_response, send_immediate_response
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/webhooks/jira", tags=["jira-webhook"])
 
-DEDUP_TTL_SECONDS = 60
+DEDUP_TTL_SECONDS = 3600
 
 
 def _get_publisher(request: Request) -> EventPublisher | None:
@@ -69,7 +70,7 @@ async def handle_jira_webhook(request: Request):
         logger.debug(
             "jira_event_skipped",
             event_type=webhook_event,
-            reason="Bot comment, missing AI-Fix label, or unsupported event",
+            reason="Bot comment, missing ai-agent label, or unsupported event",
         )
         if publisher:
             await publisher.publish_webhook_skipped(
@@ -83,7 +84,7 @@ async def handle_jira_webhook(request: Request):
             content={"status": "skipped", "reason": "Event not processed"},
         )
 
-    dedup_key = f"jira:dedup:{issue_key}:{webhook_event}"
+    dedup_key = f"jira:dedup:{issue_key}"
     try:
         redis_client = redis.from_url(settings.redis_url)
         already_processing = await redis_client.set(dedup_key, "1", nx=True, ex=DEDUP_TTL_SECONDS)
@@ -114,7 +115,10 @@ async def handle_jira_webhook(request: Request):
         settings.slack_notification_channel,
     )
 
-    task_info = extract_task_info(webhook_event, data)
+    jira_site = await get_jira_site_url(
+        settings.oauth_service_url, settings.internal_service_key,
+    )
+    task_info = extract_task_info(webhook_event, data, jira_site_url=jira_site)
     task_id = str(uuid.uuid4())
     task_info["task_id"] = task_id
 
@@ -172,12 +176,15 @@ async def handle_jira_webhook(request: Request):
             input_message=task_info.get("prompt", ""),
         )
 
+    issue_summary = task_info.get("issue", {}).get("summary", issue_key)
+    assigned_agent = task_info.get("assigned_agent", "")
     await notify_task_started(
         settings.slack_api_url,
         notification_channel,
         "jira",
         task_id,
-        f"{issue_key} {webhook_event}",
+        f"{issue_key}: {issue_summary}" if issue_summary else issue_key,
+        agent=assigned_agent,
     )
     if publisher:
         await publisher.publish_notification_ops(

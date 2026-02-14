@@ -18,7 +18,7 @@ const PLATFORM_META: Record<
   },
   jira: {
     icon: MessageSquare,
-    description: "Create and manage tickets with AI-Fix labels",
+    description: "Create and manage tickets with ai-agent labels",
     accent: "bg-blue-500",
     iconBg: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   },

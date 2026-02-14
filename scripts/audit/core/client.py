@@ -106,6 +106,9 @@ class AuditClient:
     async def check_health(self, service_url: str) -> bool:
         try:
             response = await self.http.get(f"{service_url}/health", timeout=5.0)
+            if response.status_code == 200:
+                return True
+            response = await self.http.get(f"{service_url}/api/health", timeout=5.0)
             return response.status_code == 200
         except (httpx.HTTPError, httpx.TimeoutException):
             return False

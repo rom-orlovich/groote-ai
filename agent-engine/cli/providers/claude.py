@@ -5,7 +5,7 @@ from pathlib import Path
 
 import structlog
 
-from cli.base import CLIResult
+from cli.base import CLIResult, EventCallback
 from cli.event_collector import (
     determine_error_message,
     handle_assistant_message,
@@ -27,6 +27,7 @@ class ClaudeCLIRunner:
         allowed_tools: str | None = None,
         agents: str | None = None,
         debug_mode: str | None = None,
+        event_callback: EventCallback | None = None,
     ) -> CLIResult:
         cmd = self._build_command(prompt, model, allowed_tools, agents, debug_mode)
 
@@ -36,6 +37,9 @@ class ClaudeCLIRunner:
             working_dir=str(working_dir),
             agent=agents,
             cmd_args=" ".join(cmd[:8]),
+            prompt_len=len(prompt),
+            total_args=len(cmd),
+            has_mcp_config="--mcp-config" in cmd,
         )
 
         run_env = {
@@ -67,12 +71,13 @@ class ClaudeCLIRunner:
         tool_events: list[dict] = []
         thinking_blocks: list[dict] = []
         last_tool_name: list[str] = [""]
+        stdout_line_count = 0
 
         try:
 
             async def read_stdout() -> None:
                 nonlocal cost_usd, input_tokens, output_tokens, cli_error_message
-                nonlocal has_streaming_output, result_text
+                nonlocal has_streaming_output, result_text, stdout_line_count
 
                 if not process.stdout:
                     return
@@ -81,6 +86,10 @@ class ClaudeCLIRunner:
                     line_str = line.decode(errors="replace").rstrip("\n\r")
                     if not line_str:
                         continue
+
+                    stdout_line_count += 1
+                    if stdout_line_count <= 3:
+                        logger.debug("cli_stdout_line", task_id=task_id, line_num=stdout_line_count, preview=line_str[:200])
 
                     try:
                         data = json.loads(line_str)
@@ -93,6 +102,7 @@ class ClaudeCLIRunner:
                             tool_events,
                             thinking_blocks,
                             last_tool_name,
+                            event_callback,
                         )
 
                         msg_type = data.get("type")
@@ -132,6 +142,16 @@ class ClaudeCLIRunner:
             )
             await process.wait()
             await output_queue.put(None)
+
+            logger.info(
+                "cli_stdout_summary",
+                task_id=task_id,
+                stdout_lines=stdout_line_count,
+                accumulated_len=len("".join(accumulated_output)),
+                clean_len=len("".join(clean_output)),
+                result_text_len=len(result_text),
+                stderr_count=len(stderr_lines),
+            )
 
             error_msg = determine_error_message(
                 process.returncode or 0, stderr_lines, cli_error_message
@@ -225,7 +245,8 @@ class ClaudeCLIRunner:
         ]
 
         if agents:
-            cmd.extend(["--agent", agents])
+            agent_path = Path(f"/app/.claude/agents/{agents}.md")
+            cmd.extend(["--agent", str(agent_path) if agent_path.exists() else agents])
 
         if debug_mode is not None:
             if debug_mode:
@@ -257,6 +278,7 @@ class ClaudeCLIRunner:
         tool_events: list[dict],
         thinking_blocks: list[dict],
         last_tool_name: list[str],
+        event_callback: EventCallback | None = None,
     ) -> None:
         msg_type = data.get("type")
 
@@ -276,11 +298,13 @@ class ClaudeCLIRunner:
                 tool_events,
                 thinking_blocks,
                 last_tool_name,
+                event_callback,
             )
 
         elif msg_type == "user":
             await handle_user_message(
-                data, accumulated_output, output_queue, tool_events, last_tool_name
+                data, accumulated_output, output_queue, tool_events, last_tool_name,
+                event_callback,
             )
 
         elif msg_type == "stream_event":

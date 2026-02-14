@@ -3,15 +3,18 @@ import logging
 from .client import AuditClient
 from .redis_monitor import RedisEventMonitor
 from .scoring import (
+    CRITICAL_DIMENSIONS,
     DIMENSION_WEIGHTS,
     FlowCriteria,
     QualityDimension,
     QualityReport,
     score_completeness,
+    score_content_quality,
     score_delivery,
     score_errors,
     score_execution,
     score_knowledge,
+    score_knowledge_first,
     score_relevance,
     score_routing,
     score_tool_efficiency,
@@ -41,8 +44,10 @@ class QualityEvaluator:
             score_routing(events, criteria),
             score_tool_efficiency(tool_calls, criteria),
             score_knowledge(tool_calls, criteria),
+            score_knowledge_first(tool_calls, criteria),
             score_completeness(events, criteria),
-            score_relevance(events),
+            score_relevance(events, criteria),
+            score_content_quality(events, criteria),
             score_delivery(events),
             score_execution(events, criteria),
             score_errors(events),
@@ -56,9 +61,14 @@ class QualityEvaluator:
             total_weight += weight
 
         overall = weighted_sum // total_weight if total_weight > 0 else 0
-        passed = overall >= self._pass_threshold
 
-        suggestions = self._generate_suggestions(dimensions)
+        critical_failed = any(
+            dim.score < 50 for dim in dimensions
+            if dim.name in CRITICAL_DIMENSIONS
+        )
+        passed = overall >= self._pass_threshold and not critical_failed
+
+        suggestions = self._generate_suggestions(dimensions, critical_failed)
 
         return QualityReport(
             task_id=task_id,
@@ -69,10 +79,14 @@ class QualityEvaluator:
         )
 
     def _generate_suggestions(
-        self, dimensions: list[QualityDimension]
+        self, dimensions: list[QualityDimension], critical_failed: bool
     ) -> list[str]:
         suggestions: list[str] = []
+        if critical_failed:
+            for dim in dimensions:
+                if dim.name in CRITICAL_DIMENSIONS and dim.score < 50:
+                    suggestions.append(f"CRITICAL FAIL - {dim.name}: {dim.detail}")
         for dim in dimensions:
-            if dim.score < 50:
+            if dim.score < 50 and dim.name not in CRITICAL_DIMENSIONS:
                 suggestions.append(f"{dim.name}: {dim.detail}")
         return suggestions

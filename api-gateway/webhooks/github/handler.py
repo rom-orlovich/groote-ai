@@ -20,6 +20,41 @@ from .response import send_error_response, send_immediate_response
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/webhooks/github", tags=["github-webhook"])
 
+DEDUP_TTL_SECONDS = 3600
+
+
+async def _is_duplicate_webhook(settings: object, event_type: str, data: dict) -> bool:
+    comment_id = data.get("comment", {}).get("id")
+    if not comment_id:
+        return False
+    key = f"webhook:dedup:github:{event_type}:{comment_id}"
+    try:
+        redis_client = redis.from_url(settings.redis_url)
+        was_set = await redis_client.set(key, "1", nx=True, ex=DEDUP_TTL_SECONDS)
+        await redis_client.aclose()
+        return not was_set
+    except Exception as e:
+        logger.warning("github_dedup_check_failed", error=str(e))
+        return False
+
+
+IMPROVE_KEYWORDS = {"improve", "fix", "update", "refactor", "change", "implement", "address"}
+
+
+def _resolve_handler_name(event_type: str, task_info: dict) -> str:
+    if event_type in ("pull_request", "pull_request_review_comment"):
+        return "github-pr-review"
+    if event_type == "issue_comment":
+        issue = task_info.get("issue", {})
+        title = issue.get("title", "")
+        comment_body = task_info.get("comment", {}).get("body", "").lower()
+        has_pr = bool(issue.get("pull_request") if isinstance(issue, dict) else False)
+        if has_pr and title.startswith("[PLAN]") and "@agent approve" in comment_body:
+            return "github-pr-review"
+        if has_pr and any(kw in comment_body for kw in IMPROVE_KEYWORDS):
+            return "github-pr-review"
+    return "github-issue-handler"
+
 
 def _get_publisher(request: Request) -> EventPublisher | None:
     return getattr(request.app.state, "event_publisher", None)
@@ -116,6 +151,20 @@ async def handle_github_webhook(
             content={"status": "skipped", "reason": "Event type not processed"},
         )
 
+    if await _is_duplicate_webhook(settings, x_github_event, data):
+        logger.debug("github_event_deduplicated", event_type=x_github_event)
+        if publisher:
+            await publisher.publish_webhook_skipped(
+                webhook_event_id=webhook_event_id,
+                source="github",
+                event_type=x_github_event,
+                reason="duplicate_within_cooldown",
+            )
+        return JSONResponse(
+            status_code=200,
+            content={"status": "skipped", "reason": "Duplicate event within cooldown"},
+        )
+
     notification_channel = await get_notification_channel(
         settings.oauth_service_url,
         settings.internal_service_key,
@@ -148,7 +197,7 @@ async def handle_github_webhook(
         logger.warning("github_immediate_response_failed", error=str(e))
 
     if publisher:
-        handler_name = "github-issue-handler" if "issue" in x_github_event else "github-pr-review"
+        handler_name = _resolve_handler_name(x_github_event, task_info)
         await publisher.publish_webhook_matched(
             webhook_event_id=webhook_event_id,
             source="github",
@@ -197,12 +246,20 @@ async def handle_github_webhook(
             input_message=task_info.get("prompt", ""),
         )
 
+    issue_title = (
+        task_info.get("issue", {}).get("title")
+        or task_info.get("pull_request", {}).get("title")
+        or ""
+    )
+    started_title = f"{ctx['full_name']}#{ctx['issue_number']}: {issue_title}" if issue_title else (
+        f"{ctx['full_name']} #{ctx['issue_number']} {x_github_event}"
+    )
     await notify_task_started(
         settings.slack_api_url,
         notification_channel,
         "github",
         task_id,
-        f"{ctx['full_name']} #{ctx['issue_number']} {x_github_event}",
+        started_title,
     )
     if publisher:
         await publisher.publish_notification_ops(

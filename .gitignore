@@ -22,7 +22,7 @@ share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
+
 
 # ===========================================
 # Virtual Environments
@@ -175,3 +175,4 @@ package-lock.json
 *.exe
 *.out
 *.app
+audit-results/

@@ -77,9 +77,14 @@ Extract from `source_metadata`:
 1. Search for error in codebase and logs
 2. `slack:send_slack_message` with findings and suggested next steps
 
-### 4. Response Format
+### 4. Post Response via MCP
 
-**MUST** always reply in thread using `thread_ts`.
+**MANDATORY**: You MUST call `slack:send_slack_message` to post your response. Do NOT just output text — the user will not see it unless you explicitly call the Slack MCP tool.
+
+Call `slack:send_slack_message` with:
+- `channel`: the `channel_id` from task metadata
+- `text`: your formatted response
+- `thread_ts`: the `thread_ts` from task metadata (MUST reply in thread)
 
 Keep responses under 3000 characters (Slack truncates longer messages).
 

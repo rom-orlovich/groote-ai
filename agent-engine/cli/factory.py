@@ -4,7 +4,7 @@ from enum import Enum
 from functools import lru_cache
 from pathlib import Path
 
-from cli.base import CLIResult, CLIRunner
+from cli.base import CLIResult, CLIRunner, EventCallback
 from cli.providers.claude import ClaudeCLIRunner
 from cli.providers.cursor import CursorCLIRunner
 
@@ -34,6 +34,7 @@ async def run_cli(
     allowed_tools: str | None = None,
     agents: str | None = None,
     debug_mode: str | None = None,
+    event_callback: EventCallback | None = None,
 ) -> CLIResult:
     runner = get_cli_runner()
     return await runner.run(
@@ -46,4 +47,5 @@ async def run_cli(
         allowed_tools=allowed_tools,
         agents=agents,
         debug_mode=debug_mode,
+        event_callback=event_callback,
     )

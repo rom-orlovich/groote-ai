@@ -125,10 +125,10 @@ sequenceDiagram
 
 | Event Type | Condition | Action |
 |------------|-----------|--------|
-| issue_created | Has AI-Fix label | Process |
-| issue_updated | Has AI-Fix label | Process |
-| comment_added | - | Process |
-| * | No AI-Fix label | Skip |
+| issue_created | Has `ai-agent` label | Process |
+| issue_updated | Has `ai-agent` label | Process |
+| comment_added | Has `ai-agent` label | Process |
+| * | No `ai-agent` label | Skip |
 
 ### Slack Events
 

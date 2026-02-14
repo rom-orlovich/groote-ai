@@ -191,22 +191,26 @@ class TestSlackImmediateResponse:
 
 class TestSlackNotifier:
     @patch("services.slack_notifier.httpx.AsyncClient")
-    async def test_task_started_notification(self, mock_cls):
+    async def test_task_started_sends_blocks(self, mock_cls):
         from services.slack_notifier import notify_task_started
 
         mock_cls.return_value = _mock_http_client()
 
         result = await notify_task_started(
-            "http://slack-api:3003", "#ops", "github", "task-1", "myorg/myrepo #123"
+            "http://slack-api:3003", "#ops", "github", "task-1", "Fix auth bug", agent="brain"
         )
 
         assert result is True
         payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
         assert "Task Started" in payload["text"]
-        assert "github" in payload["text"]
+        assert "blocks" in payload
+        blocks = payload["blocks"]
+        assert blocks[0]["type"] == "section"
+        assert "Fix auth bug" in blocks[0]["text"]["text"]
+        assert "brain" in blocks[1]["elements"][0]["text"]
 
     @patch("services.slack_notifier.httpx.AsyncClient")
-    async def test_task_failed_notification(self, mock_cls):
+    async def test_task_failed_sends_blocks(self, mock_cls):
         from services.slack_notifier import notify_task_failed
 
         mock_cls.return_value = _mock_http_client()
@@ -218,6 +222,8 @@ class TestSlackNotifier:
         assert result is True
         payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
         assert "Task Failed" in payload["text"]
+        assert "blocks" in payload
+        assert ":x:" in payload["blocks"][0]["text"]["text"]
 
     async def test_no_channel_skips_notification(self):
         from services.slack_notifier import notify_task_started
@@ -228,7 +234,7 @@ class TestSlackNotifier:
         assert result is False
 
     @patch("services.slack_notifier.httpx.AsyncClient")
-    async def test_task_completed_notification(self, mock_cls):
+    async def test_task_completed_sends_blocks_with_buttons(self, mock_cls):
         from services.slack_notifier import notify_task_completed
 
         mock_cls.return_value = _mock_http_client()
@@ -240,6 +246,9 @@ class TestSlackNotifier:
         assert result is True
         payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
         assert "Task Completed" in payload["text"]
+        assert "blocks" in payload
+        context_block = payload["blocks"][1]
+        assert context_block["type"] == "context"
 
 
 class TestHttpFailuresHandledGracefully:

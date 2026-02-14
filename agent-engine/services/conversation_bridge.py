@@ -138,12 +138,18 @@ async def get_or_create_flow_conversation(
 
 
 async def fetch_conversation_context(
-    dashboard_url: str, conversation_id: str, limit: int = 5
+    dashboard_url: str,
+    conversation_id: str,
+    limit: int = 5,
+    roles: str | None = None,
 ) -> list[dict]:
+    params: dict = {"max_messages": limit}
+    if roles:
+        params["roles"] = roles
     async with httpx.AsyncClient(timeout=10.0) as client:
         response = await client.get(
             f"{dashboard_url}/api/conversations/{conversation_id}/context",
-            params={"max_messages": limit},
+            params=params,
         )
         response.raise_for_status()
         return response.json()

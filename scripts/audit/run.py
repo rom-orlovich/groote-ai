@@ -13,12 +13,14 @@ from .core.redis_monitor import RedisEventMonitor
 from .core.report import AuditReport, FlowReport, ReportGenerator
 
 FLOW_ALIASES: dict[str, list[str]] = {
-    "all": ["f01", "f02", "f03", "f04", "f05", "f06", "f07"],
-    "slack": ["f01"],
-    "jira": ["f02", "f05"],
+    "all": ["f01", "f02", "f03", "f04", "f05", "f06", "f07", "f08", "f09"],
+    "slack": ["f01", "f08"],
+    "jira": ["f02", "f05", "f09"],
     "github": ["f03", "f04"],
     "chain": ["f06"],
     "knowledge": ["f07"],
+    "multi-repo": ["f08"],
+    "plan-approval": ["f09"],
 }
 
 
@@ -37,6 +39,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--quality-threshold", type=int, default=70)
     parser.add_argument("--slack-channel", default=None)
+    parser.add_argument("--github-owner", default=None)
+    parser.add_argument("--github-repo", default=None)
+    parser.add_argument("--jira-project", default=None)
+    parser.add_argument(
+        "--ticket", default=None,
+        help="Existing ticket key to audit (e.g. KAN-41) instead of creating new",
+    )
     return parser.parse_args()
 
 
@@ -114,6 +123,12 @@ async def main() -> int:
     config.verbose = args.verbose
     if args.slack_channel:
         config.slack_channel = args.slack_channel
+    if args.github_owner:
+        config.github_owner = args.github_owner
+    if args.github_repo:
+        config.github_repo = args.github_repo
+    if args.jira_project:
+        config.jira_project = args.jira_project
 
     flow_ids = resolve_flows(args.flow)
     log.info("resolved_flows", extra={"flows": flow_ids})
@@ -154,12 +169,15 @@ async def main() -> int:
                     continue
 
                 evidence = EvidenceCollector(str(base_output), flow_id)
-                flow = flow_cls(
-                    client=client,
-                    monitor=monitor,
-                    config=config,
-                    evidence_collector=evidence,
-                )
+                flow_kwargs: dict = {
+                    "client": client,
+                    "monitor": monitor,
+                    "config": config,
+                    "evidence_collector": evidence,
+                }
+                if args.ticket and hasattr(flow_cls, "__init__"):
+                    flow_kwargs["existing_ticket_key"] = args.ticket
+                flow = flow_cls(**flow_kwargs)
                 cleanup_flows.append(flow)
 
                 log.info(

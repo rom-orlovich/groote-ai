@@ -234,20 +234,63 @@ async def list_branches(
 
 
 @mcp.tool()
-async def list_repos(
-    per_page: int = 100, page: int = 1
-) -> dict[str, Any]:
-    """
-    List repositories accessible to the installation.
+async def list_repos(per_page: int = 100, page: int = 1) -> dict[str, Any]:
+    """List repositories accessible to the installation.
 
     Args:
         per_page: Number of results per page (max 100)
         page: Page number for pagination
-
-    Returns:
-        List of accessible repositories
     """
     return await github_api.list_repos(per_page, page)
+
+
+@mcp.tool()
+async def get_branch_sha(owner: str, repo: str, branch: str) -> dict[str, Any]:
+    """Get the SHA of a branch head.
+
+    Args:
+        owner: Repository owner
+        repo: Repository name
+        branch: Branch name
+    """
+    return await github_api.get_branch_sha(owner, repo, branch)
+
+
+@mcp.tool()
+async def create_branch(owner: str, repo: str, ref: str, sha: str) -> dict[str, Any]:
+    """Create a new branch from a SHA.
+
+    Args:
+        owner: Repository owner
+        repo: Repository name
+        ref: New branch name
+        sha: SHA to create branch from
+    """
+    return await github_api.create_branch(owner, repo, ref, sha)
+
+
+@mcp.tool()
+async def create_or_update_file(
+    owner: str,
+    repo: str,
+    path: str,
+    content: str,
+    message: str,
+    branch: str,
+    sha: str | None = None,
+) -> dict[str, Any]:
+    """Create or update a file in a repository via the Contents API.
+
+    Args:
+        owner: Repository owner
+        repo: Repository name
+        path: File path in the repository
+        content: File content (will be base64 encoded by the API service)
+        message: Commit message
+        branch: Branch to commit to
+        sha: SHA of the file being replaced (required for updates, omit for creates)
+    """
+    return await github_api.create_or_update_file(owner, repo, path, content, message, branch, sha)
 
 
 if __name__ == "__main__":

@@ -26,7 +26,7 @@ class FullChainFlow(BaseFlow):
                 "Add comprehensive input validation for panel width, height, "
                 "and format. This should include range checks and type validation."
             ),
-            labels=["AI-Fix"],
+            labels=["ai-agent"],
         )
         self._ticket_key = result.artifact_id
         return result

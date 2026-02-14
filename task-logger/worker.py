@@ -17,13 +17,15 @@ from models import TaskEventType
 logger = logging.getLogger(__name__)
 
 loggers_cache: dict[str, TaskLogger] = {}
+task_sources: dict[str, str] = {}
 webhook_buffer: dict[str, list[dict]] = defaultdict(list)
 running = True
 
 
 def get_or_create_logger(task_id: str) -> TaskLogger:
     if task_id not in loggers_cache:
-        loggers_cache[task_id] = TaskLogger(task_id, settings.logs_dir)
+        source = task_sources.get(task_id, "")
+        loggers_cache[task_id] = TaskLogger(task_id, settings.logs_dir, source=source)
     return loggers_cache[task_id]
 
 
@@ -70,6 +72,11 @@ async def process_task_event(event: dict):
 
     if isinstance(data, str):
         data = json.loads(data)
+
+    if event_type == TaskEventType.TASK_CREATED:
+        source = data.get("source", "")
+        if source:
+            task_sources[task_id] = source
 
     task_logger = get_or_create_logger(task_id)
 

@@ -168,9 +168,8 @@ SLACK_WEBHOOK_SECRET=xxx
 
 1. Receive POST → Validate signature (middleware)
 2. Parse issue data
-3. Check AI-Fix label → Skip if missing → Return `200 OK`
-4. Check assignee matches AI agent
-5. Create task → Queue to Redis → Return `202 Accepted`
+3. Check `ai-agent` label → Skip if missing → Return `200 OK`
+4. Create task → Queue to Redis → Return `202 Accepted`
 
 ### Slack Flow
 

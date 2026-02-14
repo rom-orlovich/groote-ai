@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from pathlib import Path
 
 import httpx
 import jwt
@@ -51,6 +52,43 @@ class WebhookRegistrationService:
             logger.error("github_webhook_configuration_failed", error=str(e))
             return WebhookRegistrationResult(success=False, error=str(e))
 
+    async def _delete_existing_jira_webhooks(
+        self,
+        access_token: str,
+        cloud_id: str,
+    ) -> None:
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"https://api.atlassian.com/ex/jira/{cloud_id}/rest/api/3/webhook",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                response.raise_for_status()
+                data = response.json()
+
+            webhook_ids = [wh["id"] for wh in data.get("values", []) if "id" in wh]
+            if not webhook_ids:
+                return
+
+            logger.info(
+                "jira_deleting_existing_webhooks",
+                cloud_id=cloud_id,
+                count=len(webhook_ids),
+            )
+
+            async with httpx.AsyncClient() as client:
+                await client.request(
+                    "DELETE",
+                    f"https://api.atlassian.com/ex/jira/{cloud_id}/rest/api/3/webhook",
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                        "Content-Type": "application/json",
+                    },
+                    json={"webhookIds": webhook_ids},
+                )
+        except Exception as e:
+            logger.warning("jira_webhook_cleanup_failed", cloud_id=cloud_id, error=str(e))
+
     async def register_jira_webhook(
         self,
         access_token: str,
@@ -58,6 +96,8 @@ class WebhookRegistrationService:
     ) -> WebhookRegistrationResult:
         webhook_url = f"{self.base_webhook_url}/webhooks/jira"
         try:
+            await self._delete_existing_jira_webhooks(access_token, cloud_id)
+
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"https://api.atlassian.com/ex/jira/{cloud_id}/rest/api/3/webhook",
@@ -143,6 +183,20 @@ class WebhookRegistrationService:
             )
             return WebhookRegistrationResult(success=False, error=str(e))
 
+    def _load_private_key(self) -> str:
+        key = self.settings.github_private_key
+        if key and "BEGIN" in key:
+            return key.replace("\\n", "\n")
+
+        key_path = self.settings.github_private_key_path
+        if key_path:
+            path = Path(key_path)
+            if path.exists():
+                logger.info("github_loading_key_from_file", path=key_path)
+                return path.read_text()
+
+        return key.replace("\\n", "\n")
+
     def _generate_github_jwt(self) -> str:
         now = int(datetime.now(UTC).timestamp())
         payload = {
@@ -150,5 +204,5 @@ class WebhookRegistrationService:
             "exp": now + (10 * 60),
             "iss": self.settings.github_app_id,
         }
-        private_key = self.settings.github_private_key.replace("\\n", "\n")
+        private_key = self._load_private_key()
         return jwt.encode(payload, private_key, algorithm="RS256")

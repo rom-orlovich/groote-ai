@@ -56,6 +56,20 @@ class AddReactionRequest(BaseModel):
     content: str
 
 
+class CreateBranchRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+    ref: str
+    sha: str
+
+
+class CreateOrUpdateFileRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+    content: str
+    message: str
+    branch: str
+    sha: str | None = None
+
+
 @router.get("/repos/{owner}/{repo}")
 async def get_repository(
     owner: str,
@@ -207,3 +221,36 @@ async def search_repositories(
     client: Annotated[GitHubClient, Depends(get_github_client)] = None,
 ):
     return await client.search_repositories(q, per_page, page)
+
+
+@router.get("/repos/{owner}/{repo}/git/ref/heads/{branch}")
+async def get_branch_sha(
+    owner: str,
+    repo: str,
+    branch: str,
+    client: Annotated[GitHubClient, Depends(get_github_client)],
+):
+    return await client.get_branch_sha(owner, repo, branch)
+
+
+@router.post("/repos/{owner}/{repo}/git/refs")
+async def create_branch(
+    owner: str,
+    repo: str,
+    request: CreateBranchRequest,
+    client: Annotated[GitHubClient, Depends(get_github_client)],
+):
+    return await client.create_branch(owner, repo, request.ref, request.sha)
+
+
+@router.put("/repos/{owner}/{repo}/contents/{path:path}")
+async def create_or_update_file(
+    owner: str,
+    repo: str,
+    path: str,
+    request: CreateOrUpdateFileRequest,
+    client: Annotated[GitHubClient, Depends(get_github_client)],
+):
+    return await client.create_or_update_file(
+        owner, repo, path, request.content, request.message, request.branch, request.sha
+    )

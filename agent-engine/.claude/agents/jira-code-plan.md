@@ -1,7 +1,7 @@
 ---
 name: jira-code-plan
 description: Handles Jira tickets with AI-Fix label. Analyzes tickets, discovers code, implements fixes, creates PRs, and posts summaries with PR links back to Jira. Use when Jira tickets are created or updated with AI-Fix label.
-model: sonnet
+model: opus
 memory: project
 skills:
   - jira-operations
@@ -136,36 +136,128 @@ Message format:
 *PR:* <{pr_html_url}|#{pr_number}>
 ```
 
-## Simplified Flow (Analysis Only)
+## Plan Flow (Analysis → Draft PR → Jira Summary)
 
-For complex tickets where immediate implementation is not feasible:
+For tickets requiring planning before implementation:
 
 1. Follow Steps 1-3 (parse, read, discover)
-2. Create implementation plan instead of implementing
-3. Post plan via `jira:add_jira_comment` with:
+2. Create a detailed implementation plan
+3. **Create a Draft PR** with the plan as the PR body:
+   a. `github:get_branch_sha` to get the SHA of the `main` branch
+   b. `github:create_branch` to create `plan/{issue-key}` branch from that SHA
+   c. `github:create_or_update_file` to add `PLAN.md` to the branch with the full plan
+   d. `github:create_pull_request` with `draft=true`, title `[PLAN] {issue-key}: {summary}`
+
+Plan PR body template (MUST include parallel micro-subtasks with complete code):
 ```markdown
 ## Implementation Plan
 
+**Jira Ticket**: [{issue-key}]({ticket_url})
 **Scope**: {small | medium | large}
 **Estimated files**: {count}
+**Parallel subtasks**: {count that can run simultaneously}
 
 ### Summary
-{what will be done and why}
+{what will be done and why — reference specific existing code patterns}
 
-### Affected Files
-- `path/to/file.py`: {description of changes}
+### Shared Context
+{Architecture decisions, naming conventions, shared interfaces all subtasks use}
 
-### Implementation Steps
-1. {step with specific file and change}
-2. {step with specific file and change}
+```typescript
+// Shared types referenced across subtasks
+export interface SharedType { ... }
+```
 
-### Risks
-- {risk and mitigation}
+### Subtask 1: {Title} — `path/to/file.ts`
+**Can run in parallel with**: Subtask 2, Subtask 3
+**Blocked by**: nothing
+**Owner**: one executor agent
+
+**Current code** (lines X-Y):
+```typescript
+// exact current code from the file
+export function existingFunc(): void { ... }
+```
+
+**Target code**:
+```typescript
+// exact replacement — executor copies this verbatim
+export function existingFunc(config: Config): Result { ... }
+```
+
+**Tests** (`path/to/file.test.ts`):
+```typescript
+describe("existingFunc", () => {
+  it("should return Result when config is valid", () => {
+    const result = existingFunc({ limit: 10 });
+    expect(result.ok).toBe(true);
+  });
+  it("should throw when config.limit < 0", () => {
+    expect(() => existingFunc({ limit: -1 })).toThrow();
+  });
+});
+```
+
+**Acceptance criteria**:
+- [ ] Function signature matches target
+- [ ] All test cases pass
+- [ ] No existing callers break
+
+### Subtask 2: {Title} — `path/to/other.ts`
+**Can run in parallel with**: Subtask 1
+**Blocked by**: nothing
+
+{same structure: current code, target code, tests, acceptance criteria}
+
+### Subtask 3: {Title} — `path/to/integration.ts`
+**Can run in parallel with**: nothing
+**Blocked by**: Subtask 1, Subtask 2
+
+{same structure — wires subtask outputs together}
+
+### Parallelism Map
+```
+Subtask 1 ──┐
+             ├──→ Subtask 3 (integration) ──→ Subtask 4 (verification)
+Subtask 2 ──┘
+```
+
+### Edge Cases & Risks
+- {specific scenario}: {concrete mitigation with code approach}
 
 ### Approval
-Reply with "approved" to proceed with implementation.
+Comment `@agent approve` on this PR to proceed with implementation.
 ```
-4. Send Slack notification (Step 8) with action "Posted implementation plan"
+
+**CRITICAL RULES FOR PLANS**:
+1. Each subtask owns exactly ONE file — no shared file edits across subtasks
+2. Include FULL current code and FULL target code — no placeholders or summaries
+3. Include complete test functions with assertions — not descriptions
+4. Mark parallelism explicitly: which subtasks can run simultaneously
+5. Integration subtasks MUST be blocked by their dependencies
+6. Every subtask must be implementable by a sonnet executor with ZERO additional code reading
+7. Read every affected file thoroughly via MCP before writing the plan
+8. Search the codebase for ALL callers/usages of functions being changed
+
+4. **Post summary to Jira** via `jira:add_jira_comment` with link to the PR:
+```markdown
+## Plan Created
+
+A detailed implementation plan has been created as a Draft PR:
+
+**PR**: [#{pr_number} — {pr_title}]({pr_html_url})
+**Scope**: {small | medium | large}
+
+### Summary
+{1-2 sentence summary of what will be done}
+
+Comment `@agent approve` on the PR to proceed with implementation.
+
+---
+_Automated by Groote AI_
+```
+
+5. Send Slack notification (Step 8) with action "Posted implementation plan" and PR link
 
 ### Handle Approval
 

@@ -61,21 +61,14 @@ class JiraClient:
         description: str,
         issue_type: str = "Task",
     ) -> dict[str, Any]:
+        from .markdown_to_adf import markdown_to_adf
+
         client = await self._get_client()
         payload = {
             "fields": {
                 "project": {"key": project_key},
                 "summary": summary,
-                "description": {
-                    "type": "doc",
-                    "version": 1,
-                    "content": [
-                        {
-                            "type": "paragraph",
-                            "content": [{"type": "text", "text": description}],
-                        }
-                    ],
-                },
+                "description": markdown_to_adf(description),
                 "issuetype": {"name": issue_type},
             }
         }
@@ -90,19 +83,10 @@ class JiraClient:
         return {"success": True, "issue_key": issue_key}
 
     async def add_comment(self, issue_key: str, body: str) -> dict[str, Any]:
+        from .markdown_to_adf import markdown_to_adf
+
         client = await self._get_client()
-        payload = {
-            "body": {
-                "type": "doc",
-                "version": 1,
-                "content": [
-                    {
-                        "type": "paragraph",
-                        "content": [{"type": "text", "text": body}],
-                    }
-                ],
-            }
-        }
+        payload = {"body": markdown_to_adf(body)}
         response = await client.post(f"/issue/{issue_key}/comment", json=payload)
         response.raise_for_status()
         return response.json()
