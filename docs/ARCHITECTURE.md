@@ -317,7 +317,7 @@ groote-ai/
 │   ├── Dockerfile
 │   ├── main.py                         # FastAPI + Redis worker
 │   ├── .claude/
-│   │   ├── agents/                     # 13 specialized agents
+│   │   ├── agents/                     # 10 specialized agents
 │   │   │   ├── brain.md                # Main orchestrator
 │   │   │   ├── planning.md             # Discovery & planning
 │   │   │   ├── executor.md             # TDD implementation
@@ -326,6 +326,7 @@ groote-ai/
 │   │   │   ├── github-pr-review.md     # PR review
 │   │   │   ├── jira-code-plan.md       # Jira ticket handling
 │   │   │   ├── slack-inquiry.md        # Slack Q&A
+│   │   │   ├── knowledge-researcher.md # Knowledge search
 │   │   │   └── service-integrator.md   # External coordination
 │   │   └── skills/                     # 9 reusable skills
 │   │       ├── discovery/              # Repo identification

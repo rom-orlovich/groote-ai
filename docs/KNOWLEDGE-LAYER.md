@@ -109,7 +109,7 @@ User adds a data source via the dashboard UI.
 sequenceDiagram
     participant User
     participant Dashboard as Dashboard UI
-    participant API as Dashboard API
+    participant API as Dashboard API :5000
     participant OAuth as OAuth Service
     participant DB as PostgreSQL
 

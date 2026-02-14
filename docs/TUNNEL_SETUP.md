@@ -4,7 +4,7 @@ To receive webhooks from GitHub, Jira, Slack, and other external services, you n
 
 ## Setting Your Public URL
 
-Set `PUBLIC_URL` via the **dashboard setup wizard** (`/setup` > Domain step) or directly in `.env`:
+Set `PUBLIC_URL` directly in `.env`:
 
 ```bash
 PUBLIC_URL=https://your-domain.example.com
@@ -56,7 +56,7 @@ All services automatically use `PUBLIC_URL`:
 
 When your public URL changes, update it in:
 
-1. `.env` file or dashboard setup wizard
+1. `.env` file
 2. **GitHub** → Webhook settings
 3. **Jira** → Webhook settings
 4. **Slack** → Event subscription URLs
@@ -69,7 +69,7 @@ Services pick up the new `PUBLIC_URL` on restart.
 
 ### "PUBLIC_URL is not set"
 
-Set it in `.env` or via the dashboard setup wizard before starting a tunnel.
+Set it in `.env` before starting a tunnel.
 
 ### Tunnel stops unexpectedly
 
@@ -82,7 +82,7 @@ Check for:
 
 ## Next Steps
 
-1. Set your `PUBLIC_URL` via the dashboard setup wizard or `.env`
+1. Set your `PUBLIC_URL` in `.env`
 2. Start your tunnel: `make tunnel-zrok` or `make tunnel`
 3. Configure webhooks in GitHub, Jira, Slack
 4. Test by triggering a webhook (e.g., create a GitHub issue)

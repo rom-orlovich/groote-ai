@@ -51,7 +51,7 @@ PUBLIC_URL (ngrok/production) -> port 3005 -> nginx
   /ws            -> Dashboard API WebSocket (port 5000)
 ```
 
-Set `PUBLIC_URL` in `.env` or via the dashboard setup wizard (`/setup`):
+Set `PUBLIC_URL` in `.env`:
 ```bash
 PUBLIC_URL=https://your-domain.example.com
 ```

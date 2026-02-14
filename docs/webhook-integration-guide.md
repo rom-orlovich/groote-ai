@@ -108,7 +108,7 @@ docker compose exec cli curl http://dashboard-api:5000/api/health
 
 Verify the conversation has messages:
 ```bash
-curl http://localhost:5001/api/conversations/{id}/context?max_messages=5
+curl http://localhost:5000/api/conversations/{id}/context?max_messages=5
 ```
 
 ### Agent not posting back to platform
