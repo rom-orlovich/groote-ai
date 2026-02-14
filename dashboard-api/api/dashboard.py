@@ -4,11 +4,18 @@ import json
 import math
 import uuid
 from datetime import UTC, datetime
+from pathlib import Path
 
 import structlog
 from core.config import settings
 from core.database import get_session as get_db_session
-from core.database.models import SessionDB, TaskDB, WebhookConfigDB, WebhookEventDB, update_conversation_metrics
+from core.database.models import (
+    SessionDB,
+    TaskDB,
+    WebhookConfigDB,
+    WebhookEventDB,
+    update_conversation_metrics,
+)
 from core.database.redis_client import redis_client
 from core.webhook_configs import WEBHOOK_CONFIGS
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -772,9 +779,7 @@ async def get_webhook_stats(db: AsyncSession = Depends(get_db_session)):
 # Task Log Endpoints
 
 
-def _resolve_task_log_dir(task_id: str) -> "Path":
-    from pathlib import Path
-
+def _resolve_task_log_dir(task_id: str) -> Path:
     base = settings.task_logs_dir
     direct = base / task_id
     if direct.exists():

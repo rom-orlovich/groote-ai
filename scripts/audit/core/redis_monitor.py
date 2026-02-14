@@ -125,7 +125,7 @@ class RedisEventMonitor:
         try:
             await asyncio.wait_for(event.wait(), timeout=timeout)
             return self._waiter_data.get(key)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(
                 "wait_for_event_timeout",
                 extra={"task_id": task_id, "event_type": event_type, "timeout": timeout},
@@ -153,7 +153,7 @@ class RedisEventMonitor:
             if result and result.get("_epoch", 0) < min_epoch:
                 return None
             return result
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(
                 "wait_for_source_event_timeout",
                 extra={"source": source, "event_type": event_type, "timeout": timeout},

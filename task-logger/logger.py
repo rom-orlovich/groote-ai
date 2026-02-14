@@ -22,7 +22,7 @@ class TaskLogger:
         self._create_id_symlink(logs_dir, task_id, dir_name)
 
     def _create_id_symlink(self, logs_dir: Path, task_id: str, dir_name: str) -> None:
-        link_path = logs_dir / f".by-id" / task_id
+        link_path = logs_dir / ".by-id" / task_id
         link_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             if link_path.is_symlink() or link_path.exists():

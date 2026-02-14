@@ -2,7 +2,7 @@ import logging
 import time
 from datetime import UTC, datetime
 
-from ..core.checkpoint import Checkpoint, CheckpointRunner
+from ..core.checkpoint import CheckpointRunner
 from ..core.evaluator import FlowCriteria
 from ..triggers.base import TriggerResult
 from .base import BaseFlow, FlowResult

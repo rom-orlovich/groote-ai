@@ -133,6 +133,86 @@ class JiraClient:
         response.raise_for_status()
         return response.json()
 
+    async def create_project(
+        self,
+        key: str,
+        name: str,
+        project_type_key: str = "software",
+        lead_account_id: str = "",
+        description: str = "",
+    ) -> dict[str, Any]:
+        client = await self._get_client()
+        payload: dict[str, Any] = {
+            "key": key,
+            "name": name,
+            "projectTypeKey": project_type_key,
+        }
+        if lead_account_id:
+            payload["leadAccountId"] = lead_account_id
+        if description:
+            payload["description"] = description
+        response = await client.post("/project", json=payload)
+        response.raise_for_status()
+        return response.json()
+
+    async def get_boards(self, project_key: str = "") -> dict[str, Any]:
+        base_url = self._base_url.rstrip("/")
+        agile_url = f"{base_url}/rest/agile/1.0/board"
+        params: dict[str, str | int] = {"maxResults": 50}
+        if project_key:
+            params["projectKeyOrId"] = project_key
+        async with httpx.AsyncClient(
+            headers={
+                "Authorization": self._get_auth_header(),
+                "Accept": "application/json",
+            },
+            timeout=self._timeout,
+        ) as agile_client:
+            response = await agile_client.get(agile_url, params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def create_board(
+        self,
+        name: str,
+        project_key: str,
+        board_type: str = "kanban",
+    ) -> dict[str, Any]:
+        base_url = self._base_url.rstrip("/")
+        agile_url = f"{base_url}/rest/agile/1.0/board"
+        filter_url = f"{base_url}/rest/api/3/filter"
+
+        headers = {
+            "Authorization": self._get_auth_header(),
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+
+        async with httpx.AsyncClient(
+            headers=headers,
+            timeout=self._timeout,
+        ) as agile_client:
+            filter_resp = await agile_client.post(
+                filter_url,
+                json={
+                    "name": f"{name} Filter",
+                    "jql": f"project = {project_key} ORDER BY Rank ASC",
+                },
+            )
+            filter_resp.raise_for_status()
+            filter_id = filter_resp.json()["id"]
+
+            board_resp = await agile_client.post(
+                agile_url,
+                json={
+                    "name": name,
+                    "type": board_type,
+                    "filterId": int(filter_id),
+                },
+            )
+            board_resp.raise_for_status()
+            return board_resp.json()
+
     async def get_confluence_pages(
         self, space_key: str, start: int = 0, limit: int = 50, expand: str = ""
     ) -> dict[str, Any]:

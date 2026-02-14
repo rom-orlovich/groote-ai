@@ -78,7 +78,14 @@ def _code_block(text: str, language: str = "") -> AdfNode:
     return node
 
 
+def _normalize_newlines(text: str) -> str:
+    text = text.replace("\\n", "\n")
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
 def markdown_to_adf(markdown: str) -> AdfNode:
+    markdown = _normalize_newlines(markdown)
     lines = markdown.split("\n")
     doc_content: list[AdfNode] = []
     i = 0

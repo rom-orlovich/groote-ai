@@ -28,12 +28,12 @@ FLOW_REGISTRY: dict[str, type] = {
 
 __all__ = [
     "FLOW_REGISTRY",
-    "SlackKnowledgeFlow",
-    "JiraCodePlanFlow",
-    "GitHubPRReviewFlow",
-    "JiraCommentFlow",
     "FullChainFlow",
+    "GitHubPRReviewFlow",
+    "JiraCodePlanFlow",
+    "JiraCommentFlow",
     "KnowledgeHealthFlow",
-    "SlackMultiRepoFlow",
     "PlanApprovalFlow",
+    "SlackKnowledgeFlow",
+    "SlackMultiRepoFlow",
 ]

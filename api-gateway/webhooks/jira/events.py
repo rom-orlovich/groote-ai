@@ -56,13 +56,9 @@ def _get_body_text(body: str | dict[str, Any]) -> str:
 
 
 def _body_matches_bot_pattern(body_text: str) -> bool:
-    for marker in BOT_COMMENT_PREFIX_MARKERS:
-        if body_text.startswith(marker):
-            return True
-    for marker in BOT_COMMENT_SECTION_MARKERS:
-        if marker in body_text:
-            return True
-    return False
+    if any(body_text.startswith(marker) for marker in BOT_COMMENT_PREFIX_MARKERS):
+        return True
+    return any(marker in body_text for marker in BOT_COMMENT_SECTION_MARKERS)
 
 
 def is_bot_comment(
@@ -84,10 +80,7 @@ def is_bot_comment(
 
     body = comment_data.get("body", "")
     body_text = _get_body_text(body)
-    if body_text and _body_matches_bot_pattern(body_text):
-        return True
-
-    return False
+    return bool(body_text and _body_matches_bot_pattern(body_text))
 
 
 def should_process_event(

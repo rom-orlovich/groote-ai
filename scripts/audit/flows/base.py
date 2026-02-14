@@ -230,5 +230,5 @@ class BaseFlow(ABC):
                 except Exception:
                     pass
 
-    async def cleanup(self) -> None:
+    async def cleanup(self) -> None:  # noqa: B027
         pass

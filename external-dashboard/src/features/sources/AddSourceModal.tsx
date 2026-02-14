@@ -38,7 +38,13 @@ const STEP_TITLES: Record<ModalStep, string> = {
   configure: "CONFIGURE_SOURCE",
 };
 
-export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting, error }: AddSourceModalProps) {
+export function AddSourceModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  isSubmitting,
+  error,
+}: AddSourceModalProps) {
   const [step, setStep] = useState<ModalStep>("select");
   const [selectedType, setSelectedType] = useState<SourceType | null>(null);
   const [selectedTypeInfo, setSelectedTypeInfo] = useState<SourceTypeInfo | null>(null);
@@ -88,7 +94,11 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting, error 
     }
     if (selectedResourceIds.length > 0) {
       const repoName = selectedResourceIds[0].split("/").pop() ?? selectedResourceIds[0];
-      setName(selectedResourceIds.length === 1 ? repoName : `${repoName} +${selectedResourceIds.length - 1}`);
+      setName(
+        selectedResourceIds.length === 1
+          ? repoName
+          : `${repoName} +${selectedResourceIds.length - 1}`,
+      );
     }
     setStep("configure");
   };

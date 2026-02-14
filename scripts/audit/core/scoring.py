@@ -1,6 +1,6 @@
 import re
 
-from .models import FlowCriteria, QualityDimension, QualityReport
+from .models import FlowCriteria, QualityDimension
 
 DIMENSION_WEIGHTS = {
     "Routing Accuracy": 15,
@@ -306,7 +306,7 @@ def score_delivery(events: list[dict]) -> QualityDimension:
 
 
 def score_execution(events: list[dict], criteria: FlowCriteria) -> QualityDimension:
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     timestamps: list[datetime] = []
     for evt in events:

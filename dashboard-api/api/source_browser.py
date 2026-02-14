@@ -30,6 +30,16 @@ class BrowseResponse(BaseModel):
     has_more: bool
 
 
+def _extract_description(desc: str | dict) -> str:
+    if isinstance(desc, str):
+        return desc
+    if isinstance(desc, dict):
+        plain = desc.get("plain", {})
+        if isinstance(plain, dict):
+            return plain.get("value", "")
+    return ""
+
+
 async def _require_oauth(platform: str) -> None:
     connected = await check_oauth_connected(platform)
     if not connected:
@@ -132,7 +142,7 @@ async def browse_confluence_spaces():
         PlatformResource(
             id=space.get("key", ""),
             name=space.get("name", ""),
-            description=space.get("description", "") if isinstance(space.get("description"), str) else "",
+            description=_extract_description(space.get("description", "")),
             metadata={
                 "key": space.get("key", ""),
                 "type": space.get("type", ""),

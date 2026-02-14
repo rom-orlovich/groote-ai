@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import structlog
-from core.interfaces import VectorStoreProtocol
 from core.models import (
     CodeQueryRequest,
     DocsQueryRequest,
@@ -14,8 +13,13 @@ from core.models import (
     QueryResponse,
     TicketQueryRequest,
 )
-from core.query_engine import HybridQueryEngine
 from fastapi import APIRouter
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from core.interfaces import VectorStoreProtocol
+    from core.query_engine import HybridQueryEngine
 
 logger = structlog.get_logger()
 

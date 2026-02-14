@@ -62,6 +62,22 @@ class TransitionIssueRequest(BaseModel):
     transition_id: str
 
 
+class CreateProjectRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+    key: str
+    name: str
+    project_type_key: str = "software"
+    lead_account_id: str = ""
+    description: str = ""
+
+
+class CreateBoardRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+    name: str
+    project_key: str
+    board_type: str = "kanban"
+
+
 @router.get("/issues/{issue_key}")
 async def get_issue(
     issue_key: str,
@@ -138,6 +154,40 @@ async def get_projects(
     client: Annotated[JiraClient, Depends(get_jira_client)],
 ):
     return await client.get_projects()
+
+
+@router.post("/projects")
+async def create_project(
+    request: CreateProjectRequest,
+    client: Annotated[JiraClient, Depends(get_jira_client)],
+):
+    return await client.create_project(
+        request.key,
+        request.name,
+        request.project_type_key,
+        request.lead_account_id,
+        request.description,
+    )
+
+
+@router.get("/boards")
+async def get_boards(
+    project_key: Annotated[str, Query()] = "",
+    client: Annotated[JiraClient, Depends(get_jira_client)] = None,
+):
+    return await client.get_boards(project_key)
+
+
+@router.post("/boards")
+async def create_board(
+    request: CreateBoardRequest,
+    client: Annotated[JiraClient, Depends(get_jira_client)],
+):
+    return await client.create_board(
+        request.name,
+        request.project_key,
+        request.board_type,
+    )
 
 
 @router.get("/confluence/pages")

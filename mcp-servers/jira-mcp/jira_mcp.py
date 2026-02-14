@@ -93,3 +93,50 @@ class JiraAPI:
         )
         response.raise_for_status()
         return response.json()
+
+    async def create_project(
+        self,
+        key: str,
+        name: str,
+        project_type_key: str = "software",
+        lead_account_id: str = "",
+        description: str = "",
+    ) -> dict[str, Any]:
+        client = await self._get_client()
+        response = await client.post(
+            "/api/v1/projects",
+            json={
+                "key": key,
+                "name": name,
+                "project_type_key": project_type_key,
+                "lead_account_id": lead_account_id,
+                "description": description,
+            },
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def get_boards(self, project_key: str = "") -> dict[str, Any]:
+        client = await self._get_client()
+        params = {"project_key": project_key} if project_key else {}
+        response = await client.get("/api/v1/boards", params=params)
+        response.raise_for_status()
+        return response.json()
+
+    async def create_board(
+        self,
+        name: str,
+        project_key: str,
+        board_type: str = "kanban",
+    ) -> dict[str, Any]:
+        client = await self._get_client()
+        response = await client.post(
+            "/api/v1/boards",
+            json={
+                "name": name,
+                "project_key": project_key,
+                "board_type": board_type,
+            },
+        )
+        response.raise_for_status()
+        return response.json()

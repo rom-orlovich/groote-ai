@@ -70,7 +70,6 @@ async def handle_user_message(
     content = message.get("content", []) if isinstance(message, dict) else []
 
     pending_calls = [e for e in tool_events if e.get("type") == "tool_call"]
-    matched_results = {e.get("name") for e in tool_events if e.get("type") == "tool_result"}
     unmatched_calls = [c for c in pending_calls if c.get("_matched") is not True]
 
     result_index = 0
