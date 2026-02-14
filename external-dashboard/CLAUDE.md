@@ -17,28 +17,28 @@ Frontend dashboard for Groote AI (port 3005). React 19 + TypeScript + Vite + Tai
 ```
 external-dashboard/
 ├── src/
-│   ├── components/      # Reusable UI components
-│   ├── features/        # Feature-specific modules
-│   ├── hooks/           # Custom React hooks
-│   ├── layouts/         # Page layouts
-│   ├── test/            # Test utilities and setup
-│   ├── App.tsx          # Root component
-│   └── main.tsx         # Entry point
-├── biome.json           # Linter/formatter config
-├── vite.config.ts       # Build config
-└── tsconfig.json        # TypeScript config
+│   ├── components/       # Reusable UI components
+│   ├── features/         # Feature-specific modules
+│   ├── hooks/            # Custom React hooks
+│   ├── layouts/          # Page layouts
+│   ├── test/             # Test utilities and setup
+│   ├── App.tsx           # Root component
+│   └── main.tsx          # Entry point
+├── biome.json            # Linter/formatter config
+├── vite.config.ts        # Build config
+└── tsconfig.json         # TypeScript config
 ```
 
 ## Key Commands
 
 ```bash
-pnpm install             # Install dependencies
-pnpm dev                 # Start dev server (port 3005)
-pnpm build               # Production build
-pnpm lint                # Check lint errors
-pnpm lint:fix            # Fix lint errors (use this, NOT eslint)
-pnpm test                # Run tests
-pnpm test -- -t "name"   # Run specific test
+pnpm install              # Install dependencies
+pnpm dev                  # Start dev server (port 3005)
+pnpm build                # Production build
+pnpm lint                 # Check lint errors
+pnpm lint:fix             # Fix lint errors (use this, NOT eslint)
+pnpm test                 # Run tests
+pnpm test -- -t "name"    # Run specific test
 ```
 
 ## Development Rules
@@ -54,8 +54,8 @@ pnpm test -- -t "name"   # Run specific test
 ## Environment Variables
 
 ```bash
-VITE_API_URL=http://localhost:5000    # Dashboard API
-VITE_WS_URL=ws://localhost:5000/ws    # WebSocket endpoint
+VITE_API_URL=http://localhost:5000      # Dashboard API
+VITE_WS_URL=ws://localhost:5000/ws      # WebSocket endpoint
 ```
 
 ## Dependencies
