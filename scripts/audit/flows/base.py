@@ -216,5 +216,19 @@ class BaseFlow(ABC):
         except Exception:
             logger.exception("evidence_save_failed", extra={"task_id": task_id})
 
+    async def _warm_knowledge_services(self) -> None:
+        import httpx
+
+        urls = [
+            f"{self._config.llamaindex_url}/health",
+            f"{self._config.gkg_url}/health",
+        ]
+        async with httpx.AsyncClient(timeout=5.0) as http:
+            for url in urls:
+                try:
+                    await http.get(url)
+                except Exception:
+                    pass
+
     async def cleanup(self) -> None:
         pass

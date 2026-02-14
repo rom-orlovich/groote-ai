@@ -1,4 +1,8 @@
+import re
+
 import httpx
+
+JIRA_KEY_PATTERN = re.compile(r"\b([A-Z][A-Z0-9]+-\d+)\b")
 
 
 def _extract_jira_metadata(task: dict) -> dict:
@@ -71,6 +75,13 @@ def build_flow_id(task: dict) -> str:
     return f"{source}:unknown"
 
 
+def _extract_jira_key_from_github(task: dict) -> str | None:
+    metadata = _extract_github_metadata(task)
+    title = metadata.get("title", "")
+    match = JIRA_KEY_PATTERN.search(title)
+    return match.group(1) if match else None
+
+
 def build_conversation_title(task: dict) -> str:
     source = task.get("source", "unknown")
     metadata = get_source_metadata(task)
@@ -104,22 +115,33 @@ def build_conversation_title(task: dict) -> str:
     return f"{source.title()}: Unknown"
 
 
+async def _lookup_flow(client: httpx.AsyncClient, dashboard_url: str, flow_id: str) -> str | None:
+    from urllib.parse import quote
+
+    encoded = quote(flow_id, safe="")
+    response = await client.get(f"{dashboard_url}/api/conversations/by-flow/{encoded}")
+    if response.status_code == 200:
+        return response.json()["conversation_id"]
+    return None
+
+
 async def get_or_create_flow_conversation(
     dashboard_url: str, task: dict
 ) -> str:
-    from urllib.parse import quote
-
     flow_id = build_flow_id(task)
-    encoded_flow_id = quote(flow_id, safe="")
 
     async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.get(
-            f"{dashboard_url}/api/conversations/by-flow/{encoded_flow_id}"
-        )
+        conversation_id = await _lookup_flow(client, dashboard_url, flow_id)
+        if conversation_id:
+            return conversation_id
 
-        if response.status_code == 200:
-            data = response.json()
-            return data["conversation_id"]
+        if task.get("source") == "github":
+            jira_key = _extract_jira_key_from_github(task)
+            if jira_key:
+                jira_flow_id = f"jira:{jira_key}"
+                conversation_id = await _lookup_flow(client, dashboard_url, jira_flow_id)
+                if conversation_id:
+                    return conversation_id
 
         title = build_conversation_title(task)
         response = await client.post(

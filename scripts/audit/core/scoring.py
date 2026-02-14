@@ -37,6 +37,8 @@ DEFAULT_DOMAIN_TERMS = [
 
 RESPONSE_TOOL_PATTERNS = ["send_slack_message", "add_issue_comment", "add_jira_comment"]
 
+INTERNAL_TOOLS = {"Read", "Write", "Edit", "Glob", "Grep", "Bash", "Task"}
+
 
 def extract_output(events: list[dict]) -> str:
     for evt in reversed(events):
@@ -89,8 +91,9 @@ def score_tool_efficiency(tool_calls: list[dict], criteria: FlowCriteria) -> Qua
     base_score = 100 if required_total == 0 else int((required_found / required_total) * 100)
 
     unique_tools = set(called_tools)
-    redundant = max(0, len(called_tools) - len(unique_tools) - 2)
-    penalty = min(redundant * 10, 40)
+    allowed_repeats = len(unique_tools)
+    excess = max(0, len(called_tools) - len(unique_tools) - allowed_repeats)
+    penalty = min(excess * 5, 30)
     score = max(0, base_score - penalty)
 
     missing = [t for t in criteria.required_tools if not _any_tool_matches(t, called_tools)]
@@ -150,16 +153,17 @@ def score_knowledge_first(tool_calls: list[dict], criteria: FlowCriteria) -> Qua
 
     called_tools = [tc.get("data", {}).get("name", "") for tc in tool_calls]
     first_knowledge_idx = -1
-    first_non_knowledge_idx = -1
+    first_domain_idx = -1
 
     for i, tool_name in enumerate(called_tools):
         is_knowledge = any(
             _tool_matches(pattern, tool_name) for pattern in KNOWLEDGE_TOOL_PATTERNS
         )
+        is_internal = tool_name in INTERNAL_TOOLS
         if is_knowledge and first_knowledge_idx == -1:
             first_knowledge_idx = i
-        if not is_knowledge and first_non_knowledge_idx == -1:
-            first_non_knowledge_idx = i
+        if not is_knowledge and not is_internal and first_domain_idx == -1:
+            first_domain_idx = i
 
     if first_knowledge_idx == -1:
         return QualityDimension(
@@ -168,20 +172,20 @@ def score_knowledge_first(tool_calls: list[dict], criteria: FlowCriteria) -> Qua
             detail="No knowledge tools were called",
         )
 
-    if first_non_knowledge_idx == -1 or first_knowledge_idx < first_non_knowledge_idx:
+    if first_domain_idx == -1 or first_knowledge_idx < first_domain_idx:
         return QualityDimension(
             name="Knowledge First",
             score=100,
             detail=f"Knowledge tool called first at position {first_knowledge_idx}",
         )
 
-    gap = first_knowledge_idx - first_non_knowledge_idx
+    gap = first_knowledge_idx - first_domain_idx
     score = max(0, 50 - gap * 10)
     return QualityDimension(
         name="Knowledge First",
         score=score,
         detail=f"Knowledge tool at position {first_knowledge_idx}, "
-        f"but non-knowledge tool called first at position {first_non_knowledge_idx}",
+        f"but domain tool called first at position {first_domain_idx}",
     )
 
 

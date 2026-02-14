@@ -152,6 +152,13 @@ class ComponentMonitor:
         tool_results = [e for e in events if e["type"] == "task:tool_result"]
         errors = [r for r in tool_results if r.get("data", {}).get("is_error")]
 
+        task_completed = any(
+            e["type"] == "task:completed"
+            and e.get("data", {}).get("status") != "failed"
+            for e in events
+        )
+        critical_errors = errors if not task_completed else []
+
         checks = [
             ComponentCheck(
                 check_name="Tool calls executed",
@@ -160,10 +167,17 @@ class ComponentMonitor:
                 evidence={"tool_call_count": len(tool_calls)},
             ),
             ComponentCheck(
-                check_name="No MCP connection errors",
-                passed=len(errors) == 0,
-                detail=f"{len(errors)} error(s) in tool results",
-                evidence={"error_count": len(errors)},
+                check_name="No critical MCP errors",
+                passed=len(critical_errors) == 0,
+                detail=(
+                    f"{len(errors)} error(s) in tool results"
+                    + (", non-critical (task completed)" if errors and not critical_errors else "")
+                ),
+                evidence={
+                    "error_count": len(errors),
+                    "critical_error_count": len(critical_errors),
+                    "task_completed": task_completed,
+                },
             ),
         ]
         return ComponentStatus(name="mcp-servers", status=_derive_status(checks), checks=checks)

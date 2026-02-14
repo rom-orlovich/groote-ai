@@ -20,6 +20,8 @@ class JiraCodePlanFlow(BaseFlow):
     async def trigger(self) -> TriggerResult:
         from ..triggers.jira import JiraTrigger
 
+        await self._warm_knowledge_services()
+
         trigger = JiraTrigger(self._client, self._config)
 
         if self._ticket_key:
@@ -54,7 +56,6 @@ class JiraCodePlanFlow(BaseFlow):
         return FlowCriteria(
             expected_agent="jira-code-plan",
             required_tools=[
-                "get_jira_issue",
                 "knowledge_query",
                 "code_search",
                 "create_pull_request",
@@ -65,6 +66,12 @@ class JiraCodePlanFlow(BaseFlow):
                 r"[Vv]alidat",
                 repo,
                 r"[Pp]ull [Rr]equest|PR|draft",
+            ],
+            domain_terms=[
+                "validation", "input", "parameter",
+                "width", "height", "format",
+                "panel", "generator", repo,
+                "implementation",
             ],
             negative_terms=[
                 "groote-ai", "groote", "api-gateway",

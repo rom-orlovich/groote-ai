@@ -49,23 +49,30 @@ Extract from the task prompt:
 - `issue.summary` — ticket title
 - `issue.description` — ticket description
 
-### 2. Read Ticket Details
+The enriched prompt already contains the ticket summary and description. Use these directly for knowledge searches — do NOT call `jira:get_jira_issue` first.
+
+### 2. Discover Relevant Code (MANDATORY — call these tools FIRST)
+
+You MUST call knowledge/code search tools BEFORE any other MCP tool calls. The ticket summary is already in your prompt — use it for the initial search query.
+
+These tools MUST be called before any other MCP tools:
+1. `llamaindex:code_search` — find related code across all indexed repos
+2. `llamaindex:knowledge_query` — semantic search across code, tickets, and docs
+3. `llamaindex:search_jira_tickets` — find related past Jira tickets
+
+After knowledge tools, continue with:
+4. `llamaindex:search_confluence` — find relevant architecture documentation
+5. `github:search_code` — search specific repository code
+6. `github:get_file_contents` — read key files identified
+7. `gkg:analyze_dependencies` — analyze file dependencies
+8. Map affected files and understand dependencies
+
+### 3. Read Ticket Details
 
 1. `jira:get_jira_issue` with the issue key
-2. Extract: summary, description, acceptance criteria, labels, priority
+2. Extract: acceptance criteria, labels, priority, linked tickets
 3. Identify: what type of work (bug fix, feature, refactor)
 4. Check for linked tickets: `jira:search_jira_issues` with JQL `issue in linkedIssues("PROJ-123")`
-
-### 3. Discover Relevant Code
-
-1. Parse ticket for file paths, function names, error messages, module names
-2. `llamaindex:knowledge_query` for semantic search across code, tickets, and docs
-3. `llamaindex:search_jira_tickets` to find related past tickets and solutions
-4. `llamaindex:search_confluence` to find relevant architecture documentation
-5. `github:search_code` to find matching code in the repository
-6. `github:get_file_contents` to read key files identified
-7. `gkg:analyze_dependencies` on key affected files
-8. Map affected files and understand dependencies
 
 ### 4. Write the Fix
 
@@ -112,13 +119,13 @@ Response structure:
 _Automated by Groote AI_
 ```
 
-### 7. Transition Ticket
+### 6. Transition Ticket
 
 After posting the summary:
 1. `jira:get_jira_transitions` to get available transitions
 2. `jira:transition_jira_issue` to move ticket to "In Review" or "In Progress"
 
-### 8. Notify Slack
+### 7. Notify Slack
 
 After posting the summary to Jira, send a Slack notification:
 
@@ -257,7 +264,7 @@ Comment `@agent approve` on the PR to proceed with implementation.
 _Automated by Groote AI_
 ```
 
-5. Send Slack notification (Step 8) with action "Posted implementation plan" and PR link
+5. Send Slack notification (Step 7) with action "Posted implementation plan" and PR link
 
 ### Handle Approval
 

@@ -21,6 +21,19 @@ task_sources: dict[str, str] = {}
 webhook_buffer: dict[str, list[dict]] = defaultdict(list)
 running = True
 
+KNOWLEDGE_TOOL_PREFIXES = (
+    "mcp__llamaindex__",
+    "mcp__gkg__",
+    "mcp__knowledge",
+    "knowledge_query",
+    "knowledge_search",
+    "code_search",
+)
+
+
+def _is_knowledge_tool(tool_name: str) -> bool:
+    return any(tool_name.startswith(prefix) for prefix in KNOWLEDGE_TOOL_PREFIXES)
+
 
 def get_or_create_logger(task_id: str) -> TaskLogger:
     if task_id not in loggers_cache:
@@ -81,6 +94,7 @@ async def process_task_event(event: dict):
     task_logger = get_or_create_logger(task_id)
 
     if event_type == TaskEventType.TASK_CREATED:
+        data["created_at"] = timestamp
         task_logger.write_metadata(data)
         task_logger.write_input({"message": data.get("input_message")})
 
@@ -113,10 +127,21 @@ async def process_task_event(event: dict):
                 "completed_at": timestamp,
             }
         )
+        task_logger.enrich_metadata(
+            {
+                "status": data.get("status", "completed"),
+                "cost_usd": data.get("cost_usd"),
+                "duration_seconds": data.get("duration_seconds"),
+                "completed_at": timestamp,
+            }
+        )
 
     elif event_type == TaskEventType.TASK_FAILED:
         task_logger.write_final_result(
             {"success": False, "error": data.get("error"), "completed_at": timestamp}
+        )
+        task_logger.enrich_metadata(
+            {"status": "failed", "completed_at": timestamp}
         )
 
     elif event_type == TaskEventType.TASK_CONTEXT_BUILT:
@@ -144,25 +169,49 @@ async def process_task_event(event: dict):
         )
 
     elif event_type == TaskEventType.TASK_TOOL_CALL:
+        tool_name = data.get("name", "")
+        tool_input = data.get("input", {})
+        if not isinstance(tool_input, str):
+            tool_input = json.dumps(tool_input)
         task_logger.append_agent_output(
             {
                 "timestamp": timestamp,
                 "type": "tool_call",
-                "name": data.get("name", ""),
-                "input": data.get("input", {}),
+                "tool_name": tool_name,
+                "tool_input": tool_input,
             }
         )
+        if _is_knowledge_tool(tool_name):
+            task_logger.append_knowledge_interaction(
+                {
+                    "timestamp": timestamp,
+                    "type": "query",
+                    "tool_name": tool_name,
+                    "input": tool_input,
+                }
+            )
 
     elif event_type == TaskEventType.TASK_TOOL_RESULT:
+        tool_name = data.get("name", "")
         task_logger.append_agent_output(
             {
                 "timestamp": timestamp,
                 "type": "tool_result",
-                "name": data.get("name", ""),
+                "tool_name": tool_name,
                 "content": data.get("content", ""),
                 "is_error": data.get("is_error", False),
             }
         )
+        if _is_knowledge_tool(tool_name):
+            task_logger.append_knowledge_interaction(
+                {
+                    "timestamp": timestamp,
+                    "type": "result",
+                    "tool_name": tool_name,
+                    "content": data.get("content", ""),
+                    "is_error": data.get("is_error", False),
+                }
+            )
 
     elif event_type == TaskEventType.TASK_RAW_OUTPUT:
         task_logger.append_agent_output(
