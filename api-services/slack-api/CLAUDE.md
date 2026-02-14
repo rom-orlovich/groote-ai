@@ -12,10 +12,11 @@ REST API wrapper for Slack operations with message posting and channel managemen
 
 ## Key Features
 
-- Message posting to channels
-- Thread replies
+- Message posting to channels with Block Kit support
+- Thread replies and message updates
 - Channel operations (list, get info, history)
-- Rich formatting (Block Kit support)
+- Reaction management
+- User information lookup
 - Credential isolation (stored only in this container)
 
 ## Environment

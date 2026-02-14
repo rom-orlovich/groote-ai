@@ -74,13 +74,15 @@ Post agent results back to Jira tickets.
 
 ## API Endpoints
 
+All endpoints use the `/api/v1` prefix.
+
 ### Issues
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/issues/{issue_key}` | GET | Get issue details |
+| `/issues` | POST | Create issue |
 | `/issues/{issue_key}` | PUT | Update issue |
-| `/issues/{issue_key}/comments` | GET | List comments |
 | `/issues/{issue_key}/comments` | POST | Add comment |
 | `/issues/{issue_key}/transitions` | GET | Get transitions |
 | `/issues/{issue_key}/transitions` | POST | Execute transition |
@@ -89,12 +91,20 @@ Post agent results back to Jira tickets.
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/search` | GET | Execute JQL query |
-| `/search?jql={query}` | GET | Search with JQL |
+| `/search` | POST | Execute JQL query (with pagination) |
 
-### Projects
+### Projects & Boards
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/projects` | GET | List all projects |
-| `/projects/{project_key}` | GET | Get project details |
+| `/projects` | POST | Create project |
+| `/boards` | GET | List boards |
+| `/boards` | POST | Create board |
+
+### Confluence
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/confluence/pages` | GET | List Confluence pages |
+| `/confluence/spaces` | GET | List Confluence spaces |

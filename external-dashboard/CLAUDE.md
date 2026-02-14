@@ -6,10 +6,13 @@ Frontend dashboard for Groote AI (port 3005). React 19 + TypeScript + Vite + Tai
 
 - **React 19** with TypeScript
 - **Vite** for bundling
-- **Tailwind CSS** for styling
+- **Tailwind CSS 4** for styling
 - **Biome** for linting and formatting (NOT ESLint)
 - **Vitest** + **happy-dom** for testing
-- **React Router** for navigation
+- **React Router 7** for navigation
+- **TanStack React Query** for server state
+- **Zustand** for global client state
+- **Recharts** for data visualization
 - **Lucide React** for icons
 
 ## Folder Structure
@@ -58,6 +61,19 @@ VITE_API_URL=http://localhost:5000      # Dashboard API
 VITE_WS_URL=ws://localhost:5000/ws      # WebSocket endpoint
 ```
 
+## Feature Modules
+
+11 feature modules in `src/features/`:
+- overview, analytics, ledger, webhooks, chat, registry
+- integrations, sources, settings, install, setup
+
 ## Dependencies
 
 - **Dashboard API** (port 5000): REST endpoints and WebSocket for real-time updates
+- **OAuth Service** (port 8010): OAuth flows proxied via `/oauth/*`
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) - Component diagrams and data flows
+- [Features](docs/features.md) - Feature list and capabilities
+- [Flows](docs/flows.md) - Process flow documentation

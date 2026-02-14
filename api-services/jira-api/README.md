@@ -58,28 +58,40 @@ jira-api/
 
 ## API Endpoints
 
+All endpoints use the `/api/v1` prefix.
+
 ### Issues
 
-| Endpoint                          | Method | Purpose             |
-| --------------------------------- | ------ | ------------------- |
-| `/issues/{issue_key}`             | GET    | Get issue details   |
-| `/issues/{issue_key}/comments`    | POST   | Post issue comment  |
-| `/issues/{issue_key}/comments`    | GET    | List issue comments |
-| `/issues/{issue_key}/transitions` | POST   | Transition issue    |
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/issues/{issue_key}` | GET | Get issue details |
+| `/api/v1/issues` | POST | Create issue |
+| `/api/v1/issues/{issue_key}` | PUT | Update issue |
+| `/api/v1/issues/{issue_key}/comments` | POST | Post comment |
+| `/api/v1/issues/{issue_key}/transitions` | GET | Get transitions |
+| `/api/v1/issues/{issue_key}/transitions` | POST | Execute transition |
 
 ### Search
 
-| Endpoint              | Method | Purpose           |
-| --------------------- | ------ | ----------------- |
-| `/search`             | GET    | Execute JQL query |
-| `/search?jql={query}` | GET    | Search with JQL   |
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/search` | POST | Execute JQL query |
 
-### Projects
+### Projects & Boards
 
-| Endpoint                  | Method | Purpose             |
-| ------------------------- | ------ | ------------------- |
-| `/projects`               | GET    | List all projects   |
-| `/projects/{project_key}` | GET    | Get project details |
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/projects` | GET | List all projects |
+| `/api/v1/projects` | POST | Create project |
+| `/api/v1/boards` | GET | List boards |
+| `/api/v1/boards` | POST | Create board |
+
+### Confluence
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/confluence/pages` | GET | List Confluence pages |
+| `/api/v1/confluence/spaces` | GET | List Confluence spaces |
 
 ## Environment Variables
 

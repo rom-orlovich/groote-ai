@@ -14,8 +14,10 @@ REST API wrapper for Jira operations with issue and project management.
 
 - Issue management (create, read, update)
 - Comment posting
-- JQL search
+- JQL search (POST-based)
 - Transition management
+- Project and board management
+- Confluence pages and spaces
 - Credential isolation (stored only in this container)
 
 ## Environment

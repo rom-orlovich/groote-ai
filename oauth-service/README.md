@@ -49,7 +49,8 @@ oauth-service/
 │   └── slack.py               # Slack OAuth provider
 ├── services/
 │   ├── installation_service.py # Installation management
-│   └── token_service.py       # Token storage and refresh
+│   ├── token_service.py       # Token storage and refresh
+│   └── webhook_service.py     # Automatic webhook registration
 └── config/
     └── settings.py            # Configuration
 ```
@@ -63,6 +64,7 @@ oauth-service/
 3. **Token Refresh**: Automatically refresh expired tokens
 4. **Token Lookup**: Provide token lookup APIs for other services
 5. **Installation Management**: Track OAuth app installations
+6. **Automatic Webhook Registration**: Register webhooks during OAuth callback (GitHub App, Jira dynamic webhooks)
 
 ## OAuth Flows
 
@@ -71,7 +73,7 @@ oauth-service/
 1. User clicks "Install GitHub App"
 2. Redirected to GitHub authorization page
 3. User authorizes installation
-4. GitHub redirects to `/oauth/github/callback` with code
+4. GitHub redirects to `/oauth/callback/github` with code
 5. Service exchanges code for access token
 6. Token stored in database with organization ID
 
@@ -80,7 +82,7 @@ oauth-service/
 1. User initiates Jira OAuth
 2. Redirected to Jira authorization page
 3. User authorizes access
-4. Jira redirects to `/oauth/jira/callback` with code
+4. Jira redirects to `/oauth/callback/jira` with code
 5. Service exchanges code for access token + refresh token
 6. Tokens stored in database
 
@@ -89,7 +91,7 @@ oauth-service/
 1. User clicks "Add to Slack"
 2. Redirected to Slack authorization page
 3. User authorizes installation
-4. Slack redirects to `/oauth/slack/callback` with code
+4. Slack redirects to `/oauth/callback/slack` with code
 5. Service exchanges code for access token
 6. Token stored in database with workspace ID
 

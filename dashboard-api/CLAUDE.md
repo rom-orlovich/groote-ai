@@ -4,33 +4,48 @@ Backend API for groote-ai dashboard (port 5000). Provides REST endpoints, WebSoc
 
 ## API Endpoints
 
-- `/api/tasks` - Task listing and details
+- `/api/tasks` - Task listing, details, logs, and lifecycle
+- `/api/chat` - Chat with brain agent (conversation context)
 - `/api/analytics/*` - Cost tracking, performance metrics
-- `/api/conversations` - Chat interface management
-- `/api/webhooks` - Webhook status monitoring
+- `/api/conversations` - Conversation management
+- `/api/webhooks` - Webhook configurations, events, stats
+- `/api/cli/*` - CLI start/stop/status control
+- `/api/credentials/*` - Claude credentials management
+- `/api/oauth-status/*` - OAuth connection status
+- `/api/setup/*` - Setup configuration
+- `/api/user-settings/*` - Per-user settings
+- `/api/sources/*` - Source management
 - `/ws` - WebSocket for real-time updates
 - `/api/health` - Health check
 
 ## Core Responsibilities
 
-1. **Task Management**: List, filter, retrieve task details
-2. **Real-Time Streaming**: WebSocket streaming of task outputs
-3. **Analytics**: Cost tracking, performance metrics, histograms
-4. **Conversations**: Chat interface for agent interactions
-5. **Webhook Status**: Monitor webhook configurations and events
+1. **Task Management**: List, filter, retrieve task details and logs
+2. **Chat Interface**: Send messages to brain with conversation context
+3. **Real-Time Streaming**: WebSocket streaming of task/CLI status
+4. **Analytics**: Cost tracking, performance metrics, histograms
+5. **Conversations**: Conversation management with flow_id support
+6. **Webhook Status**: Monitor webhook configurations and events
+7. **CLI Control**: Start/stop/status of CLI providers
+8. **User Settings**: Per-user configuration management
 
 ## Folder Structure
 
 ```
 dashboard-api/
 ├── main.py              # FastAPI application
-├── api/                 # REST endpoints
+├── api/                 # REST endpoints (12 modules)
+│   ├── dashboard.py     # Tasks, chat, agents, webhooks
+│   ├── analytics.py     # Cost/performance metrics
+│   ├── conversations.py # Conversation management
+│   ├── cli_control.py   # CLI start/stop/status
+│   ├── credentials.py   # Claude credentials
+│   ├── user_settings.py # Per-user settings
+│   └── websocket.py     # WebSocket handler
 ├── core/                # Database, WebSocket hub
 ├── shared/              # Shared models
+├── middleware/           # CORS configuration
 └── tests/               # Co-located tests
-    ├── factories/       # All test factories
-    ├── conftest.py      # Shared fixtures
-    └── test_*.py        # Test files
 ```
 
 ## Testing

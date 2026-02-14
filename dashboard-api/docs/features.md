@@ -96,9 +96,18 @@ Manage knowledge sources for RAG integration (GitHub repos, Jira projects, Confl
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/status` | GET | Machine status |
-| `/api/tasks` | GET | List tasks with pagination |
+| `/api/tasks` | GET | List tasks with filters |
+| `/api/tasks/table` | GET | Paginated task table |
 | `/api/tasks/{task_id}` | GET | Task details |
+| `/api/tasks/{task_id}` | PATCH | Update task status/metrics |
+| `/api/tasks/{task_id}/logs` | GET | Task output stream |
 | `/api/tasks/{task_id}/logs/full` | GET | Complete task logs |
+| `/api/tasks/{task_id}/logs/metadata` | GET | Task metadata |
+| `/api/tasks/{task_id}/logs/agent-output` | GET | Agent output events |
+| `/api/tasks/{task_id}/knowledge-summary` | GET | Knowledge usage summary |
+| `/api/tasks/{task_id}/stop` | POST | Stop running task |
+| `/api/tasks` | POST | Register external task |
+| `/api/chat` | POST | Chat with brain agent |
 | `/api/agents` | GET | List available agents |
 
 ### Analytics

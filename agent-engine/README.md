@@ -210,12 +210,15 @@ LIMIT 10;
 
 ## API Endpoints
 
-| Endpoint           | Method | Purpose                |
-| ------------------ | ------ | ---------------------- |
-| `/health`          | GET    | Health check           |
-| `/status`          | GET    | Service status         |
-| `/tasks`           | POST   | Create task (internal) |
-| `/tasks/{task_id}` | GET    | Get task status        |
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/health` | GET | Basic health check |
+| `/health/auth` | GET | CLI provider authentication status |
+| `/health/detailed` | GET | Detailed component status (Redis, worker, knowledge) |
+| `/status` | GET | Service status (provider, concurrency, knowledge) |
+| `/tasks` | POST | Create task (internal) |
+| `/tasks/{task_id}` | GET | Get task status |
+| `/knowledge/toggle` | POST | Enable/disable knowledge services |
 
 ## Response Posting
 

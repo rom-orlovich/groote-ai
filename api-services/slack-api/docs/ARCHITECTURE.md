@@ -73,36 +73,35 @@ flowchart TB
 
 ## API Endpoints
 
-### Messages API
+### Messages API (prefix: `/api/v1`)
 
 ```mermaid
 graph LR
-    subgraph Messages["/messages"]
-        M1["POST / - Post Message"]
-        M2["POST /reply - Reply in Thread"]
-        M3["PUT /{ts} - Update Message"]
-        M4["DELETE /{ts} - Delete Message"]
+    subgraph Messages["/messages + /reactions"]
+        M1["POST /messages - Send Message"]
+        M2["PUT /messages - Update Message"]
+        M3["POST /reactions - Add Reaction"]
     end
 ```
 
-### Channels API
+### Channels API (prefix: `/api/v1`)
 
 ```mermaid
 graph LR
     subgraph Channels["/channels"]
         C1["GET / - List Channels"]
-        C2["GET /{id} - Get Channel"]
-        C3["GET /{id}/history - Get Messages"]
+        C2["GET /{channel} - Get Channel Info"]
+        C3["GET /{channel}/history - Get Messages"]
+        C4["GET /{channel}/threads/{ts} - Get Thread Replies"]
     end
 ```
 
-### Users API
+### Users API (prefix: `/api/v1`)
 
 ```mermaid
 graph LR
     subgraph Users["/users"]
-        U1["GET / - List Users"]
-        U2["GET /{id} - Get User"]
+        U1["GET /{user_id} - Get User Info"]
     end
 ```
 

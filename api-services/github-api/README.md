@@ -60,35 +60,44 @@ github-api/
 
 ## API Endpoints
 
+All endpoints use the `/api/v1` prefix.
+
 ### Issues
 
-| Endpoint                                   | Method | Purpose             |
-| ------------------------------------------ | ------ | ------------------- |
-| `/issues/{owner}/{repo}/{number}`          | GET    | Get issue details   |
-| `/issues/{owner}/{repo}/{number}/comments` | POST   | Post issue comment  |
-| `/issues/{owner}/{repo}/{number}/comments` | GET    | List issue comments |
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/repos/{owner}/{repo}/issues/{number}` | GET | Get issue details |
+| `/api/v1/repos/{owner}/{repo}/issues` | POST | Create issue |
+| `/api/v1/repos/{owner}/{repo}/issues/{number}/comments` | POST | Post issue comment |
+| `/api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions` | POST | Add reaction |
 
 ### Pull Requests
 
-| Endpoint                                  | Method | Purpose          |
-| ----------------------------------------- | ------ | ---------------- |
-| `/pulls/{owner}/{repo}/{number}`          | GET    | Get PR details   |
-| `/pulls/{owner}/{repo}/{number}/comments` | POST   | Post PR comment  |
-| `/pulls/{owner}/{repo}/{number}/reviews`  | POST   | Create PR review |
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/repos/{owner}/{repo}/pulls/{number}` | GET | Get PR details |
+| `/api/v1/repos/{owner}/{repo}/pulls/{number}/comments` | POST | Post PR review comment |
+| `/api/v1/repos/{owner}/{repo}/pulls` | POST | Create pull request |
 
 ### Repository Files
 
-| Endpoint                                | Method | Purpose            |
-| --------------------------------------- | ------ | ------------------ |
-| `/repos/{owner}/{repo}/contents/{path}` | GET    | Read file contents |
-| `/repos/{owner}/{repo}/contents/{path}` | POST   | Create/update file |
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/repos/{owner}/{repo}/contents/{path}` | GET | Read file contents |
+| `/api/v1/repos/{owner}/{repo}/contents/{path}` | PUT | Create/update file |
 
-### Repositories
+### Repositories & Search
 
-| Endpoint                | Method | Purpose                        |
-| ----------------------- | ------ | ------------------------------ |
-| `/repos/{owner}/{repo}` | GET    | Get repository details         |
-| `/orgs/{org}/repos`     | GET    | List organization repositories |
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/repos/{owner}/{repo}` | GET | Get repository details |
+| `/api/v1/repos/{owner}/{repo}/branches` | GET | List branches |
+| `/api/v1/repos/{owner}/{repo}/git/ref/heads/{branch}` | GET | Get branch SHA |
+| `/api/v1/repos/{owner}/{repo}/git/refs` | POST | Create branch |
+| `/api/v1/search/code` | GET | Search code |
+| `/api/v1/search/repositories` | GET | Search repositories |
+| `/api/v1/installation/repos` | GET | List installation repos |
+| `/api/v1/users/{username}/repos` | GET | List user repos |
 
 ## Environment Variables
 
@@ -96,7 +105,7 @@ github-api/
 GITHUB_TOKEN=ghp_xxx                    # Personal Access Token (single-tenant)
 GITHUB_OAUTH_CLIENT_ID=xxx              # OAuth Client ID (multi-tenant)
 GITHUB_OAUTH_CLIENT_SECRET=xxx          # OAuth Client Secret (multi-tenant)
-OAUTH_SERVICE_URL=http://oauth-service:6000
+OAUTH_SERVICE_URL=http://oauth-service:8010
 PORT=3001
 LOG_LEVEL=INFO
 ```

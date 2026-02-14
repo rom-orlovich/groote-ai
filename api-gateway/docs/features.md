@@ -79,7 +79,8 @@ Prevents infinite loops from agent-posted comments triggering new tasks.
 **Jira Prevention:**
 - Bot comment detection by author displayName matching `JIRA_AI_AGENT_NAME`
 - Atlassian `accountType: "app"` detection
-- Bot comment body marker matching (e.g. "Agent is analyzing this issue")
+- Bot comment body prefix markers (e.g. "Agent is analyzing this issue", "Implementation started")
+- Bot comment section markers (e.g. "## Implementation Plan", "_Automated by Groote AI_")
 - Redis dedup key per issue+event with 60s TTL to prevent burst duplicates
 
 ### Event Filtering
@@ -87,8 +88,8 @@ Prevents infinite loops from agent-posted comments triggering new tasks.
 Only processes relevant event types and actions. Ignores unsupported events to reduce noise.
 
 **Processed Events:**
-- GitHub: issues (opened, edited, labeled), issue_comment (created), pull_request (opened, synchronize, reopened), push
-- Jira: `jira:issue_created`, `jira:issue_updated`, `comment_created` (only when issue has `ai-agent` label)
+- GitHub: issues (opened, edited, labeled), issue_comment (created), pull_request (review_requested), pull_request_review_comment (created), push
+- Jira: `jira:issue_created`, `jira:issue_updated`, `comment_created` (when issue has `ai-agent` label OR comment mentions @agent/@groote/@bot/@ai-agent)
 - Slack: app_mention, message (DM only)
 
 ### Agent Routing

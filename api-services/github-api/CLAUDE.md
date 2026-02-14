@@ -21,8 +21,8 @@ REST API wrapper for GitHub operations with multi-tenant OAuth support.
 
 ```bash
 GITHUB_TOKEN=ghp_xxx
-GITHUB_OAUTH_CLIENT_ID=xxx
-GITHUB_OAUTH_CLIENT_SECRET=xxx
-OAUTH_SERVICE_URL=http://oauth-service:6000
+OAUTH_SERVICE_URL=http://oauth-service:8010
+INTERNAL_SERVICE_KEY=xxx
+USE_OAUTH=true
 PORT=3001
 ```

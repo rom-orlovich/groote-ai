@@ -47,6 +47,7 @@ gkg-service/
 | `/graph/calls` | POST | Get function call graph |
 | `/graph/hierarchy` | POST | Get class hierarchy |
 | `/graph/related` | POST | Find related entities |
+| `/graph/batch-related` | POST | Batch related entities |
 | `/index` | POST | Index a repository |
 
 ## Configuration

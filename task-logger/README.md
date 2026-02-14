@@ -34,12 +34,14 @@ Each task gets its own directory with structured logs:
 
 ```
 /data/logs/tasks/{task_id}/
-├── metadata.json              # Static: task metadata
-├── 01-input.json             # Static: initial task input
-├── 02-webhook-flow.jsonl     # Stream: webhook processing events
-├── 03-agent-output.jsonl     # Stream: Claude output, thinking, tool calls
-├── 03-user-inputs.jsonl      # Stream: user interactive inputs
-└── 04-final-result.json      # Static: final results + metrics
+├── metadata.json                      # Static: task metadata
+├── 01-input.json                      # Static: initial task input
+├── 02-user-inputs.jsonl               # Stream: user interactive inputs
+├── 03-webhook-flow.jsonl              # Stream: webhook processing events
+├── 04-agent-output.jsonl              # Stream: Claude output, thinking, tool calls
+├── 05-knowledge-interactions.jsonl    # Stream: knowledge service queries/results
+├── 06-final-result.json               # Static: final results + metrics
+└── 07-response-posting.jsonl          # Stream: response posting events
 ```
 
 ## Folder Structure

@@ -264,6 +264,7 @@ For detailed setup instructions, see **[SETUP.md](SETUP.md)**.
 | **Dashboard API** | 5000 | Analytics, WebSocket hub for real-time updates |
 | **External Dashboard** | 3005 | React monitoring UI |
 | **OAuth Service** | 8010 | Multi-provider OAuth flows (GitHub, Jira, Slack) |
+| **Admin Setup** | 8015 | System OAuth app configuration (admin-only) |
 | **Task Logger** | 8090 | Task output logging to files |
 | **Knowledge Graph** | 4000 | Code entity indexing (Rust) |
 
@@ -386,6 +387,7 @@ curl http://localhost:8000/health    # API Gateway
 curl http://localhost:8080/health    # Agent Engine
 curl http://localhost:5000/api/health  # Dashboard API
 curl http://localhost:8010/health    # OAuth Service
+curl http://localhost:8015/health    # Admin Setup
 curl http://localhost:8090/health    # Task Logger
 curl http://localhost:4000/health    # Knowledge Graph
 ```
@@ -409,6 +411,7 @@ groote-ai/
 │   ├── knowledge-graph-mcp/
 │   ├── llamaindex-mcp/     # Optional
 │   └── gkg-mcp/            # Optional
+├── admin-setup/            # Admin OAuth app configuration
 ├── dashboard-api/          # Analytics & WebSocket hub
 ├── external-dashboard/     # React monitoring UI
 ├── oauth-service/          # OAuth flows
@@ -417,8 +420,12 @@ groote-ai/
 ├── llamaindex-service/     # Hybrid RAG (optional)
 ├── gkg-service/            # Code graph (optional)
 ├── indexer-worker/         # Background indexing (optional)
-├── docs/                   # Documentation
-│   └── ARCHITECTURE.md     # Detailed architecture
+├── scripts/
+│   └── audit/              # End-to-end system audit framework
+├── docs/                   # System-level documentation
+│   ├── ARCHITECTURE.md     # Detailed architecture
+│   ├── features.md         # System feature index
+│   └── flows.md            # End-to-end system flows
 ├── docker-compose.yml      # Service orchestration
 ├── Makefile                # Development commands
 ├── SETUP.md                # Setup guide
@@ -427,28 +434,36 @@ groote-ai/
 
 ## Documentation
 
-### Getting Started
+### System-Level Docs
 
 | Document | Description |
 |----------|-------------|
 | **[SETUP.md](SETUP.md)** | Complete setup guide - start here |
 | **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** | Detailed architecture, data flows, service interactions |
+| **[docs/features.md](docs/features.md)** | System-level feature index with per-service references |
+| **[docs/flows.md](docs/flows.md)** | End-to-end system flows (webhook to response) |
+| **[docs/KNOWLEDGE-LAYER.md](docs/KNOWLEDGE-LAYER.md)** | Knowledge layer architecture |
+| **[docs/TUNNEL_SETUP.md](docs/TUNNEL_SETUP.md)** | Public URL tunnel configuration |
 | **[.claude/CLAUDE.md](.claude/CLAUDE.md)** | Development rules and coding standards |
 
 ### Service Documentation
 
-Each service has its own setup guide and README:
+Each service has its own README, CLAUDE.md, and docs/ directory:
 
-| Service | Setup | README |
-|---------|-------|--------|
-| Agent Engine | [SETUP.md](agent-engine/SETUP.md) | [README.md](agent-engine/README.md) |
-| API Gateway | [SETUP.md](api-gateway/SETUP.md) | [README.md](api-gateway/README.md) |
-| Dashboard API | [SETUP.md](dashboard-api/SETUP.md) | [README.md](dashboard-api/README.md) |
-| External Dashboard | [SETUP.md](external-dashboard/SETUP.md) | [README.md](external-dashboard/README.md) |
-| MCP Servers | [SETUP.md](mcp-servers/SETUP.md) | [README.md](mcp-servers/README.md) |
-| API Services | [SETUP.md](api-services/SETUP.md) | [README.md](api-services/README.md) |
-| OAuth Service | [SETUP.md](oauth-service/SETUP.md) | [README.md](oauth-service/README.md) |
-| Knowledge Layer | [SETUP-KNOWLEDGE.md](docs/SETUP-KNOWLEDGE.md) | - |
+| Service | README | Docs |
+|---------|--------|------|
+| Agent Engine | [README.md](agent-engine/README.md) | [docs/](agent-engine/docs/) |
+| API Gateway | [README.md](api-gateway/README.md) | [docs/](api-gateway/docs/) |
+| Dashboard API | [README.md](dashboard-api/README.md) | [docs/](dashboard-api/docs/) |
+| External Dashboard | [README.md](external-dashboard/README.md) | [docs/](external-dashboard/docs/) |
+| OAuth Service | [README.md](oauth-service/README.md) | [docs/](oauth-service/docs/) |
+| Admin Setup | [README.md](admin-setup/README.md) | [SETUP.md](admin-setup/SETUP.md) |
+| Task Logger | [README.md](task-logger/README.md) | [docs/](task-logger/docs/) |
+| MCP Servers | [README.md](mcp-servers/README.md) | Per-server docs |
+| API Services | [README.md](api-services/README.md) | Per-service docs |
+| Knowledge Graph | [README.md](knowledge-graph/README.md) | [docs/](knowledge-graph/docs/) |
+| Audit Framework | [README.md](scripts/audit/README.md) | [docs/](scripts/audit/docs/) |
+| Knowledge Layer | - | [SETUP-KNOWLEDGE.md](docs/SETUP-KNOWLEDGE.md) |
 
 ## Key Components
 

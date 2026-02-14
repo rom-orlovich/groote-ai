@@ -98,9 +98,10 @@ Process multiple repositories concurrently.
 | ENABLE_GKG_INDEXING | true | Index code to graph store |
 | ENABLE_PARALLEL | true | Process repos in parallel |
 
-## API Endpoints
+## Redis Interface
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check |
-| `/jobs/status` | GET | Current job status |
+| Queue/Channel | Direction | Description |
+|---------------|-----------|-------------|
+| `indexer:jobs` | BRPOP | Consume indexing jobs |
+| `indexer:status:{job_id}` | SET | Job status updates |
+| `indexer:completed:{org_id}` | PUBLISH | Job completion events |

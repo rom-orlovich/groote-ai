@@ -110,7 +110,7 @@ curl -X POST \
 cd admin-setup
 
 # Install dependencies
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
 # Run tests
 uv run pytest src/
@@ -161,8 +161,15 @@ The Admin Setup Service is the first-run configuration tool for Groote AI. After
 3. The setup token can be rotated or disabled after initial configuration
 4. The service can remain running for credential updates or be stopped after setup
 
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) - Component diagrams and data flows
+- [Features](docs/features.md) - Feature list and capabilities
+- [Flows](docs/flows.md) - Process flow documentation
+
 ## See Also
 
+- [CLAUDE.md](./CLAUDE.md) - Development guide for AI agents
 - [SETUP.md](./SETUP.md) - Original setup documentation
 - [src/main.py](./src/main.py) - FastAPI application entry point
 - [frontend/](./frontend/) - React frontend source

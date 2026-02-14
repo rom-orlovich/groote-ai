@@ -15,10 +15,12 @@ Create unique log directory for each task with organized structure.
 /data/logs/tasks/{task_id}/
 ├── metadata.json
 ├── 01-input.json
-├── 02-webhook-flow.jsonl
-├── 03-agent-output.jsonl
-├── 03-user-inputs.jsonl
-└── 04-final-result.json
+├── 02-user-inputs.jsonl
+├── 03-webhook-flow.jsonl
+├── 04-agent-output.jsonl
+├── 05-knowledge-interactions.jsonl
+├── 06-final-result.json
+└── 07-response-posting.jsonl
 ```
 
 ### Metadata Writing

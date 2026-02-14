@@ -40,10 +40,17 @@ Dashboard Frontend (React)
 dashboard-api/
 ├── main.py                    # FastAPI application
 ├── api/
-│   ├── dashboard.py           # Dashboard endpoints
-│   ├── analytics.py           # Analytics endpoints
-│   ├── conversations.py       # Conversation endpoints
-│   ├── webhook_status.py       # Webhook monitoring
+│   ├── dashboard.py           # Tasks, chat, agents, webhooks
+│   ├── analytics.py           # Cost tracking, performance metrics
+│   ├── conversations.py       # Conversation management
+│   ├── cli_control.py         # CLI start/stop/status
+│   ├── credentials.py         # Claude credentials management
+│   ├── oauth_status.py        # OAuth connection status
+│   ├── setup.py               # Setup configuration
+│   ├── user_settings.py       # Per-user settings
+│   ├── sources.py             # Source management
+│   ├── source_browser.py      # Source browsing
+│   ├── webhook_status.py      # Webhook monitoring
 │   └── websocket.py           # WebSocket handler
 ├── core/
 │   ├── database/
@@ -55,10 +62,6 @@ dashboard-api/
 │   └── machine_models.py      # Shared Pydantic models
 └── tests/                     # Co-located tests
     ├── factories/             # Test data factories
-    │   ├── task_factory.py    # Task model and factory
-    │   ├── session_factory.py # Session model and factory
-    │   ├── conversation_factory.py # Conversation factory
-    │   └── webhook_factory.py # Webhook config factory
     ├── conftest.py            # Shared fixtures
     └── test_*.py              # Test files
 ```
@@ -101,13 +104,18 @@ from .factories.webhook_factory import WebhookValidationError
 
 ### Dashboard
 
-| Endpoint                         | Method | Purpose                    |
-| -------------------------------- | ------ | -------------------------- |
-| `/api/status`                    | GET    | Machine status             |
-| `/api/tasks`                     | GET    | List tasks with pagination |
-| `/api/tasks/{task_id}`           | GET    | Task details               |
-| `/api/tasks/{task_id}/logs/full` | GET    | Complete task logs         |
-| `/api/agents`                    | GET    | List available agents      |
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/status` | GET | Machine status |
+| `/api/tasks` | GET | List tasks with filters |
+| `/api/tasks/table` | GET | Paginated task table |
+| `/api/tasks/{task_id}` | GET | Task details |
+| `/api/tasks/{task_id}` | PATCH | Update task status/metrics |
+| `/api/tasks/{task_id}/logs/full` | GET | Complete task logs |
+| `/api/tasks/{task_id}/stop` | POST | Stop running task |
+| `/api/tasks` | POST | Register external task |
+| `/api/chat` | POST | Chat with brain agent |
+| `/api/agents` | GET | List available agents |
 
 ### Analytics
 

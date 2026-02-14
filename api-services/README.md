@@ -72,16 +72,19 @@ MCP servers and agent engines have NO access to API keys.
 **Key Operations**:
 
 - Issue and PR management
-- Comment posting
+- Comment posting and reactions
 - File content reading/writing
+- Branch management and code search
 - Multi-tenant OAuth support
 
-**Endpoints**:
+**Endpoints** (prefix: `/api/v1`):
 
-- `GET /issues/{owner}/{repo}/{number}` - Get issue
-- `POST /issues/{owner}/{repo}/{number}/comments` - Post comment
-- `GET /pulls/{owner}/{repo}/{number}` - Get PR
-- `POST /pulls/{owner}/{repo}/{number}/comments` - Post PR comment
+- `GET /repos/{owner}/{repo}/issues/{number}` - Get issue
+- `POST /repos/{owner}/{repo}/issues/{number}/comments` - Post comment
+- `GET /repos/{owner}/{repo}/pulls/{number}` - Get PR
+- `POST /repos/{owner}/{repo}/pulls/{number}/comments` - Post PR review comment
+- `GET /repos/{owner}/{repo}/contents/{path}` - Read file
+- `PUT /repos/{owner}/{repo}/contents/{path}` - Create/update file
 
 **Environment**:
 
@@ -97,16 +100,22 @@ GITHUB_OAUTH_CLIENT_SECRET=xxx  # Multi-tenant
 
 **Key Operations**:
 
-- Issue management
+- Issue management (create, get, update)
 - Comment posting
-- JQL search
+- JQL search (POST-based)
 - Transition management
+- Project and board management
+- Confluence pages and spaces
 
-**Endpoints**:
+**Endpoints** (prefix: `/api/v1`):
 
 - `GET /issues/{issue_key}` - Get issue
+- `POST /issues` - Create issue
 - `POST /issues/{issue_key}/comments` - Post comment
-- `GET /search?jql={query}` - Search issues
+- `POST /search` - JQL search
+- `GET /projects` - List projects
+- `GET /boards` - List boards
+- `GET /confluence/pages` - List Confluence pages
 
 **Environment**:
 
@@ -122,16 +131,20 @@ JIRA_API_TOKEN=xxx
 
 **Key Operations**:
 
-- Message posting
-- Thread management
-- Channel operations
-- User information
+- Message posting with Block Kit support
+- Thread replies and message updates
+- Channel operations (list, info, history)
+- User information lookup
+- Reaction management
 
-**Endpoints**:
+**Endpoints** (prefix: `/api/v1`):
 
-- `POST /chat/postMessage` - Post message
-- `GET /conversations/history` - Get history
-- `POST /reactions/add` - Add reaction
+- `POST /messages` - Send message
+- `PUT /messages` - Update message
+- `POST /reactions` - Add reaction
+- `GET /channels` - List channels
+- `GET /channels/{channel}/history` - Get message history
+- `GET /users/{user_id}` - Get user info
 
 **Environment**:
 
@@ -158,6 +171,12 @@ curl http://localhost:3001/health  # GitHub
 curl http://localhost:3002/health  # Jira
 curl http://localhost:3003/health  # Slack
 ```
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) - Component diagrams and data flows
+- [Features](docs/features.md) - Feature list and capabilities
+- [Flows](docs/flows.md) - Process flow documentation
 
 ## Related Services
 

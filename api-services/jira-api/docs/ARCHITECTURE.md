@@ -68,34 +68,48 @@ flowchart TB
 
 ## API Endpoints
 
-### Issues API
+### Issues API (prefix: `/api/v1`)
 
 ```mermaid
 graph LR
-    subgraph Issues["/issues/{issue_key}"]
-        I1["GET - Get Issue"]
-        I2["GET /comments - List Comments"]
-        I3["POST /comments - Add Comment"]
-        I4["POST /transitions - Transition Issue"]
+    subgraph Issues["/issues"]
+        I1["GET /{issue_key} - Get Issue"]
+        I2["POST / - Create Issue"]
+        I3["PUT /{issue_key} - Update Issue"]
+        I4["POST /{issue_key}/comments - Add Comment"]
+        I5["GET /{issue_key}/transitions - Get Transitions"]
+        I6["POST /{issue_key}/transitions - Execute Transition"]
     end
 ```
 
-### Search API
+### Search API (prefix: `/api/v1`)
 
 ```mermaid
 graph LR
     subgraph Search["/search"]
-        S1["GET ?jql={query} - JQL Search"]
+        S1["POST / - JQL Search (with pagination)"]
     end
 ```
 
-### Projects API
+### Projects & Boards API (prefix: `/api/v1`)
 
 ```mermaid
 graph LR
-    subgraph Projects["/projects"]
-        P1["GET / - List Projects"]
-        P2["GET /{key} - Get Project"]
+    subgraph Projects["/projects + /boards"]
+        P1["GET /projects - List Projects"]
+        P2["POST /projects - Create Project"]
+        B1["GET /boards - List Boards"]
+        B2["POST /boards - Create Board"]
+    end
+```
+
+### Confluence API (prefix: `/api/v1`)
+
+```mermaid
+graph LR
+    subgraph Confluence["/confluence"]
+        C1["GET /pages - List Pages"]
+        C2["GET /spaces - List Spaces"]
     end
 ```
 
@@ -156,7 +170,7 @@ sequenceDiagram
     participant API as Jira API Service
     participant JR as Jira
 
-    Client->>API: GET /search?jql=project=PROJ AND status=Open
+    Client->>API: POST /api/v1/search {jql: "project=PROJ AND status=Open"}
     API->>JR: POST /search with JQL
     JR-->>API: {issues: [...], total: 42}
     API-->>Client: {issues: [...], total: 42}
@@ -220,10 +234,10 @@ Tests focus on **behavior**, not implementation:
 
 ### With Agent Engine
 ```
-Agent Engine → POST /issues/PROJ-123/comments → Jira API → Jira
+Agent Engine → POST /api/v1/issues/PROJ-123/comments → Jira API → Jira
 ```
 
 ### With MCP Server
 ```
-Jira MCP → GET /search?jql=... → Jira API → Jira
+Jira MCP → POST /api/v1/search → Jira API → Jira
 ```

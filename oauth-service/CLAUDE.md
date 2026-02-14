@@ -57,6 +57,7 @@ Each provider implements `OAuthProvider` protocol:
 
 - **InstallationService**: Manages OAuth state & installations
 - **TokenService**: Retrieves and refreshes tokens
+- **WebhookRegistrationService**: Registers webhooks during OAuth callback (GitHub App, Jira dynamic)
 
 ### API Routes (`api/routes.py`)
 

@@ -13,9 +13,8 @@ Central webhook reception (port 8000). Receives webhooks from GitHub, Jira, Slac
 
 1. Verify signature (HMAC for GitHub/Slack)
 2. Check loop prevention (skip bot messages via Redis: `posted_comments:{comment_id}`, TTL 3600s)
-3. Create task in PostgreSQL
-4. Queue task to Redis
-5. Return 200 OK
+3. Queue task to Redis (`agent:tasks` list via LPUSH)
+4. Return 200 OK
 
 ## Folder Structure
 

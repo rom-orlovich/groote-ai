@@ -24,6 +24,11 @@ User Browser
 │  - Webhooks (config & events)           │
 │  - Chat (conversations)                 │
 │  - Registry (agents & status)           │
+│  - Integrations (OAuth status)          │
+│  - Sources (repo management)            │
+│  - Settings (AI provider config)        │
+│  - Install (platform setup guide)       │
+│  - Setup (initial wizard)               │
 └─────────────────────────────────────────┘
          ↓
          ↓ HTTP + WebSocket
@@ -45,16 +50,24 @@ external-dashboard/
 │   │   ├── ui/                  # UI components
 │   │   └── TaskStatusModal.tsx  # Task modal
 │   ├── features/
-│   │   ├── overview/            # Overview feature
-│   │   ├── analytics/           # Analytics feature
-│   │   ├── ledger/              # Ledger feature
-│   │   ├── webhooks/            # Webhooks feature
-│   │   ├── chat/                # Chat feature
-│   │   └── registry/            # Registry feature
+│   │   ├── overview/            # Dashboard home (metrics, tasks)
+│   │   ├── analytics/           # Cost and performance analytics
+│   │   ├── ledger/              # Task log with filtering
+│   │   ├── webhooks/            # Webhook management
+│   │   ├── chat/                # Conversation interface
+│   │   ├── registry/            # Agent registry
+│   │   ├── integrations/        # OAuth integration status
+│   │   ├── sources/             # Source repo management
+│   │   ├── settings/            # AI provider + agent config
+│   │   ├── install/             # Platform install guide
+│   │   └── setup/               # Initial setup wizard
 │   ├── hooks/
-│   │   ├── useWebSocket.ts      # WebSocket hook
-│   │   ├── useCLIStatus.ts      # CLI status hook
-│   │   └── useTaskModal.ts      # Task modal hook
+│   │   ├── useWebSocket.ts      # WebSocket connection
+│   │   ├── useCLIStatus.ts      # CLI agent status
+│   │   ├── useTaskModal.ts      # Task detail modal
+│   │   ├── useTaskStream.ts     # Real-time task stream
+│   │   ├── useConversations.ts  # Conversation data
+│   │   └── useOAuthUsage.ts     # OAuth rate limits
 │   └── layouts/
 │       └── DashboardLayout.tsx  # Main layout
 ├── public/                      # Static assets
@@ -77,7 +90,7 @@ external-dashboard/
 - Usage histograms
 - Token usage breakdown
 
-## Ledger
+### Ledger
 
 - Complete task log
 - Filtering and search
@@ -104,6 +117,44 @@ external-dashboard/
 - Agent status
 - Agent capabilities
 - Agent configuration
+
+### Integrations
+
+- OAuth connection status (GitHub, Jira, Slack)
+- Connect/disconnect integrations
+- Integration health monitoring
+
+### Sources
+
+- Source repository management
+- Add/remove indexed repositories
+- File tree browsing via ResourcePicker
+- Source configuration forms
+
+### Settings
+
+- AI provider API key configuration
+- Agent scaling controls
+- Agent engine startup trigger
+- Setup instructions
+
+### Install
+
+- Platform installation wizard
+- Step-by-step integration guides
+
+### Setup
+
+- Multi-step initial configuration wizard
+- AI provider setup
+- OAuth app configuration
+- Service health verification
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) - Component diagrams and data flows
+- [Features](docs/features.md) - Feature list and capabilities
+- [Flows](docs/flows.md) - Process flow documentation
 
 ## Environment Variables
 

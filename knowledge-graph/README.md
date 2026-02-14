@@ -96,27 +96,41 @@ knowledge-graph/
 | --------------- | ------ | ---------------- |
 | `/api/v1/stats` | GET    | Graph statistics |
 
+## Node Types
+
+Repository, File, Function, Class, Module, Variable, Constant, Import, Agent, Skill, Task
+
 ## Node Model
 
 ```rust
 pub struct Node {
-    pub id: String,
-    pub node_type: NodeType,  // Function, Class, Module, File
+    pub id: Uuid,
     pub name: String,
-    pub file_path: String,
-    pub metadata: HashMap<String, String>,
+    pub node_type: NodeType,
+    pub path: Option<String>,
+    pub language: Option<String>,
+    pub description: Option<String>,
+    pub metadata: serde_json::Value,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 ```
+
+## Edge Types
+
+Contains, Imports, Calls, Inherits, Implements, Uses, DependsOn, DefinedIn, References, Handles, Delegates
 
 ## Edge Model
 
 ```rust
 pub struct Edge {
-    pub id: String,
-    pub source: String,        // Source node ID
-    pub target: String,        // Target node ID
-    pub edge_type: EdgeType,   // Calls, Imports, Inherits, References
-    pub metadata: HashMap<String, String>,
+    pub id: Uuid,
+    pub source_id: Uuid,
+    pub target_id: Uuid,
+    pub edge_type: EdgeType,
+    pub weight: f64,
+    pub metadata: serde_json::Value,
+    pub created_at: DateTime<Utc>,
 }
 ```
 
@@ -179,6 +193,12 @@ curl http://localhost:4000/health
 cd knowledge-graph
 cargo build --release
 ```
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) - Component diagrams and data flows
+- [Features](docs/features.md) - Feature list and capabilities
+- [Flows](docs/flows.md) - Process flow documentation
 
 ## Related Services
 

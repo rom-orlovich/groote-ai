@@ -86,13 +86,13 @@ Cache query results for performance.
 | `/graph/calls` | POST | Get function call graph |
 | `/graph/hierarchy` | POST | Get class hierarchy |
 | `/graph/related` | POST | Find related entities |
+| `/graph/batch-related` | POST | Batch related entities |
 
 ### Indexing
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/index` | POST | Index repository |
-| `/index/status` | GET | Indexing status |
 
 ### Health
 

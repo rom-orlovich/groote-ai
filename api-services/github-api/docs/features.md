@@ -70,32 +70,41 @@ Post agent results back to GitHub issues and PRs.
 
 ## API Endpoints
 
+All endpoints use the `/api/v1` prefix.
+
 ### Issues
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/issues/{owner}/{repo}/{number}` | GET | Get issue details |
-| `/issues/{owner}/{repo}/{number}/comments` | GET | List comments |
-| `/issues/{owner}/{repo}/{number}/comments` | POST | Add comment |
+| `/repos/{owner}/{repo}/issues/{number}` | GET | Get issue details |
+| `/repos/{owner}/{repo}/issues` | POST | Create issue |
+| `/repos/{owner}/{repo}/issues/{number}/comments` | POST | Add comment |
+| `/repos/{owner}/{repo}/issues/comments/{id}/reactions` | POST | Add reaction |
 
 ### Pull Requests
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/pulls/{owner}/{repo}/{number}` | GET | Get PR details |
-| `/pulls/{owner}/{repo}/{number}/comments` | POST | Add PR comment |
-| `/pulls/{owner}/{repo}/{number}/reviews` | POST | Create review |
+| `/repos/{owner}/{repo}/pulls/{number}` | GET | Get PR details |
+| `/repos/{owner}/{repo}/pulls/{number}/comments` | POST | Add PR review comment |
+| `/repos/{owner}/{repo}/pulls` | POST | Create pull request |
 
 ### Repository Files
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/repos/{owner}/{repo}/contents/{path}` | GET | Read file |
-| `/repos/{owner}/{repo}/contents/{path}` | POST | Create/update file |
+| `/repos/{owner}/{repo}/contents/{path}` | PUT | Create/update file |
 
-### Repositories
+### Repositories & Search
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/repos/{owner}/{repo}` | GET | Get repository |
-| `/orgs/{org}/repos` | GET | List org repos |
+| `/repos/{owner}/{repo}/branches` | GET | List branches |
+| `/repos/{owner}/{repo}/git/ref/heads/{branch}` | GET | Get branch SHA |
+| `/repos/{owner}/{repo}/git/refs` | POST | Create branch |
+| `/search/code` | GET | Search code |
+| `/search/repositories` | GET | Search repos |
+| `/installation/repos` | GET | List installation repos |
+| `/users/{username}/repos` | GET | List user repos |

@@ -87,9 +87,9 @@ Authorization: Basic am9obkBjb21wYW55LmNvbTp4eHh4eHh4eA==
 ### JQL Search Flow
 
 ```
-[Service] → GET /search?jql={query}&maxResults=50
+[Service] → POST /api/v1/search {jql, max_results, start_at}
                          ↓
-                [URL Encode JQL]
+                [Parse JQL + Pagination]
                          ↓
        [POST jira/rest/api/3/search]
                          ↓

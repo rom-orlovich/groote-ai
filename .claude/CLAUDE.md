@@ -22,6 +22,19 @@
 - **Plan naming format** - Use `docs/plans/YYYY-MM-DD-<feature-name>.md`
 - **Plan structure** - Include context, phases, file changes, verification steps
 
+## Documentation Conventions
+
+Every service directory must have:
+
+- **`CLAUDE.md`** - Service guide for Claude Code (purpose, structure, commands, env vars)
+- **`README.md`** - Human-readable service documentation with Documentation section
+- **`docs/ARCHITECTURE.md`** - Component diagrams (mermaid) and data flows
+- **`docs/features.md`** - Feature list and capabilities
+- **`docs/flows.md`** - Process flow diagrams (ASCII art) with processing steps
+
+Templates: `.claude/skills/sync-docs/templates.md`
+Gold standard: `api-gateway/docs/`
+
 ## Key Commands
 
 ```bash
@@ -105,7 +118,10 @@ When assigning teammates to services, each teammate should work within their ser
 | Dashboard API | `dashboard-api/` | Backend API & WebSocket changes |
 | External Dashboard | `external-dashboard/` | Frontend React 19 changes |
 | OAuth Service | `oauth-service/` | Auth flow changes |
+| Admin Setup | `admin-setup/` | Admin configuration changes |
 | MCP Servers | `mcp-servers/` | Tool integration changes |
+| API Services | `api-services/` | REST API wrapper changes |
 | Task Logger | `task-logger/` | Event logging changes |
 | Knowledge Graph | `knowledge-graph/` | Rust graph DB changes |
 | LlamaIndex Service | `llamaindex-service/` | RAG pipeline changes |
+| Audit Framework | `scripts/audit/` | System audit changes |

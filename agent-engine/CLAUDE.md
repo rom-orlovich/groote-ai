@@ -65,11 +65,12 @@ Agent Engine is the central task processing service that:
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Basic health check |
-| `/health/detailed` | GET | Detailed component status |
+| `/health/auth` | GET | CLI provider authentication status |
+| `/health/detailed` | GET | Detailed component status (Redis, worker, knowledge) |
 | `/status` | GET | Worker and service status |
 | `/tasks` | POST | Queue new task |
 | `/tasks/{task_id}` | GET | Get task status/result |
-| `/knowledge/toggle` | POST | Enable/disable knowledge |
+| `/knowledge/toggle` | POST | Enable/disable knowledge services |
 
 ## Configuration
 

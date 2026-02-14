@@ -66,10 +66,12 @@ graph TB
     subgraph TaskDir["/data/logs/tasks/{task_id}/"]
         M[metadata.json]
         I[01-input.json]
-        W[02-webhook-flow.jsonl]
-        A[03-agent-output.jsonl]
-        U[03-user-inputs.jsonl]
-        F[04-final-result.json]
+        U[02-user-inputs.jsonl]
+        W[03-webhook-flow.jsonl]
+        A[04-agent-output.jsonl]
+        K[05-knowledge-interactions.jsonl]
+        F[06-final-result.json]
+        R[07-response-posting.jsonl]
     end
 ```
 
@@ -79,10 +81,12 @@ graph TB
 |------|------|---------|
 | metadata.json | Static | Task ID, source, agent type |
 | 01-input.json | Static | Initial task input/prompt |
-| 02-webhook-flow.jsonl | Stream | Webhook processing events |
-| 03-agent-output.jsonl | Stream | Claude output, tool calls |
-| 03-user-inputs.jsonl | Stream | User interactive inputs |
-| 04-final-result.json | Static | Final results + metrics |
+| 02-user-inputs.jsonl | Stream | User interactive inputs |
+| 03-webhook-flow.jsonl | Stream | Webhook processing events |
+| 04-agent-output.jsonl | Stream | Claude output, tool calls |
+| 05-knowledge-interactions.jsonl | Stream | Knowledge service queries/results |
+| 06-final-result.json | Static | Final results + metrics |
+| 07-response-posting.jsonl | Stream | Response posting events |
 
 ## Event Types
 

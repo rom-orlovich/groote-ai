@@ -10,150 +10,74 @@ The Slack MCP server provides a Model Context Protocol interface for Slack opera
 
 ```
 Agent Engine (via mcp.json)
-         │
-         │ SSE Connection
-         ▼
-┌─────────────────────────────────────┐
-│      Slack MCP :9003                │
-│                                     │
-│  1. Receive MCP tool call          │
-│  2. Translate to HTTP request       │
-│  3. Call slack-api service         │
-│     (no credentials)                │
-│  4. Return standardized response    │
-└─────────────────────────────────────┘
-         │
-         │ HTTP (no credentials)
-         ▼
-┌─────────────────────────────────────┐
-│      Slack API Service             │
-│  (Has credentials, makes API call)  │
-└─────────────────────────────────────┘
+         |
+         | SSE Connection
+         v
++-----------------------------------------+
+|      Slack MCP :9003                     |
+|                                          |
+|  1. Receive MCP tool call               |
+|  2. Translate to HTTP request            |
+|  3. Call slack-api service              |
+|     (no credentials)                     |
+|  4. Return standardized response         |
++-----------------------------------------+
+         |
+         | HTTP (no credentials)
+         v
++-----------------------------------------+
+|      Slack API Service :3003             |
+|  (Has credentials, makes API call)       |
++-----------------------------------------+
 ```
 
 ## Folder Structure
 
 ```
 slack-mcp/
-├── main.py                    # FastMCP server entry point
-├── slack_mcp.py               # MCP tool definitions
-├── config.py                  # Configuration
-└── requirements.txt            # Dependencies
+├── main.py            # FastMCP server + 8 tool registrations
+├── slack_mcp.py       # SlackAPI HTTP client class
+├── config.py          # Settings
+├── requirements.txt   # Dependencies
+└── Dockerfile
 ```
 
-## Business Logic
+## MCP Tools (8)
 
-### Core Responsibilities
+### Messaging
 
-1. **MCP Tool Exposure**: Expose Slack operations as MCP tools
-2. **Protocol Translation**: Translate MCP calls to HTTP API requests
-3. **Credential Isolation**: Never store credentials (delegate to slack-api service)
-4. **SSE Transport**: Provide Server-Sent Events transport for MCP
-5. **Thread Management**: Handle Slack thread context
+| Tool | Description |
+|------|-------------|
+| `send_slack_message` | Send message to channel or thread (via thread_ts) |
+| `update_slack_message` | Update an existing message |
 
-## MCP Tools
+### History
 
-### post_message
+| Tool | Description |
+|------|-------------|
+| `get_slack_channel_history` | Get channel messages with time-range filtering |
+| `get_slack_thread` | Get replies in a thread |
 
-Post a message to a channel or thread.
+### Reactions
 
-**Input**:
+| Tool | Description |
+|------|-------------|
+| `add_slack_reaction` | Add emoji reaction to a message |
 
-```json
-{
-  "channel": "C1234567890",
-  "text": "Message text",
-  "thread_ts": "1234567890.123456"
-}
-```
+### Channel & User Info
 
-**Output**:
-
-```json
-{
-  "ts": "1234567890.123457",
-  "channel": "C1234567890",
-  "text": "Message text"
-}
-```
-
-### get_channel_history
-
-Get message history for a channel.
-
-**Input**:
-
-```json
-{
-  "channel": "C1234567890",
-  "limit": 100
-}
-```
-
-**Output**:
-
-```json
-{
-  "messages": [
-    {
-      "ts": "1234567890.123456",
-      "text": "Message text",
-      "user": "U1234567890"
-    }
-  ]
-}
-```
-
-### add_reaction
-
-Add emoji reaction to a message.
-
-**Input**:
-
-```json
-{
-  "channel": "C1234567890",
-  "timestamp": "1234567890.123456",
-  "name": "eyes"
-}
-```
-
-**Output**:
-
-```json
-{
-  "success": true
-}
-```
-
-### get_user_info
-
-Get user information.
-
-**Input**:
-
-```json
-{
-  "user_id": "U1234567890"
-}
-```
-
-**Output**:
-
-```json
-{
-  "id": "U1234567890",
-  "name": "username",
-  "real_name": "Real Name"
-}
-```
+| Tool | Description |
+|------|-------------|
+| `get_slack_channel_info` | Get channel details (name, topic, members) |
+| `list_slack_channels` | List workspace channels with cursor pagination |
+| `get_slack_user_info` | Get user details (name, email, status) |
 
 ## Environment Variables
 
 ```bash
 SLACK_API_URL=http://slack-api:3003
 PORT=9003
-LOG_LEVEL=INFO
+REQUEST_TIMEOUT=30
 ```
 
 ## SSE Endpoint
@@ -172,7 +96,13 @@ Accept: text/event-stream
 curl http://localhost:9003/health
 ```
 
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) - Component diagrams and data flows
+- [Features](docs/features.md) - Feature list and capabilities
+- [Flows](docs/flows.md) - Process flow documentation
+
 ## Related Services
 
-- **slack-api**: Provides actual Slack API operations
+- **slack-api**: Provides actual Slack API operations (port 3003)
 - **agent-engine**: Connects to this MCP server via SSE

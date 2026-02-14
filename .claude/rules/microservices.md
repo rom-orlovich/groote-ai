@@ -33,6 +33,7 @@ GET http://localhost:8080/health      # Agent Engine
 GET http://localhost:5000/api/health  # Dashboard API
 GET http://localhost:8010/health      # OAuth Service
 GET http://localhost:8090/health      # Task Logger
+GET http://localhost:4000/health      # Knowledge Graph
 ```
 
 Or use `make health` to check all services at once.

@@ -17,12 +17,9 @@
 
 ## Dashboard API
 
-- Runs on port 5001
-- Endpoints:
-  - `GET /api/setup/status` - Current setup status
-  - `POST /api/setup/steps/{step}` - Complete a setup step
-  - `POST /api/setup/complete` - Mark setup as complete
-  - `POST /api/setup/reset` - Reset setup progress
+- Dev proxy target: port 5001
+- Vite proxies: `/api/*` -> Dashboard API, `/oauth/*` -> OAuth Service, `/webhooks/*` -> API Gateway, `/ws` -> WebSocket
+- Endpoints consumed: `/api/metrics`, `/api/tasks`, `/api/conversations`, `/api/webhooks`, `/api/user-settings/*`, `/api/agent-engine/*`
 
 ## Package Manager
 

@@ -51,13 +51,14 @@ python -m scripts.audit --slack-channel C12345678
 
 | Flow ID | Name | Category | Description |
 |---------|------|----------|-------------|
-| f01 | Slack Knowledge Query | Slack | User asks a question in Slack about manga-creator. Verifies routing to slack-inquiry agent, knowledge tool usage, and Slack response delivery. |
+| f01 | Slack Knowledge Query | Slack | User asks about a repo in Slack. Verifies routing to slack-inquiry agent, knowledge tool usage, and Slack response delivery. |
 | f02 | Jira Code Plan | Jira | New Jira issue triggers code planning. Verifies routing to jira-code-plan agent, knowledge retrieval, plan generation, and Jira comment delivery. |
-| f03 | GitHub Issue Handler | GitHub | New GitHub issue triggers investigation. Verifies routing to github-issue-handler agent, repo analysis, and GitHub comment delivery. |
-| f04 | GitHub PR Review | GitHub | New PR triggers code review. Verifies routing to github-pr-review agent, diff analysis, knowledge context, and PR review comment delivery. |
-| f05 | Jira Status Transition | Jira | Jira issue status change triggers update. Verifies routing to service-integrator agent and cross-platform sync. |
-| f06 | Chained Flow | Chain | Multi-step flow: Jira issue creates GitHub PR reference. Verifies cross-platform orchestration and conversation threading. |
-| f07 | Knowledge Refresh | Knowledge | Triggers re-indexing of a source and verifies the knowledge layer updates propagate correctly. |
+| f04 | GitHub PR Review | GitHub | PR comment triggers code review. Verifies routing to github-pr-review agent, diff analysis, knowledge context, and PR review comment delivery. |
+| f05 | Jira Comment | Jira | Jira comment triggers agent response. Verifies routing to jira-code-plan agent and comment delivery. |
+| f06 | Full Chain | Chain | Multi-step flow: Jira issue triggers cross-platform orchestration. Verifies conversation threading and full pipeline. |
+| f07 | Knowledge Health | Knowledge | Verifies knowledge layer services are healthy and responding to queries. |
+| f08 | Slack Multi-Repo | Slack | Multi-repo question in Slack. Verifies knowledge search across repositories. |
+| f09 | Plan Approval | Jira | Plan approval workflow via Jira. Verifies plan generation and approval flow. |
 
 ## Pass Criteria
 
@@ -70,32 +71,37 @@ Each flow must satisfy ALL of the following to pass:
 
 ### Per-Flow Criteria
 
-| Flow | Expected Agent | Required Tools | Required Response |
-|------|---------------|----------------|-------------------|
-| f01 | slack-inquiry | knowledge_query, slack_post_message | Slack message posted |
-| f02 | jira-code-plan | knowledge_query, jira_add_comment | Jira comment posted |
-| f03 | github-issue-handler | github_create_comment | GitHub comment posted |
-| f04 | github-pr-review | github_create_review | PR review posted |
-| f05 | service-integrator | jira_transition_issue | Status synced |
-| f06 | jira-code-plan | knowledge_query, github_create_branch | Cross-platform linked |
-| f07 | indexer | github_indexer, llamaindex_index | Index refreshed |
+| Flow | Expected Agent | Key Required Tools | Response Tool |
+|------|---------------|-------------------|---------------|
+| f01 | slack-inquiry | knowledge_query | send_slack_message |
+| f02 | jira-code-plan | knowledge_query | add_jira_comment |
+| f04 | github-pr-review | knowledge_query | add_issue_comment |
+| f05 | jira-code-plan | knowledge_query | add_jira_comment |
+| f06 | jira-code-plan | knowledge_query | add_jira_comment |
+| f07 | slack-inquiry | knowledge_query | send_slack_message |
+| f08 | slack-inquiry | knowledge_query | send_slack_message |
+| f09 | jira-code-plan | knowledge_query | add_jira_comment |
 
 ## Quality Scoring
 
-Quality is evaluated across 8 dimensions, each scored 0-100 with weighted contribution to the overall score:
+Quality is evaluated across 10 dimensions, each scored 0-100 with weighted contribution to the overall score:
 
-| Dimension | Weight | What It Measures |
-|-----------|--------|------------------|
-| Routing Accuracy | 20% | Correct agent selected for the task |
-| Tool Efficiency | 15% | Required tools called without excessive redundancy |
-| Knowledge Utilization | 10% | Knowledge layer tools used when applicable |
-| Response Completeness | 15% | Output contains expected patterns and meets length requirements |
-| Response Relevance | 10% | Output contains domain-specific terminology |
-| Delivery Success | 15% | Response posted back to originating platform via MCP |
-| Execution Metrics | 10% | Task completed within acceptable time bounds |
-| Error Freedom | 5% | No errors in the event stream |
+| Dimension | Weight | Critical | What It Measures |
+|-----------|--------|----------|------------------|
+| Routing Accuracy | 15 | Yes | Correct agent selected for the task |
+| Content Quality | 15 | Yes | Output references target repo, no negative patterns, meets min length |
+| Tool Efficiency | 10 | No | Required tools called without excessive redundancy |
+| Knowledge Utilization | 10 | No | Knowledge layer tools used when applicable |
+| Knowledge First | 10 | No | Knowledge tools called before domain action tools |
+| Response Completeness | 10 | No | Output contains expected patterns and meets length requirements |
+| Response Relevance | 10 | No | Output contains domain-specific terminology |
+| Delivery Success | 10 | No | Response posted back to originating platform via MCP |
+| Execution Metrics | 5 | No | Task completed within acceptable time bounds |
+| Error Freedom | 5 | No | No errors in the event stream |
 
 **Overall score** = weighted average of all dimensions. Default pass threshold is 70.
+
+**Critical dimensions** (Routing Accuracy, Content Quality) force a fail if they score below 50, regardless of overall score.
 
 ## Component Monitoring
 
@@ -175,6 +181,12 @@ If flows fail with `TimeoutError`, the environment may be slow. Increase timeout
 ```bash
 python -m scripts.audit --timeout-multiplier 3.0
 ```
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) - Component diagrams and data flows
+- [Features](docs/features.md) - Feature list and capabilities
+- [Flows](docs/flows.md) - Process flow documentation
 
 ## Adding New Flows
 

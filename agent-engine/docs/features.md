@@ -134,7 +134,10 @@ Connects to MCP servers for external service access during agent execution.
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/health` | GET | Health check endpoint |
+| `/health` | GET | Basic health check |
+| `/health/auth` | GET | CLI provider authentication status |
+| `/health/detailed` | GET | Detailed component status |
 | `/status` | GET | Service status with queue depth |
 | `/tasks` | POST | Create task (internal) |
 | `/tasks/{task_id}` | GET | Get task status |
+| `/knowledge/toggle` | POST | Enable/disable knowledge services |

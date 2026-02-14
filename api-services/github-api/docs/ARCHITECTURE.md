@@ -80,37 +80,40 @@ flowchart TB
 
 ## API Endpoints
 
-### Issues API
+### Issues API (prefix: `/api/v1`)
 
 ```mermaid
 graph LR
-    subgraph Issues["/issues/{owner}/{repo}/{number}"]
-        I1["GET - Get Issue"]
-        I2["GET /comments - List Comments"]
-        I3["POST /comments - Add Comment"]
+    subgraph Issues["/repos/{owner}/{repo}/issues"]
+        I1["GET /{number} - Get Issue"]
+        I2["POST / - Create Issue"]
+        I3["POST /{number}/comments - Add Comment"]
+        I4["POST /comments/{id}/reactions - Add Reaction"]
     end
 ```
 
-### Pull Requests API
+### Pull Requests API (prefix: `/api/v1`)
 
 ```mermaid
 graph LR
-    subgraph PRs["/pulls/{owner}/{repo}/{number}"]
-        P1["GET - Get PR"]
-        P2["GET /comments - List Comments"]
-        P3["POST /comments - Add Comment"]
-        P4["POST /reviews - Create Review"]
+    subgraph PRs["/repos/{owner}/{repo}/pulls"]
+        P1["GET /{number} - Get PR"]
+        P2["POST /{number}/comments - Add Review Comment"]
+        P3["POST / - Create PR"]
     end
 ```
 
-### Repository API
+### Repository API (prefix: `/api/v1`)
 
 ```mermaid
 graph LR
-    subgraph Repos["/repos"]
-        R1["GET /{owner}/{repo} - Get Repo"]
-        R2["GET /{owner}/{repo}/contents/{path} - Read File"]
-        R3["POST /{owner}/{repo}/contents/{path} - Write File"]
+    subgraph Repos["/repos/{owner}/{repo}"]
+        R1["GET / - Get Repo"]
+        R2["GET /contents/{path} - Read File"]
+        R3["PUT /contents/{path} - Create/Update File"]
+        R4["GET /branches - List Branches"]
+        R5["GET /git/ref/heads/{branch} - Get Branch SHA"]
+        R6["POST /git/refs - Create Branch"]
     end
 ```
 

@@ -117,18 +117,20 @@ sequenceDiagram
 | Event Type | Actions Processed | Actions Skipped |
 |------------|------------------|-----------------|
 | issues | opened, edited, labeled | closed, deleted |
-| issue_comment | created | edited, deleted |
-| pull_request | opened, synchronize, reopened | closed, merged |
+| issue_comment | created (with bot mention for PR comments) | edited, deleted |
+| pull_request | review_requested | opened, closed, merged |
+| pull_request_review_comment | created | edited, deleted |
 | push | all | - |
 
 ### Jira Events
 
 | Event Type | Condition | Action |
 |------------|-----------|--------|
-| issue_created | Has `ai-agent` label | Process |
-| issue_updated | Has `ai-agent` label | Process |
-| comment_added | Has `ai-agent` label | Process |
-| * | No `ai-agent` label | Skip |
+| jira:issue_created | Has `ai-agent` label OR agent mention | Process |
+| jira:issue_updated | Has `ai-agent` label OR agent mention | Process |
+| comment_created | Has `ai-agent` label OR agent mention (@agent, @groote, @bot, @ai-agent) | Process |
+| * | No label and no mention | Skip |
+| * | Bot comment detected | Skip |
 
 ### Slack Events
 

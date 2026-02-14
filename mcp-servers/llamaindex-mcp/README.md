@@ -128,6 +128,12 @@ Add to `.claude/mcp.json`:
 }
 ```
 
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) - Component diagrams and data flows
+- [Features](docs/features.md) - Feature list and capabilities
+- [Flows](docs/flows.md) - Process flow documentation
+
 ## Replacing the Backend
 
 The MCP server is designed to be backend-agnostic. To use a different knowledge service:

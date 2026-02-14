@@ -69,14 +69,15 @@ Automatic retry with backoff for Slack API rate limits.
 
 ## API Endpoints
 
+All endpoints use the `/api/v1` prefix.
+
 ### Messages
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/messages/{channel}` | POST | Post message |
-| `/messages/{channel}/{thread_ts}` | POST | Reply in thread |
-| `/messages/{channel}/{ts}` | PUT | Update message |
-| `/messages/{channel}/{ts}` | DELETE | Delete message |
+| `/messages` | POST | Send message (channel, text, thread_ts, blocks) |
+| `/messages` | PUT | Update message |
+| `/reactions` | POST | Add reaction |
 
 ### Channels
 
@@ -85,10 +86,10 @@ Automatic retry with backoff for Slack API rate limits.
 | `/channels` | GET | List channels |
 | `/channels/{channel}` | GET | Get channel info |
 | `/channels/{channel}/history` | GET | Get message history |
+| `/channels/{channel}/threads/{thread_ts}` | GET | Get thread replies |
 
 ### Users
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/users` | GET | List users |
 | `/users/{user_id}` | GET | Get user info |

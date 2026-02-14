@@ -40,20 +40,30 @@ Agent Engine / MCP Server
 
 ## API Endpoints
 
+All endpoints use the `/api/v1` prefix.
+
 ### Messages
 
-| Endpoint                         | Method | Purpose              |
-| -------------------------------- | ------ | -------------------- |
-| `/messages/{channel}`            | POST   | Post message         |
-| `/messages/{channel}/{thread}`   | POST   | Reply in thread      |
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/messages` | POST | Send message (channel, text, thread_ts, blocks) |
+| `/api/v1/messages` | PUT | Update message |
+| `/api/v1/reactions` | POST | Add reaction |
 
 ### Channels
 
-| Endpoint                         | Method | Purpose              |
-| -------------------------------- | ------ | -------------------- |
-| `/channels`                      | GET    | List channels        |
-| `/channels/{channel}`            | GET    | Get channel info     |
-| `/channels/{channel}/history`    | GET    | Get message history  |
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/channels` | GET | List channels |
+| `/api/v1/channels/{channel}` | GET | Get channel info |
+| `/api/v1/channels/{channel}/history` | GET | Get message history |
+| `/api/v1/channels/{channel}/threads/{thread_ts}` | GET | Get thread replies |
+
+### Users
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/users/{user_id}` | GET | Get user info |
 
 ## Environment Variables
 

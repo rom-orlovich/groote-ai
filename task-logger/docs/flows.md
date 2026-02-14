@@ -51,12 +51,14 @@
 **Directory Contents:**
 ```
 /data/logs/tasks/abc-123/
-├── metadata.json       # Static task info
-├── 01-input.json       # Initial prompt/task
-├── 02-webhook-flow.jsonl  # Webhook events (append)
-├── 03-agent-output.jsonl  # Agent output (append)
-├── 03-user-inputs.jsonl   # User responses (append)
-└── 04-final-result.json   # Final metrics
+├── metadata.json                      # Static task info
+├── 01-input.json                      # Initial prompt/task
+├── 02-user-inputs.jsonl               # User responses (append)
+├── 03-webhook-flow.jsonl              # Webhook events (append)
+├── 04-agent-output.jsonl              # Agent output (append)
+├── 05-knowledge-interactions.jsonl    # Knowledge queries (append)
+├── 06-final-result.json               # Final metrics
+└── 07-response-posting.jsonl          # Response posting (append)
 ```
 
 ### Event Consumption Flow
@@ -133,7 +135,7 @@
             │                  │                  │
             └──────────────────┼──────────────────┘
                                ↓
-                    [Atomic write 04-final-result.json]
+                    [Atomic write 06-final-result.json]
 ```
 
 **Final Result Format:**

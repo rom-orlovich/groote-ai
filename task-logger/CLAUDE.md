@@ -18,12 +18,14 @@ Dedicated service for structured task logging (port 8090). Consumes task events 
 
 ```
 /data/logs/tasks/{task_id}/
-├── metadata.json          # Task metadata
-├── 01-input.json          # Initial task input
-├── 02-webhook-flow.jsonl  # Webhook processing events
-├── 03-agent-output.jsonl  # Claude output, thinking, tool calls
-├── 03-user-inputs.jsonl   # User interactive inputs
-└── 04-final-result.json   # Final results + metrics
+├── metadata.json                      # Task metadata
+├── 01-input.json                      # Initial task input
+├── 02-user-inputs.jsonl               # User interactive inputs
+├── 03-webhook-flow.jsonl              # Webhook processing events
+├── 04-agent-output.jsonl              # Claude output, thinking, tool calls
+├── 05-knowledge-interactions.jsonl    # Knowledge service queries/results
+├── 06-final-result.json               # Final results + metrics
+└── 07-response-posting.jsonl          # Response posting events
 ```
 
 ## Folder Structure

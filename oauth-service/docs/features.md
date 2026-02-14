@@ -114,4 +114,3 @@ Lookup tokens by organization for multi-tenant API access.
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Health check |
-| `/oauth/status` | GET | OAuth status summary |
