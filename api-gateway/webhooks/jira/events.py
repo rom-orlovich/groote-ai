@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 SUPPORTED_EVENTS = [
@@ -8,6 +9,11 @@ SUPPORTED_EVENTS = [
 
 AI_AGENT_LABEL = "ai-agent"
 DEFAULT_AI_AGENT_NAME = "ai-agent"
+AGENT_MENTION_TRIGGERS = ["@agent", "@groote", "@bot", "@ai-agent"]
+_MENTION_PATTERN = re.compile(
+    "|".join(re.escape(t) for t in AGENT_MENTION_TRIGGERS),
+    re.IGNORECASE,
+)
 
 BOT_COMMENT_PREFIX_MARKERS = [
     "Agent is analyzing this issue",
@@ -83,6 +89,14 @@ def is_bot_comment(
     return bool(body_text and _body_matches_bot_pattern(body_text))
 
 
+def has_agent_mention(comment_data: dict[str, Any] | None) -> bool:
+    if not comment_data:
+        return False
+    body = comment_data.get("body", "")
+    body_text = _get_body_text(body)
+    return bool(_MENTION_PATTERN.search(body_text))
+
+
 def should_process_event(
     webhook_event: str,
     issue_data: dict[str, Any],
@@ -94,6 +108,9 @@ def should_process_event(
 
     if comment_data and is_bot_comment(webhook_event, comment_data, ai_agent_name):
         return False
+
+    if comment_data and has_agent_mention(comment_data):
+        return True
 
     fields = issue_data.get("fields", {})
     labels = fields.get("labels", [])

@@ -1,6 +1,7 @@
 from webhooks.jira.events import (
     AI_AGENT_LABEL,
     extract_task_info,
+    has_agent_mention,
     is_bot_comment,
     should_process_event,
 )
@@ -285,6 +286,140 @@ class TestBotCommentDetection:
             )
             is False
         )
+
+
+class TestAgentMentionTrigger:
+    def test_comment_with_agent_mention_triggers_without_label(self):
+        payload = jira_comment_created_payload(
+            issue_key="PROJ-1",
+            body="@agent fix this login bug",
+            author="developer",
+        )
+        payload["issue"]["fields"]["labels"] = []
+        assert (
+            should_process_event(
+                "comment_created",
+                payload["issue"],
+                comment_data=payload["comment"],
+            )
+            is True
+        )
+
+    def test_comment_with_claude_mention_triggers(self):
+        payload = jira_comment_created_payload(
+            issue_key="PROJ-1",
+            body="@claude analyze this issue",
+            author="developer",
+        )
+        payload["issue"]["fields"]["labels"] = []
+        assert (
+            should_process_event(
+                "comment_created",
+                payload["issue"],
+                comment_data=payload["comment"],
+            )
+            is True
+        )
+
+    def test_comment_with_bot_mention_triggers(self):
+        payload = jira_comment_created_payload(
+            issue_key="PROJ-1",
+            body="@bot improve this",
+            author="developer",
+        )
+        payload["issue"]["fields"]["labels"] = []
+        assert (
+            should_process_event(
+                "comment_created",
+                payload["issue"],
+                comment_data=payload["comment"],
+            )
+            is True
+        )
+
+    def test_comment_without_mention_and_without_label_skipped(self):
+        payload = jira_comment_created_payload(
+            issue_key="PROJ-1",
+            body="Just a regular comment",
+            author="developer",
+        )
+        payload["issue"]["fields"]["labels"] = []
+        assert (
+            should_process_event(
+                "comment_created",
+                payload["issue"],
+                comment_data=payload["comment"],
+            )
+            is False
+        )
+
+    def test_bot_comment_with_mention_still_skipped(self):
+        payload = jira_comment_created_payload(
+            issue_key="PROJ-1",
+            body="@agent some text",
+            author="ai-agent",
+        )
+        payload["issue"]["fields"]["labels"] = []
+        assert (
+            should_process_event(
+                "comment_created",
+                payload["issue"],
+                comment_data=payload["comment"],
+            )
+            is False
+        )
+
+    def test_mention_case_insensitive(self):
+        payload = jira_comment_created_payload(
+            issue_key="PROJ-1",
+            body="@Agent please fix this",
+            author="developer",
+        )
+        payload["issue"]["fields"]["labels"] = []
+        assert (
+            should_process_event(
+                "comment_created",
+                payload["issue"],
+                comment_data=payload["comment"],
+            )
+            is True
+        )
+
+    def test_mention_in_adf_body(self):
+        adf_body = {
+            "type": "doc",
+            "content": [
+                {
+                    "type": "paragraph",
+                    "content": [
+                        {"type": "text", "text": "@agent improve this ticket"},
+                    ],
+                }
+            ],
+        }
+        payload = jira_comment_created_payload(
+            issue_key="PROJ-1",
+            body=adf_body,
+            author="developer",
+        )
+        payload["issue"]["fields"]["labels"] = []
+        assert (
+            should_process_event(
+                "comment_created",
+                payload["issue"],
+                comment_data=payload["comment"],
+            )
+            is True
+        )
+
+    def test_has_agent_mention_returns_false_for_none(self):
+        assert has_agent_mention(None) is False
+
+    def test_has_agent_mention_returns_false_for_no_mention(self):
+        assert has_agent_mention({"body": "regular comment"}) is False
+
+    def test_has_agent_mention_returns_true_for_mention(self):
+        assert has_agent_mention({"body": "@agent do something"}) is True
 
 
 class TestAIAgentLabelRequirement:

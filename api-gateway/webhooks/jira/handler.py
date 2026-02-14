@@ -85,7 +85,9 @@ async def handle_jira_webhook(request: Request):
             content={"status": "skipped", "reason": "Event not processed"},
         )
 
-    dedup_key = f"jira:dedup:{issue_key}"
+    comment_id = comment.get("id") if comment else None
+    dedup_suffix = f":{comment_id}" if comment_id else f":{webhook_event}"
+    dedup_key = f"jira:dedup:{issue_key}{dedup_suffix}"
     try:
         redis_client = redis.from_url(settings.redis_url)
         already_processing = await redis_client.set(dedup_key, "1", nx=True, ex=DEDUP_TTL_SECONDS)
