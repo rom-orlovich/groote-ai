@@ -1,11 +1,13 @@
-# LlamaIndex Service - Development Guide
+# LlamaIndex Service
 
-## Service Overview
+Hybrid RAG orchestration service combining vector search (ChromaDB) with graph traversal (GKG).
 
-Hybrid RAG orchestration service that combines:
-- **Vector Search**: Semantic similarity via ChromaDB
-- **Graph Traversal**: Code relationships via GKG
-- **Query Routing**: Intent-based routing to appropriate indexes
+## Development
+
+- Port: 8002
+- Language: Python
+- Max 300 lines per file, no comments, strict types, async/await for I/O
+- Tests: `pytest tests/ -v`
 
 ## Architecture Principles
 
