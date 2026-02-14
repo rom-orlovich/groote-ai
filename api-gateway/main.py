@@ -5,18 +5,26 @@ import uvicorn
 from config import get_settings
 from fastapi import FastAPI
 from routes import webhooks_router
+from services.event_publisher import EventPublisher, create_event_publisher
 from webhooks.github.validator import GitHubAuthMiddleware
 from webhooks.jira.validator import JiraAuthMiddleware
 from webhooks.slack.validator import SlackAuthMiddleware
 
 logger = structlog.get_logger(__name__)
 
+event_publisher: EventPublisher | None = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global event_publisher
     settings = get_settings()
+    event_publisher = create_event_publisher(settings.redis_url)
+    app.state.event_publisher = event_publisher
     logger.info("api_gateway_starting", port=settings.port)
     yield
+    if event_publisher:
+        await event_publisher.close()
     logger.info("api_gateway_shutting_down")
 
 

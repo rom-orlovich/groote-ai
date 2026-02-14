@@ -72,6 +72,17 @@ class GitHubClient:
         response.raise_for_status()
         return response.json()
 
+    async def add_reaction(
+        self, owner: str, repo: str, comment_id: int, reaction: str
+    ) -> dict[str, Any]:
+        client = await self._get_client()
+        response = await client.post(
+            f"/repos/{owner}/{repo}/issues/comments/{comment_id}/reactions",
+            json={"content": reaction},
+        )
+        response.raise_for_status()
+        return response.json()
+
     async def get_pull_request(self, owner: str, repo: str, pr_number: int) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.get(f"/repos/{owner}/{repo}/pulls/{pr_number}")
@@ -129,11 +140,90 @@ class GitHubClient:
         response.raise_for_status()
         return response.json()
 
+    async def create_pull_request(
+        self,
+        owner: str,
+        repo: str,
+        title: str,
+        head: str,
+        base: str,
+        body: str | None = None,
+        draft: bool = False,
+    ) -> dict[str, Any]:
+        client = await self._get_client()
+        payload: dict[str, Any] = {"title": title, "head": head, "base": base, "draft": draft}
+        if body:
+            payload["body"] = body
+        response = await client.post(f"/repos/{owner}/{repo}/pulls", json=payload)
+        response.raise_for_status()
+        return response.json()
+
     async def list_installation_repos(self, per_page: int = 100, page: int = 1) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.get(
             "/installation/repositories",
             params={"per_page": per_page, "page": page},
         )
+        response.raise_for_status()
+        return response.json()
+
+    async def list_user_repos(
+        self, username: str, per_page: int = 100, page: int = 1
+    ) -> list[dict[str, Any]]:
+        client = await self._get_client()
+        response = await client.get(
+            f"/users/{username}/repos",
+            params={"per_page": per_page, "page": page},
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def search_repositories(
+        self, query: str, per_page: int = 30, page: int = 1
+    ) -> dict[str, Any]:
+        client = await self._get_client()
+        response = await client.get(
+            "/search/repositories",
+            params={"q": query, "per_page": per_page, "page": page},
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def get_branch_sha(self, owner: str, repo: str, branch: str) -> dict[str, Any]:
+        client = await self._get_client()
+        response = await client.get(f"/repos/{owner}/{repo}/git/ref/heads/{branch}")
+        response.raise_for_status()
+        return response.json()
+
+    async def create_branch(self, owner: str, repo: str, ref: str, sha: str) -> dict[str, Any]:
+        client = await self._get_client()
+        response = await client.post(
+            f"/repos/{owner}/{repo}/git/refs",
+            json={"ref": f"refs/heads/{ref}", "sha": sha},
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def create_or_update_file(
+        self,
+        owner: str,
+        repo: str,
+        path: str,
+        content: str,
+        message: str,
+        branch: str,
+        sha: str | None = None,
+    ) -> dict[str, Any]:
+        import base64
+
+        client = await self._get_client()
+        payload: dict[str, Any] = {
+            "message": message,
+            "content": base64.b64encode(content.encode()).decode(),
+            "branch": branch,
+        }
+        if sha:
+            payload["sha"] = sha
+        response = await client.put(f"/repos/{owner}/{repo}/contents/{path}", json=payload)
         response.raise_for_status()
         return response.json()

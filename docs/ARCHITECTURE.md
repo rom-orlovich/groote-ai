@@ -1071,7 +1071,7 @@ KNOWLEDGE_SERVICES_ENABLED=true docker-compose up -d
 | --------- | ----------------------- | -------------------- |
 | GitHub    | Issue opened/commented  | github-issue-handler |
 | GitHub    | PR opened/reviewed      | github-pr-review     |
-| Jira      | Issue with AI-Fix label | jira-code-plan       |
+| Jira      | Issue with `ai-agent` label | jira-code-plan       |
 | Slack     | @agent mention          | slack-inquiry        |
 | Dashboard | Discovery request       | planning             |
 | Dashboard | Implementation          | executor             |
@@ -1098,6 +1098,7 @@ KNOWLEDGE_SERVICES_ENABLED=true docker-compose up -d
 ## Related Documentation
 
 - [TUNNEL_SETUP.md](./TUNNEL_SETUP.md) - Configure public URLs for webhooks & OAuth
+- [KNOWLEDGE-LAYER.md](./KNOWLEDGE-LAYER.md) - Knowledge layer architecture and data flow
 - [SETUP-KNOWLEDGE.md](./SETUP-KNOWLEDGE.md) - Knowledge layer setup guide
 - [CLAUDE.md](../.claude/CLAUDE.md) - Development rules and conventions
 - [README.md](../README.md) - Project overview and quick start

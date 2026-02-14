@@ -13,6 +13,7 @@ DEFAULT_SCOPES = [
     "users:read",
     "reactions:write",
     "team:read",
+    "incoming-webhook",
 ]
 
 
@@ -22,6 +23,7 @@ class SlackOAuthProvider(OAuthProvider):
         self.client_secret = settings.slack_client_secret
         self.redirect_uri = f"{settings.base_url}/oauth/callback/slack"
         self.scopes = DEFAULT_SCOPES
+        self._incoming_webhook: dict[str, str] = {}
 
         missing = [
             name
@@ -57,6 +59,8 @@ class SlackOAuthProvider(OAuthProvider):
 
         if not data.get("ok"):
             raise ValueError(f"Slack OAuth error: {data.get('error')}")
+
+        self._incoming_webhook = data.get("incoming_webhook", {})
 
         return OAuthTokens(
             access_token=data["access_token"],
@@ -99,16 +103,20 @@ class SlackOAuthProvider(OAuthProvider):
             raise ValueError(f"Slack team.info error: {data.get('error')}")
 
         team = data["team"]
+        metadata: dict[str, str | None] = {
+            "domain": team.get("domain"),
+            "icon": team.get("icon", {}).get("image_132"),
+        }
+        if self._incoming_webhook:
+            metadata["notification_channel_id"] = self._incoming_webhook.get("channel_id")
+            metadata["notification_channel_name"] = self._incoming_webhook.get("channel")
         return InstallationInfo(
             external_org_id=team["id"],
             external_org_name=team["name"],
             external_install_id=None,
             installed_by=None,
             permissions=dict.fromkeys(tokens.scopes or [], "granted"),
-            metadata={
-                "domain": team.get("domain"),
-                "icon": team.get("icon", {}).get("image_132"),
-            },
+            metadata=metadata,
         )
 
     async def revoke_tokens(self, tokens: OAuthTokens) -> bool:

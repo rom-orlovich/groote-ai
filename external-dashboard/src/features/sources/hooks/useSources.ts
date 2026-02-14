@@ -87,7 +87,8 @@ async function createSource(orgId: string, request: CreateSourceRequest): Promis
     body: JSON.stringify(request),
   });
   if (!response.ok) {
-    throw new Error("Failed to create data source");
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? "Failed to create data source");
   }
   return response.json();
 }
@@ -129,6 +130,16 @@ async function triggerSync(
   });
   if (!response.ok) {
     throw new Error("Failed to trigger sync");
+  }
+  return response.json();
+}
+
+async function cancelJob(orgId: string, jobId: string): Promise<IndexingJob> {
+  const response = await fetch(`${API_BASE}/api/sources/${orgId}/jobs/${jobId}/cancel`, {
+    method: "POST",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to cancel job");
   }
   return response.json();
 }
@@ -186,6 +197,13 @@ export function useSources(orgId: string = DEFAULT_ORG_ID) {
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: (jobId: string) => cancelJob(orgId, jobId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["indexing-jobs", orgId] });
+    },
+  });
+
   return {
     sources: sourcesQuery.data ?? [],
     jobs: jobsQuery.data ?? [],
@@ -197,12 +215,16 @@ export function useSources(orgId: string = DEFAULT_ORG_ID) {
     refetchJobs: jobsQuery.refetch,
     create: createMutation.mutate,
     isCreating: createMutation.isPending,
+    createError: createMutation.error,
+    resetCreateError: createMutation.reset,
     update: updateMutation.mutate,
     isUpdating: updateMutation.isPending,
     remove: deleteMutation.mutate,
     isDeleting: deleteMutation.isPending,
     sync: syncMutation.mutate,
     isSyncing: syncMutation.isPending,
+    cancelJob: cancelMutation.mutate,
+    isCancelling: cancelMutation.isPending,
   };
 }
 

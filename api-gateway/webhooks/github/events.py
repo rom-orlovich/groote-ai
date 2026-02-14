@@ -1,27 +1,63 @@
 from typing import Any
 
-import structlog
-
-logger = structlog.get_logger(__name__)
-
 SUPPORTED_EVENTS = {
     "issues": ["opened", "edited", "labeled"],
     "issue_comment": ["created"],
-    "pull_request": ["opened", "synchronize", "reopened"],
+    "pull_request": ["review_requested"],
     "pull_request_review_comment": ["created"],
     "push": None,
 }
 
 
-def should_process_event(event_type: str, action: str | None) -> bool:
+def is_bot_sender(payload: dict[str, Any]) -> bool:
+    sender = payload.get("sender", {})
+    if sender.get("type") == "Bot":
+        return True
+
+    comment = payload.get("comment", {})
+    if comment.get("performed_via_github_app"):
+        return True
+
+    comment_user = comment.get("user", {})
+    return comment_user.get("type") == "Bot"
+
+
+def _has_bot_mention(payload: dict[str, Any], bot_mentions: list[str] | None = None) -> bool:
+    comment_body = payload.get("comment", {}).get("body", "").lower()
+    if bot_mentions is None:
+        from config import get_settings
+
+        bot_mentions = get_settings().bot_mention_list
+    return any(mention in comment_body for mention in bot_mentions)
+
+
+def _is_pr_comment(payload: dict[str, Any]) -> bool:
+    issue = payload.get("issue", {})
+    return bool(issue.get("pull_request"))
+
+
+def should_process_event(
+    event_type: str,
+    action: str | None,
+    payload: dict[str, Any] | None = None,
+    bot_mentions: list[str] | None = None,
+) -> bool:
     if event_type not in SUPPORTED_EVENTS:
         return False
 
     allowed_actions = SUPPORTED_EVENTS[event_type]
-    if allowed_actions is None:
-        return True
+    if allowed_actions is not None and action not in allowed_actions:
+        return False
 
-    return action in allowed_actions
+    if payload and event_type in ("issue_comment", "pull_request_review_comment"):
+        if is_bot_sender(payload):
+            return False
+
+    if payload and event_type == "issue_comment" and _is_pr_comment(payload):
+        if not _has_bot_mention(payload, bot_mentions):
+            return False
+
+    return True
 
 
 def extract_task_info(event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -83,7 +119,9 @@ def extract_task_info(event_type: str, payload: dict[str, Any]) -> dict[str, Any
                 "path": path,
                 "line": line,
             }
-            task_info["prompt"] = f"{pr_title}\n\n{pr_body}\n\nReview comment on {path}:{line}: {comment_body}"
+            task_info["prompt"] = (
+                f"{pr_title}\n\n{pr_body}\n\nReview comment on {path}:{line}: {comment_body}"
+            )
         else:
             task_info["prompt"] = f"{pr_title}\n\n{pr_body}"
 
@@ -95,10 +133,7 @@ def extract_task_info(event_type: str, payload: dict[str, Any]) -> dict[str, Any
             "ref": ref,
             "before": payload.get("before"),
             "after": payload.get("after"),
-            "commits": [
-                {"message": c.get("message"), "sha": c.get("id")}
-                for c in commits
-            ],
+            "commits": [{"message": c.get("message"), "sha": c.get("id")} for c in commits],
         }
         task_info["prompt"] = f"Push to {ref}: {', '.join(commit_messages)}"
 

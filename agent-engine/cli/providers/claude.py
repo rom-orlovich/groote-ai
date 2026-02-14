@@ -5,8 +5,12 @@ from pathlib import Path
 
 import structlog
 
-from cli.base import CLIResult
-from cli.sanitization import contains_sensitive_data, sanitize_sensitive_content
+from cli.base import CLIResult, EventCallback
+from cli.event_collector import (
+    determine_error_message,
+    handle_assistant_message,
+    handle_user_message,
+)
 
 logger = structlog.get_logger()
 
@@ -23,39 +27,57 @@ class ClaudeCLIRunner:
         allowed_tools: str | None = None,
         agents: str | None = None,
         debug_mode: str | None = None,
+        event_callback: EventCallback | None = None,
     ) -> CLIResult:
         cmd = self._build_command(prompt, model, allowed_tools, agents, debug_mode)
 
-        logger.info("starting_claude_cli", task_id=task_id, working_dir=str(working_dir))
+        logger.info(
+            "starting_claude_cli",
+            task_id=task_id,
+            working_dir=str(working_dir),
+            agent=agents,
+            cmd_args=" ".join(cmd[:8]),
+            prompt_len=len(prompt),
+            total_args=len(cmd),
+            has_mcp_config="--mcp-config" in cmd,
+        )
+
+        run_env = {
+            **os.environ,
+            "CLAUDE_TASK_ID": task_id,
+            "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1",
+        }
 
         process = await asyncio.create_subprocess_exec(
             *cmd,
             cwd=str(working_dir),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            env={
-                **os.environ,
-                "CLAUDE_TASK_ID": task_id,
-                "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1",
-            },
+            limit=1024 * 1024,
+            env=run_env,
         )
 
         await output_queue.put(f"[CLI] Claude process started (PID: {process.pid})\n")
 
         accumulated_output: list[str] = []
         clean_output: list[str] = []
+        result_text: str = ""
         cost_usd = 0.0
         input_tokens = 0
         output_tokens = 0
         cli_error_message: str | None = None
         has_streaming_output = False
         stderr_lines: list[str] = []
+        tool_events: list[dict] = []
+        thinking_blocks: list[dict] = []
+        last_tool_name: list[str] = [""]
+        stdout_line_count = 0
 
         try:
 
             async def read_stdout() -> None:
                 nonlocal cost_usd, input_tokens, output_tokens, cli_error_message
-                nonlocal has_streaming_output
+                nonlocal has_streaming_output, result_text, stdout_line_count
 
                 if not process.stdout:
                     return
@@ -65,6 +87,15 @@ class ClaudeCLIRunner:
                     if not line_str:
                         continue
 
+                    stdout_line_count += 1
+                    if stdout_line_count <= 3:
+                        logger.debug(
+                            "cli_stdout_line",
+                            task_id=task_id,
+                            line_num=stdout_line_count,
+                            preview=line_str[:200],
+                        )
+
                     try:
                         data = json.loads(line_str)
                         await self._handle_json_event(
@@ -72,8 +103,11 @@ class ClaudeCLIRunner:
                             accumulated_output,
                             clean_output,
                             output_queue,
-                            task_id,
                             has_streaming_output,
+                            tool_events,
+                            thinking_blocks,
+                            last_tool_name,
+                            event_callback,
                         )
 
                         msg_type = data.get("type")
@@ -89,6 +123,8 @@ class ClaudeCLIRunner:
                             output_tokens = usage.get("output_tokens", 0)
                             if data.get("is_error"):
                                 cli_error_message = data.get("result", "")
+                            else:
+                                result_text = data.get("result", "")
 
                     except json.JSONDecodeError:
                         accumulated_output.append(line_str + "\n")
@@ -112,25 +148,47 @@ class ClaudeCLIRunner:
             await process.wait()
             await output_queue.put(None)
 
-            error_msg = self._determine_error_message(
+            logger.info(
+                "cli_stdout_summary",
+                task_id=task_id,
+                stdout_lines=stdout_line_count,
+                accumulated_len=len("".join(accumulated_output)),
+                clean_len=len("".join(clean_output)),
+                result_text_len=len(result_text),
+                stderr_count=len(stderr_lines),
+            )
+
+            error_msg = determine_error_message(
                 process.returncode or 0, stderr_lines, cli_error_message
             )
+
+            if stderr_lines:
+                logger.warning(
+                    "claude_cli_stderr",
+                    task_id=task_id,
+                    stderr="\n".join(stderr_lines[:10]),
+                )
 
             logger.info(
                 "claude_cli_completed",
                 task_id=task_id,
                 success=process.returncode == 0,
                 cost_usd=cost_usd,
+                return_code=process.returncode,
             )
+
+            final_clean = result_text if result_text else "".join(clean_output)
 
             return CLIResult(
                 success=process.returncode == 0,
                 output="".join(accumulated_output),
-                clean_output="".join(clean_output) if clean_output else "",
+                clean_output=final_clean,
                 cost_usd=cost_usd,
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
                 error=error_msg,
+                tool_events=tool_events or None,
+                thinking_blocks=thinking_blocks or None,
             )
 
         except TimeoutError:
@@ -144,11 +202,13 @@ class ClaudeCLIRunner:
             return CLIResult(
                 success=False,
                 output="".join(accumulated_output),
-                clean_output="".join(clean_output) if clean_output else "",
+                clean_output=result_text if result_text else "".join(clean_output),
                 cost_usd=cost_usd,
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
                 error=f"Timeout after {timeout_seconds} seconds",
+                tool_events=tool_events or None,
+                thinking_blocks=thinking_blocks or None,
             )
 
         except Exception as e:
@@ -162,11 +222,13 @@ class ClaudeCLIRunner:
             return CLIResult(
                 success=False,
                 output="".join(accumulated_output),
-                clean_output="".join(clean_output) if clean_output else "",
+                clean_output=result_text if result_text else "".join(clean_output),
                 cost_usd=cost_usd,
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
                 error=f"Unexpected error: {e!s}",
+                tool_events=tool_events or None,
+                thinking_blocks=thinking_blocks or None,
             )
 
     def _build_command(
@@ -187,20 +249,25 @@ class ClaudeCLIRunner:
             "--include-partial-messages",
         ]
 
+        if agents:
+            agent_path = Path(f"/app/.claude/agents/{agents}.md")
+            cmd.extend(["--agent", str(agent_path) if agent_path.exists() else agents])
+
         if debug_mode is not None:
             if debug_mode:
                 cmd.extend(["--debug", debug_mode])
             else:
                 cmd.append("--debug")
 
-        if model:
+        if model and not agents:
             cmd.extend(["--model", model])
 
         if allowed_tools:
             cmd.extend(["--allowedTools", allowed_tools])
 
-        if agents:
-            cmd.extend(["--agents", agents])
+        mcp_config = Path("/app/.claude/mcp.json")
+        if mcp_config.exists():
+            cmd.extend(["--mcp-config", str(mcp_config)])
 
         cmd.extend(["--", prompt])
 
@@ -212,8 +279,11 @@ class ClaudeCLIRunner:
         accumulated_output: list[str],
         clean_output: list[str],
         output_queue: asyncio.Queue[str | None],
-        task_id: str,
         has_streaming_output: bool,
+        tool_events: list[dict],
+        thinking_blocks: list[dict],
+        last_tool_name: list[str],
+        event_callback: EventCallback | None = None,
     ) -> None:
         msg_type = data.get("type")
 
@@ -224,17 +294,27 @@ class ClaudeCLIRunner:
                 await output_queue.put(init_content)
 
         elif msg_type == "assistant":
-            await self._handle_assistant_message(
+            await handle_assistant_message(
                 data,
                 accumulated_output,
                 clean_output,
                 output_queue,
-                task_id,
                 has_streaming_output,
+                tool_events,
+                thinking_blocks,
+                last_tool_name,
+                event_callback,
             )
 
         elif msg_type == "user":
-            await self._handle_user_message(data, accumulated_output, output_queue, task_id)
+            await handle_user_message(
+                data,
+                accumulated_output,
+                output_queue,
+                tool_events,
+                last_tool_name,
+                event_callback,
+            )
 
         elif msg_type == "stream_event":
             event = data.get("event", {})
@@ -245,88 +325,7 @@ class ClaudeCLIRunner:
                     if text:
                         accumulated_output.append(text)
                         clean_output.append(text)
-                        await output_queue.put(text)
 
         elif msg_type == "result":
-            result_text = data.get("result", "")
-            if result_text and not data.get("is_error"):
-                accumulated_output.append(result_text)
-                await output_queue.put(result_text)
-
-    async def _handle_assistant_message(
-        self,
-        data: dict,
-        accumulated_output: list[str],
-        clean_output: list[str],
-        output_queue: asyncio.Queue[str | None],
-        task_id: str,
-        has_streaming_output: bool,
-    ) -> None:
-        message = data.get("message", {})
-        content_blocks = message.get("content", [])
-
-        for block in content_blocks:
-            if not isinstance(block, dict):
-                continue
-
-            block_type = block.get("type")
-            if block_type == "text":
-                text_content = block.get("text", "")
-                if text_content and not has_streaming_output:
-                    clean_output.append(text_content)
-
-            elif block_type == "tool_use":
-                tool_name = block.get("name", "unknown")
-                tool_input = block.get("input", {})
-                tool_log = f"\n[TOOL] Using {tool_name}\n"
-                if isinstance(tool_input, dict):
-                    if "command" in tool_input:
-                        tool_log += f"  Command: {tool_input['command']}\n"
-                    elif "description" in tool_input:
-                        tool_log += f"  {tool_input['description']}\n"
-                accumulated_output.append(tool_log)
-                await output_queue.put(tool_log)
-
-    async def _handle_user_message(
-        self,
-        data: dict,
-        accumulated_output: list[str],
-        output_queue: asyncio.Queue[str | None],
-        task_id: str,
-    ) -> None:
-        message = data.get("message", {})
-        content = message.get("content", []) if isinstance(message, dict) else []
-
-        for block in content if isinstance(content, list) else []:
-            if isinstance(block, dict) and block.get("type") == "tool_result":
-                tool_content = block.get("content", "")
-                is_error = block.get("is_error", False)
-                if tool_content:
-                    if contains_sensitive_data(tool_content):
-                        tool_content = sanitize_sensitive_content(tool_content)
-                    prefix = "[TOOL ERROR] " if is_error else "[TOOL RESULT]\n"
-                    result_log = f"{prefix}{tool_content}\n"
-                    accumulated_output.append(result_log)
-                    await output_queue.put(result_log)
-
-    def _determine_error_message(
-        self,
-        returncode: int,
-        stderr_lines: list[str],
-        cli_error_message: str | None,
-    ) -> str | None:
-        if returncode == 0:
-            return None
-
-        if cli_error_message:
-            return cli_error_message
-
-        if stderr_lines:
-            cleaned_lines = [
-                line for line in stderr_lines if not line.startswith("[LOG]") and line.strip()
-            ]
-            if cleaned_lines:
-                return "\n".join(cleaned_lines) + f"\n\n(Exit code: {returncode})"
-            return "\n".join(stderr_lines) + f"\n\n(Exit code: {returncode})"
-
-        return f"Exit code: {returncode}"
+            if (rt := data.get("result", "")) and not data.get("is_error"):
+                accumulated_output.append(rt)

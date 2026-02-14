@@ -6,19 +6,16 @@ class Settings(BaseSettings):
     model_config = ConfigDict(strict=True, env_file=".env")
 
     chromadb_url: str = "http://chromadb:8000"
-    gkg_url: str = "http://gkg-service:8003"
+    gkg_url: str = "http://gkg-service:27496"
     redis_url: str = "redis://redis:6379/0"
     postgres_url: str = "postgresql+asyncpg://agent:agent@postgres:5432/agent_system"
     oauth_service_url: str = "http://oauth-service:8010"
 
-    use_oauth: bool = True
+    jira_api_url: str = "http://jira-api:3002"
+    github_api_url: str = "http://github-api:3001"
+    internal_service_key: str = ""
+
     github_token: str = ""
-    jira_url: str = ""
-    jira_email: str = ""
-    jira_api_token: str = ""
-    confluence_url: str = ""
-    confluence_email: str = ""
-    confluence_api_token: str = ""
 
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     repos_dir: str = "/data/repos"

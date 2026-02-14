@@ -50,6 +50,28 @@ Automatic refresh of expired tokens for seamless operation.
 - Refresh token rotation support
 - Failed refresh handling
 
+### Automatic Webhook Registration
+
+Webhooks are registered automatically during the OAuth callback for supported platforms.
+
+**GitHub:**
+- Configures the GitHub App webhook URL via `PATCH /app/hook/config`
+- Sets `PUBLIC_URL/webhooks/github` as the webhook endpoint
+
+**Jira:**
+- Registers dynamic webhooks via `POST /rest/api/3/webhook`
+- JQL filter: `project != NULL` (note: `is not EMPTY` is invalid in Jira Cloud)
+- Events: `jira:issue_created`, `jira:issue_updated`, `jira:issue_deleted`, `comment_created`, `comment_updated`
+- Webhook IDs stored in `installations.webhook_external_id`
+- Requires `manage:jira-webhook` OAuth scope
+- Dynamic webhooks expire after 30 days and need re-registration
+
+**Registration Status Tracking:**
+- `webhook_registered`: boolean success flag
+- `webhook_url`: the registered URL
+- `webhook_external_id`: comma-separated webhook IDs from the platform
+- `webhook_error`: error message if registration failed
+
 ### Installation Management
 
 Track and manage OAuth installations per organization.

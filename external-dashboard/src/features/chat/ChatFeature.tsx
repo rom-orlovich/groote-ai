@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import { Bot, Check, Clock, MessageSquare, Plus, Trash2, User, X } from "lucide-react";
+import { Bot, Check, Clock, FileText, MessageSquare, Plus, Trash2, User, X } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useCLIStatus } from "../../hooks/useCLIStatus";
@@ -64,6 +64,19 @@ export function ChatFeature() {
   };
 
   const isDisabled = cliActive === false;
+
+  const findNearestTaskId = (currentIndex: number): string | null => {
+    if (!messages) return null;
+    for (let offset = 0; offset < messages.length; offset++) {
+      if (currentIndex - offset >= 0 && messages[currentIndex - offset].task_id) {
+        return messages[currentIndex - offset].task_id as string;
+      }
+      if (currentIndex + offset < messages.length && messages[currentIndex + offset].task_id) {
+        return messages[currentIndex + offset].task_id as string;
+      }
+    }
+    return null;
+  };
 
   const renderMessageContent = (content: string) => {
     // Regex to match task- followed by alphanumeric characters
@@ -260,7 +273,7 @@ export function ChatFeature() {
               className="flex-1 overflow-y-auto p-4 space-y-6 scroll-smooth bg-background-app/20"
             >
               <div className="max-w-3xl mx-auto w-full">
-                {messages?.map((msg) => (
+                {messages?.map((msg, msgIndex) => (
                   <div
                     key={msg.id}
                     className={clsx(
@@ -293,16 +306,31 @@ export function ChatFeature() {
                       <div className="font-mono whitespace-pre-wrap selection:bg-primary/20 leading-relaxed">
                         {renderMessageContent(msg.content)}
                       </div>
-                      <div className="mt-2 md:mt-3 flex items-center justify-between gap-4 opacity-0 group-hover:opacity-40 transition-opacity">
-                        <span className="text-[8px] md:text-[9px] font-mono tracking-tighter uppercase font-bold text-app-muted">
+                      <div className="mt-2 md:mt-3 flex items-center justify-between gap-4">
+                        <span className="text-[8px] md:text-[9px] font-mono tracking-tighter uppercase font-bold text-app-muted/40">
                           {msg.role}
                         </span>
-                        <span className="text-[8px] md:text-[9px] font-mono text-app-muted">
-                          {new Date(msg.timestamp).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          {(() => {
+                            const taskIdForLog = msg.task_id || findNearestTaskId(msgIndex);
+                            return taskIdForLog ? (
+                              <button
+                                type="button"
+                                onClick={() => openTask(taskIdForLog as string)}
+                                className="flex items-center gap-1 text-[8px] md:text-[9px] font-heading font-bold text-primary/60 hover:text-primary transition-colors uppercase tracking-wider"
+                              >
+                                <FileText size={10} />
+                                VIEW_LOGS
+                              </button>
+                            ) : null;
+                          })()}
+                          <span className="text-[8px] md:text-[9px] font-mono text-app-muted opacity-40">
+                            {new Date(msg.timestamp).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>

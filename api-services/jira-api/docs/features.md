@@ -40,7 +40,7 @@ Execute JQL queries to find issues across projects.
 **Example Queries:**
 - `project = PROJ AND status = "In Progress"`
 - `assignee = currentUser() AND sprint in openSprints()`
-- `labels = "AI-Fix" AND created >= -7d`
+- `labels = "ai-agent" AND created >= -7d`
 
 ### Transition Management
 

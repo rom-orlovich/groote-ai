@@ -16,6 +16,9 @@ DEFAULT_SCOPES = [
     "write:jira-work",
     "read:jira-user",
     "manage:jira-webhook",
+    "read:confluence-content.all",
+    "read:confluence-space.summary",
+    "read:space:confluence",
     "offline_access",
 ]
 

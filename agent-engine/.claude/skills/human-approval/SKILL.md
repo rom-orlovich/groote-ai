@@ -41,7 +41,7 @@ On rejection → Brain re-delegates to planning
 
 ### 1. Create Draft PR
 
-Use MCP tool `github:create_pull_request` with `draft=true`:
+Use CLI `gh pr create --draft` (MCP `create_pull_request` is not available):
 
 See [github-operations/flow.md](../github-operations/flow.md) for complete workflow.
 
@@ -54,7 +54,7 @@ PR body must include:
 
 ### 2. Send Slack Notification
 
-Use MCP tool `slack:post_message` with approval blocks:
+Use MCP tool `slack:send_slack_message` with approval blocks:
 
 See [slack-operations/flow.md](../slack-operations/flow.md) for complete workflow.
 

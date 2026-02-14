@@ -260,42 +260,6 @@ async def list_data_sources(
     return responses
 
 
-@router.get("/{org_id}/{source_id}", response_model=DataSourceResponse)
-async def get_data_source(
-    org_id: str,
-    source_id: str,
-    db: AsyncSession = Depends(get_db_session),
-):
-    result = await db.execute(
-        select(DataSourceDB).where(
-            DataSourceDB.org_id == org_id,
-            DataSourceDB.source_id == source_id,
-        )
-    )
-    source = result.scalar_one_or_none()
-
-    if not source:
-        raise HTTPException(status_code=404, detail="Data source not found")
-
-    platform = SOURCE_TYPE_TO_PLATFORM.get(source.source_type)
-    oauth_connected = await check_oauth_connected(platform) if platform else False
-
-    return DataSourceResponse(
-        source_id=source.source_id,
-        org_id=source.org_id,
-        source_type=source.source_type,
-        name=source.name,
-        enabled=source.enabled,
-        config_json=source.config_json,
-        last_sync_at=source.last_sync_at,
-        last_sync_status=source.last_sync_status,
-        created_at=source.created_at,
-        updated_at=source.updated_at,
-        oauth_connected=oauth_connected,
-        oauth_platform=platform,
-    )
-
-
 @router.post("/{org_id}", response_model=DataSourceResponse)
 async def create_data_source(
     org_id: str,
@@ -313,6 +277,19 @@ async def create_data_source(
                 detail=f"Cannot enable source: OAuth not connected for {platform}. "
                 f"Please connect {platform} in the Integrations page first.",
             )
+
+    existing = await db.execute(
+        select(DataSourceDB).where(
+            DataSourceDB.org_id == org_id,
+            DataSourceDB.source_type == request.source_type,
+            DataSourceDB.name == request.name,
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(
+            status_code=409,
+            detail=f"A {request.source_type} source named '{request.name}' already exists.",
+        )
 
     org_result = await db.execute(select(OrganizationDB).where(OrganizationDB.org_id == org_id))
     org = org_result.scalar_one_or_none()
@@ -351,84 +328,6 @@ async def create_data_source(
     )
 
 
-@router.patch("/{org_id}/{source_id}", response_model=DataSourceResponse)
-async def update_data_source(
-    org_id: str,
-    source_id: str,
-    request: UpdateDataSourceRequest,
-    db: AsyncSession = Depends(get_db_session),
-):
-    result = await db.execute(
-        select(DataSourceDB).where(
-            DataSourceDB.org_id == org_id,
-            DataSourceDB.source_id == source_id,
-        )
-    )
-    source = result.scalar_one_or_none()
-
-    if not source:
-        raise HTTPException(status_code=404, detail="Data source not found")
-
-    platform = SOURCE_TYPE_TO_PLATFORM.get(source.source_type)
-    oauth_connected = await check_oauth_connected(platform) if platform else False
-
-    if request.enabled and not oauth_connected:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Cannot enable source: OAuth not connected for {platform}. "
-            f"Please connect {platform} in the Integrations page first.",
-        )
-
-    if request.name is not None:
-        source.name = request.name
-    if request.config is not None:
-        source.config_json = json.dumps(request.config)
-    if request.enabled is not None:
-        source.enabled = request.enabled
-
-    source.updated_at = datetime.now(UTC)
-    await db.commit()
-    await db.refresh(source)
-
-    return DataSourceResponse(
-        source_id=source.source_id,
-        org_id=source.org_id,
-        source_type=source.source_type,
-        name=source.name,
-        enabled=source.enabled,
-        config_json=source.config_json,
-        last_sync_at=source.last_sync_at,
-        last_sync_status=source.last_sync_status,
-        created_at=source.created_at,
-        updated_at=source.updated_at,
-        oauth_connected=oauth_connected,
-        oauth_platform=platform,
-    )
-
-
-@router.delete("/{org_id}/{source_id}")
-async def delete_data_source(
-    org_id: str,
-    source_id: str,
-    db: AsyncSession = Depends(get_db_session),
-):
-    result = await db.execute(
-        select(DataSourceDB).where(
-            DataSourceDB.org_id == org_id,
-            DataSourceDB.source_id == source_id,
-        )
-    )
-    source = result.scalar_one_or_none()
-
-    if not source:
-        raise HTTPException(status_code=404, detail="Data source not found")
-
-    await db.delete(source)
-    await db.commit()
-
-    return {"status": "deleted", "source_id": source_id}
-
-
 @router.post("/{org_id}/sync", response_model=IndexingJobResponse)
 async def trigger_sync(
     org_id: str,
@@ -442,7 +341,7 @@ async def trigger_sync(
         source_id=request.source_id,
         job_type=request.job_type,
         status="queued",
-        created_at=datetime.now(UTC),
+        created_at=datetime.now(UTC).replace(tzinfo=None),
     )
     db.add(job)
     await db.commit()
@@ -552,3 +451,164 @@ async def get_indexing_job(
         completed_at=job.completed_at,
         created_at=job.created_at,
     )
+
+
+@router.post("/{org_id}/jobs/{job_id}/cancel", response_model=IndexingJobResponse)
+async def cancel_indexing_job(
+    org_id: str,
+    job_id: str,
+    db: AsyncSession = Depends(get_db_session),
+):
+    result = await db.execute(
+        select(IndexingJobDB).where(
+            IndexingJobDB.org_id == org_id,
+            IndexingJobDB.job_id == job_id,
+        )
+    )
+    job = result.scalar_one_or_none()
+
+    if not job:
+        raise HTTPException(status_code=404, detail="Indexing job not found")
+
+    if job.status in ("completed", "failed", "cancelled"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot cancel job with status '{job.status}'",
+        )
+
+    job.status = "cancelled"
+    job.completed_at = datetime.now(UTC).replace(tzinfo=None)
+    await db.commit()
+    await db.refresh(job)
+
+    logger.info("indexing_job_cancelled", job_id=job_id, org_id=org_id)
+
+    return IndexingJobResponse(
+        job_id=job.job_id,
+        org_id=job.org_id,
+        source_id=job.source_id,
+        job_type=job.job_type,
+        status=job.status,
+        progress_percent=job.progress_percent,
+        items_total=job.items_total,
+        items_processed=job.items_processed,
+        items_failed=job.items_failed,
+        error_message=job.error_message,
+        started_at=job.started_at,
+        completed_at=job.completed_at,
+        created_at=job.created_at,
+    )
+
+
+@router.get("/{org_id}/{source_id}", response_model=DataSourceResponse)
+async def get_data_source(
+    org_id: str,
+    source_id: str,
+    db: AsyncSession = Depends(get_db_session),
+):
+    result = await db.execute(
+        select(DataSourceDB).where(
+            DataSourceDB.org_id == org_id,
+            DataSourceDB.source_id == source_id,
+        )
+    )
+    source = result.scalar_one_or_none()
+
+    if not source:
+        raise HTTPException(status_code=404, detail="Data source not found")
+
+    platform = SOURCE_TYPE_TO_PLATFORM.get(source.source_type)
+    oauth_connected = await check_oauth_connected(platform) if platform else False
+
+    return DataSourceResponse(
+        source_id=source.source_id,
+        org_id=source.org_id,
+        source_type=source.source_type,
+        name=source.name,
+        enabled=source.enabled,
+        config_json=source.config_json,
+        last_sync_at=source.last_sync_at,
+        last_sync_status=source.last_sync_status,
+        created_at=source.created_at,
+        updated_at=source.updated_at,
+        oauth_connected=oauth_connected,
+        oauth_platform=platform,
+    )
+
+
+@router.patch("/{org_id}/{source_id}", response_model=DataSourceResponse)
+async def update_data_source(
+    org_id: str,
+    source_id: str,
+    request: UpdateDataSourceRequest,
+    db: AsyncSession = Depends(get_db_session),
+):
+    result = await db.execute(
+        select(DataSourceDB).where(
+            DataSourceDB.org_id == org_id,
+            DataSourceDB.source_id == source_id,
+        )
+    )
+    source = result.scalar_one_or_none()
+
+    if not source:
+        raise HTTPException(status_code=404, detail="Data source not found")
+
+    platform = SOURCE_TYPE_TO_PLATFORM.get(source.source_type)
+    oauth_connected = await check_oauth_connected(platform) if platform else False
+
+    if request.enabled and not oauth_connected:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot enable source: OAuth not connected for {platform}. "
+            f"Please connect {platform} in the Integrations page first.",
+        )
+
+    if request.name is not None:
+        source.name = request.name
+    if request.config is not None:
+        source.config_json = json.dumps(request.config)
+    if request.enabled is not None:
+        source.enabled = request.enabled
+
+    source.updated_at = datetime.now(UTC).replace(tzinfo=None)
+    await db.commit()
+    await db.refresh(source)
+
+    return DataSourceResponse(
+        source_id=source.source_id,
+        org_id=source.org_id,
+        source_type=source.source_type,
+        name=source.name,
+        enabled=source.enabled,
+        config_json=source.config_json,
+        last_sync_at=source.last_sync_at,
+        last_sync_status=source.last_sync_status,
+        created_at=source.created_at,
+        updated_at=source.updated_at,
+        oauth_connected=oauth_connected,
+        oauth_platform=platform,
+    )
+
+
+@router.delete("/{org_id}/{source_id}")
+async def delete_data_source(
+    org_id: str,
+    source_id: str,
+    db: AsyncSession = Depends(get_db_session),
+):
+    result = await db.execute(
+        select(DataSourceDB).where(
+            DataSourceDB.org_id == org_id,
+            DataSourceDB.source_id == source_id,
+        )
+    )
+    source = result.scalar_one_or_none()
+
+    if not source:
+        raise HTTPException(status_code=404, detail="Data source not found")
+
+    await db.delete(source)
+    await db.commit()
+
+    return {"status": "deleted", "source_id": source_id}

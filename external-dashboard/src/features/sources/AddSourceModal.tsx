@@ -20,6 +20,7 @@ interface AddSourceModalProps {
   onClose: () => void;
   onSubmit: (request: CreateSourceRequest) => void;
   isSubmitting: boolean;
+  error: string | null;
 }
 
 type SourceType = "github" | "jira" | "confluence";
@@ -37,7 +38,13 @@ const STEP_TITLES: Record<ModalStep, string> = {
   configure: "CONFIGURE_SOURCE",
 };
 
-export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddSourceModalProps) {
+export function AddSourceModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  isSubmitting,
+  error,
+}: AddSourceModalProps) {
   const [step, setStep] = useState<ModalStep>("select");
   const [selectedType, setSelectedType] = useState<SourceType | null>(null);
   const [selectedTypeInfo, setSelectedTypeInfo] = useState<SourceTypeInfo | null>(null);
@@ -84,6 +91,14 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
       setJiraConfig({ ...jiraConfig, jql: `project IN (${selectedResourceIds.join(", ")})` });
     } else if (selectedType === "confluence") {
       setConfluenceConfig({ ...confluenceConfig, spaces: selectedResourceIds.join(", ") });
+    }
+    if (selectedResourceIds.length > 0) {
+      const repoName = selectedResourceIds[0].split("/").pop() ?? selectedResourceIds[0];
+      setName(
+        selectedResourceIds.length === 1
+          ? repoName
+          : `${repoName} +${selectedResourceIds.length - 1}`,
+      );
     }
     setStep("configure");
   };
@@ -203,6 +218,11 @@ export function AddSourceModal({ isOpen, onClose, onSubmit, isSubmitting }: AddS
                 onConfluenceConfigChange={setConfluenceConfig}
                 selectedTypeInfo={selectedTypeInfo}
               />
+              {error && (
+                <div className="p-2 border border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800">
+                  <p className="text-[10px] font-heading text-red-600 dark:text-red-400">{error}</p>
+                </div>
+              )}
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"

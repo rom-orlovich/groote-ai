@@ -42,6 +42,34 @@ class CreatePRReviewCommentRequest(BaseModel):
     line: int
 
 
+class CreatePullRequestRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+    title: str
+    head: str
+    base: str
+    body: str | None = None
+    draft: bool = False
+
+
+class AddReactionRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+    content: str
+
+
+class CreateBranchRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+    ref: str
+    sha: str
+
+
+class CreateOrUpdateFileRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+    content: str
+    message: str
+    branch: str
+    sha: str | None = None
+
+
 @router.get("/repos/{owner}/{repo}")
 async def get_repository(
     owner: str,
@@ -82,6 +110,17 @@ async def create_issue_comment(
     return await client.create_issue_comment(owner, repo, issue_number, request.body)
 
 
+@router.post("/repos/{owner}/{repo}/issues/comments/{comment_id}/reactions")
+async def add_reaction(
+    owner: str,
+    repo: str,
+    comment_id: int,
+    request: AddReactionRequest,
+    client: Annotated[GitHubClient, Depends(get_github_client)],
+):
+    return await client.add_reaction(owner, repo, comment_id, request.content)
+
+
 @router.get("/repos/{owner}/{repo}/pulls/{pr_number}")
 async def get_pull_request(
     owner: str,
@@ -108,6 +147,18 @@ async def create_pr_review_comment(
         request.commit_id,
         request.path,
         request.line,
+    )
+
+
+@router.post("/repos/{owner}/{repo}/pulls")
+async def create_pull_request(
+    owner: str,
+    repo: str,
+    request: CreatePullRequestRequest,
+    client: Annotated[GitHubClient, Depends(get_github_client)],
+):
+    return await client.create_pull_request(
+        owner, repo, request.title, request.head, request.base, request.body, request.draft
     )
 
 
@@ -150,3 +201,56 @@ async def list_installation_repos(
     client: Annotated[GitHubClient, Depends(get_github_client)] = None,
 ):
     return await client.list_installation_repos(per_page, page)
+
+
+@router.get("/users/{username}/repos")
+async def list_user_repos(
+    username: str,
+    per_page: Annotated[int, Query(ge=1, le=100)] = 100,
+    page: Annotated[int, Query(ge=1)] = 1,
+    client: Annotated[GitHubClient, Depends(get_github_client)] = None,
+):
+    return await client.list_user_repos(username, per_page, page)
+
+
+@router.get("/search/repositories")
+async def search_repositories(
+    q: Annotated[str, Query()],
+    per_page: Annotated[int, Query(ge=1, le=100)] = 30,
+    page: Annotated[int, Query(ge=1)] = 1,
+    client: Annotated[GitHubClient, Depends(get_github_client)] = None,
+):
+    return await client.search_repositories(q, per_page, page)
+
+
+@router.get("/repos/{owner}/{repo}/git/ref/heads/{branch}")
+async def get_branch_sha(
+    owner: str,
+    repo: str,
+    branch: str,
+    client: Annotated[GitHubClient, Depends(get_github_client)],
+):
+    return await client.get_branch_sha(owner, repo, branch)
+
+
+@router.post("/repos/{owner}/{repo}/git/refs")
+async def create_branch(
+    owner: str,
+    repo: str,
+    request: CreateBranchRequest,
+    client: Annotated[GitHubClient, Depends(get_github_client)],
+):
+    return await client.create_branch(owner, repo, request.ref, request.sha)
+
+
+@router.put("/repos/{owner}/{repo}/contents/{path:path}")
+async def create_or_update_file(
+    owner: str,
+    repo: str,
+    path: str,
+    request: CreateOrUpdateFileRequest,
+    client: Annotated[GitHubClient, Depends(get_github_client)],
+):
+    return await client.create_or_update_file(
+        owner, repo, path, request.content, request.message, request.branch, request.sha
+    )

@@ -9,6 +9,47 @@ export interface TaskLogResponse {
   timestamp?: string;
 }
 
+export interface AgentOutputEntry {
+  type: "thinking" | "tool_call" | "tool_result" | "output" | "raw_output";
+  content: string;
+  tool_name?: string;
+  tool_input?: string;
+  is_error?: boolean;
+  timestamp?: string;
+}
+
+export interface WebhookFlowEntry {
+  stage: string;
+  timestamp: string;
+  data?: Record<string, unknown>;
+}
+
+export interface KnowledgeInteraction {
+  type: string;
+  timestamp?: string;
+  tool_name?: string;
+  input?: string;
+  content?: string;
+  is_error?: boolean;
+}
+
+export interface FullTaskLogResponse {
+  metadata?: {
+    task_id: string;
+    status: string;
+    source?: string;
+    flow_id?: string;
+    created_at?: string;
+    [key: string]: unknown;
+  };
+  input?: Record<string, unknown>;
+  user_inputs?: Record<string, unknown>[];
+  webhook_flow?: WebhookFlowEntry[];
+  agent_output?: AgentOutputEntry[];
+  knowledge_interactions?: KnowledgeInteraction[];
+  final_result?: Record<string, unknown>;
+}
+
 interface TaskItem {
   task_id: string;
 }
@@ -30,9 +71,25 @@ export function useTaskLogs(taskId: string | null) {
   });
 }
 
+export function useFullTaskLogs(taskId: string | null) {
+  return useQuery<FullTaskLogResponse>({
+    queryKey: ["task-logs-full", taskId],
+    queryFn: async () => {
+      if (!taskId) return {};
+      const res = await fetch(`/api/tasks/${taskId}/logs/full`);
+      if (!res.ok) throw new Error("Failed to fetch full task logs");
+      return res.json();
+    },
+    enabled: !!taskId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.metadata?.status;
+      if (status === "completed" || status === "failed") return 10000;
+      return 2000;
+    },
+  });
+}
+
 export function useGlobalLogs() {
-  // For now, we'll just fetch logs for the most recent tasks
-  // In a real app, this would be a WebSocket stream
   return useQuery<TaskLogResponse[]>({
     queryKey: ["global-logs"],
     queryFn: async () => {

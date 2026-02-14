@@ -4,11 +4,11 @@ from logger import TaskLogger
 
 
 class TestLogDirectoryStructure:
-    def test_task_directory_created_atomically(self, tmp_path):
+    def test_task_directory_created(self, tmp_path):
         logger = TaskLogger("task-001", tmp_path)
 
         assert logger.log_dir.exists()
-        assert logger.log_dir == tmp_path / "task-001"
+        assert logger.log_dir.parent == tmp_path
 
     def test_each_task_has_separate_directory(self, tmp_path):
         logger1 = TaskLogger("task-001", tmp_path)
@@ -30,7 +30,7 @@ class TestJsonFileValidity:
 
         logger.write_metadata(metadata)
 
-        metadata_file = tmp_path / "task-001" / "metadata.json"
+        metadata_file = logger.log_dir / "metadata.json"
         assert metadata_file.exists()
 
         with open(metadata_file) as f:
@@ -43,7 +43,7 @@ class TestJsonFileValidity:
 
         logger.write_input(input_data)
 
-        input_file = tmp_path / "task-001" / "01-input.json"
+        input_file = logger.log_dir / "01-input.json"
         assert input_file.exists()
 
         with open(input_file) as f:
@@ -61,7 +61,7 @@ class TestJsonFileValidity:
 
         logger.write_final_result(result)
 
-        result_file = tmp_path / "task-001" / "06-final-result.json"
+        result_file = logger.log_dir / "06-final-result.json"
         assert result_file.exists()
 
         with open(result_file) as f:
@@ -70,8 +70,6 @@ class TestJsonFileValidity:
 
 
 class TestJsonlFileValidity:
-    """Tests for JSONL file validity."""
-
     def test_webhook_flow_jsonl_valid(self, tmp_path):
         logger = TaskLogger("task-001", tmp_path)
 
@@ -84,7 +82,7 @@ class TestJsonlFileValidity:
         for event in events:
             logger.append_webhook_event(event)
 
-        webhook_file = tmp_path / "task-001" / "03-webhook-flow.jsonl"
+        webhook_file = logger.log_dir / "03-webhook-flow.jsonl"
         assert webhook_file.exists()
 
         with open(webhook_file) as f:
@@ -113,7 +111,7 @@ class TestJsonlFileValidity:
         for output in outputs:
             logger.append_agent_output(output)
 
-        output_file = tmp_path / "task-001" / "04-agent-output.jsonl"
+        output_file = logger.log_dir / "04-agent-output.jsonl"
         assert output_file.exists()
 
         with open(output_file) as f:
@@ -135,7 +133,7 @@ class TestJsonlFileValidity:
 
         logger.append_user_input(user_input)
 
-        user_input_file = tmp_path / "task-001" / "02-user-inputs.jsonl"
+        user_input_file = logger.log_dir / "02-user-inputs.jsonl"
         assert user_input_file.exists()
 
         with open(user_input_file) as f:
@@ -158,7 +156,7 @@ class TestJsonlFileValidity:
 
         logger.append_knowledge_interaction(interaction)
 
-        knowledge_file = tmp_path / "task-001" / "05-knowledge-interactions.jsonl"
+        knowledge_file = logger.log_dir / "05-knowledge-interactions.jsonl"
         assert knowledge_file.exists()
 
         with open(knowledge_file) as f:
@@ -225,7 +223,7 @@ class TestCompleteLogStructure:
             }
         )
 
-        task_dir = tmp_path / task_id
+        task_dir = logger.log_dir
         assert (task_dir / "metadata.json").exists()
         assert (task_dir / "01-input.json").exists()
         assert (task_dir / "02-user-inputs.jsonl").exists()
@@ -247,7 +245,7 @@ class TestLogFileNaming:
         logger.append_knowledge_interaction({"tool_name": "test"})
         logger.write_final_result({"success": True})
 
-        task_dir = tmp_path / "task-001"
+        task_dir = logger.log_dir
         expected_files = [
             "metadata.json",
             "01-input.json",
@@ -271,8 +269,7 @@ class TestLogFileNaming:
         logger.append_knowledge_interaction({"tool_name": "search"})
         logger.write_final_result({"success": True})
 
-        task_dir = tmp_path / "task-001"
-        files = sorted([f.name for f in task_dir.iterdir()])
+        files = sorted([f.name for f in logger.log_dir.iterdir()])
 
         assert files == [
             "01-input.json",

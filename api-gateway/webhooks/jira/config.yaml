@@ -1,0 +1,44 @@
+name: jira
+description: Jira webhook for issues and comments
+endpoint: /webhooks/jira
+source: jira
+agent_trigger:
+  prefix: "@agent"
+  aliases: ["@claude", "@bot", "@ai-agent"]
+  assignee_trigger: "ai-agent"
+default_command: analyze
+security:
+  requires_signature: true
+  signature_header: "X-Hub-Signature"
+  secret_env_var: "JIRA_WEBHOOK_SECRET"
+commands:
+  - name: analyze
+    aliases: [analysis]
+    target_agent: planning
+    requires_approval: false
+    template_file: prompts/analyze.md
+  - name: plan
+    aliases: [plan-fix, create-plan]
+    target_agent: planning
+    requires_approval: false
+    template_file: prompts/plan.md
+  - name: fix
+    aliases: [implement, execute]
+    target_agent: executor
+    requires_approval: true
+    template_file: prompts/fix.md
+  - name: discover
+    aliases: [find-code, explore]
+    target_agent: jira-code-plan
+    requires_approval: false
+    template_file: prompts/discover.md
+  - name: improve
+    aliases: [enhance, refactor, optimize]
+    target_agent: executor
+    requires_approval: true
+    template_file: prompts/improve.md
+  - name: help
+    aliases: [commands, what-can-you-do]
+    target_agent: brain
+    requires_approval: false
+    template_file: prompts/help.md

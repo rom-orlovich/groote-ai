@@ -69,12 +69,18 @@ Returns HTTP response within 50ms to prevent webhook timeouts. Actual task proce
 
 ### Loop Prevention
 
-Prevents infinite loops from agent-posted comments triggering new tasks. Uses Redis set tracking and bot detection.
+Prevents infinite loops from agent-posted comments triggering new tasks.
 
-**Prevention Methods:**
+**GitHub Prevention:**
 - Comment ID tracking with TTL (1 hour)
 - Bot username detection
 - User type checking
+
+**Jira Prevention:**
+- Bot comment detection by author displayName matching `JIRA_AI_AGENT_NAME`
+- Atlassian `accountType: "app"` detection
+- Bot comment body marker matching (e.g. "Agent is analyzing this issue")
+- Redis dedup key per issue+event with 60s TTL to prevent burst duplicates
 
 ### Event Filtering
 
@@ -82,7 +88,7 @@ Only processes relevant event types and actions. Ignores unsupported events to r
 
 **Processed Events:**
 - GitHub: issues (opened, edited, labeled), issue_comment (created), pull_request (opened, synchronize, reopened), push
-- Jira: Issues with AI-Fix label
+- Jira: `jira:issue_created`, `jira:issue_updated`, `comment_created` (only when issue has `ai-agent` label)
 - Slack: app_mention, message (DM only)
 
 ### Agent Routing

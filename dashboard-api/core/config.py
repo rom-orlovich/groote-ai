@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,6 +14,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis:6379/0"
     database_url: str = "postgresql+asyncpg://agent:agent@postgres:5432/agent_system"
     agent_engine_url: str = "http://agent-engine:8080"
+    task_logs_dir: Path = Path("/data/logs/tasks")
 
     deployment_mode: str = "local"
     port: int = 5000

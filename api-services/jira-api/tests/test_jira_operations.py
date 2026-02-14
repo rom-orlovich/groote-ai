@@ -134,7 +134,7 @@ class TestJiraIssueOperations:
             summary="New bug to fix",
             description="Details about the bug",
             issue_type="Bug",
-            labels=["AI-Fix"],
+            labels=["ai-agent"],
         )
 
         assert "key" in result
@@ -170,7 +170,7 @@ class TestJiraSearchOperations:
     async def test_search_issues_by_jql(self, jira_client):
         """Business requirement: Search works."""
         result = await jira_client.search_issues(
-            jql='project = PROJ AND labels = "AI-Fix" AND status != Done'
+            jql='project = PROJ AND labels = "ai-agent" AND status != Done'
         )
 
         assert "total" in result

@@ -150,7 +150,7 @@ class WebhookFactory:
                 action="create_task",
                 template="Handle Jira issue: {{ issue.key }}",
                 agent="jira-code-plan",
-                conditions={"labels": ["AI-Fix"]},
+                conditions={"labels": ["ai-agent"]},
             ),
         ]
         return cls.create(

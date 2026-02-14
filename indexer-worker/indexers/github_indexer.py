@@ -7,6 +7,7 @@ import structlog
 from config import settings
 from git import Repo
 from models import CodeChunk, GitHubSourceConfig
+from token_provider import GitHubTokenProvider
 
 logger = structlog.get_logger()
 
@@ -30,25 +31,31 @@ LANGUAGE_MAP = {
 
 
 class GitHubIndexer:
-    def __init__(self, org_id: str, config: GitHubSourceConfig):
+    def __init__(
+        self,
+        org_id: str,
+        config: GitHubSourceConfig,
+        github_api_url: str,
+        token_provider: GitHubTokenProvider,
+    ):
         self.org_id = org_id
         self.config = config
+        self._api_url = github_api_url.rstrip("/")
+        self._token_provider = token_provider
         self.repos_dir = Path(settings.repos_dir) / org_id
         self.repos_dir.mkdir(parents=True, exist_ok=True)
 
     async def fetch_matching_repos(self) -> list[dict]:
-        repos = []
-        headers = {"Authorization": f"token {settings.github_token}"}
+        repos: list[dict] = []
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             for pattern in self.config.include_patterns:
                 if "/" in pattern:
                     owner, repo_pattern = pattern.split("/", 1)
 
                     if "*" not in repo_pattern:
                         response = await client.get(
-                            f"https://api.github.com/repos/{owner}/{repo_pattern}",
-                            headers=headers,
+                            f"{self._api_url}/api/v1/repos/{owner}/{repo_pattern}",
                         )
                         if response.status_code == 200:
                             repos.append(response.json())
@@ -56,8 +63,7 @@ class GitHubIndexer:
                         page = 1
                         while True:
                             response = await client.get(
-                                f"https://api.github.com/users/{owner}/repos",
-                                headers=headers,
+                                f"{self._api_url}/api/v1/users/{owner}/repos",
                                 params={"page": page, "per_page": 100},
                             )
                             if response.status_code != 200:
@@ -68,7 +74,7 @@ class GitHubIndexer:
                                 break
 
                             for repo in page_repos:
-                                if fnmatch(repo["name"], repo_pattern.replace("*", "*")):
+                                if fnmatch(repo["name"], repo_pattern):
                                     if not self._is_excluded(repo["full_name"]):
                                         repos.append(repo)
                             page += 1
@@ -76,8 +82,7 @@ class GitHubIndexer:
                 elif pattern.startswith("topic:"):
                     topic = pattern.replace("topic:", "")
                     response = await client.get(
-                        "https://api.github.com/search/repositories",
-                        headers=headers,
+                        f"{self._api_url}/api/v1/search/repositories",
                         params={"q": f"topic:{topic}", "per_page": 100},
                     )
                     if response.status_code == 200:
@@ -94,6 +99,8 @@ class GitHubIndexer:
     async def clone_or_pull_repo(self, repo_url: str, repo_name: str) -> Path:
         repo_path = self.repos_dir / repo_name
 
+        token = await self._token_provider.get_token()
+
         if repo_path.exists():
             logger.info("pulling_repo", repo=repo_name)
             repo = Repo(repo_path)
@@ -102,10 +109,10 @@ class GitHubIndexer:
         else:
             logger.info("cloning_repo", repo=repo_name)
             clone_url = repo_url
-            if settings.github_token:
+            if token:
                 clone_url = repo_url.replace(
                     "https://github.com",
-                    f"https://{settings.github_token}@github.com",
+                    f"https://{token}@github.com",
                 )
             Repo.clone_from(clone_url, repo_path)
 
@@ -165,7 +172,7 @@ class GitHubIndexer:
         chunk_size = settings.chunk_size
         overlap = settings.chunk_overlap
 
-        current_chunk = []
+        current_chunk: list[str] = []
         current_start = 1
         char_count = 0
 

@@ -13,6 +13,7 @@ export interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: string;
+  task_id: string | null;
 }
 
 interface ConversationApiItem {
@@ -27,6 +28,7 @@ interface MessageApiItem {
   role: "user" | "assistant";
   content: string;
   created_at: string;
+  task_id: string | null;
 }
 
 export function useChat() {
@@ -60,6 +62,7 @@ export function useChat() {
         role: msg.role,
         content: msg.content,
         timestamp: msg.created_at,
+        task_id: msg.task_id ?? null,
       }));
     },
     enabled: !!selectedId,

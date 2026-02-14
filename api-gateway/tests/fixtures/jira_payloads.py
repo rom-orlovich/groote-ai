@@ -66,7 +66,7 @@ def jira_issue_updated_payload(
     project: str = "PROJ",
     change_type: str = "labels",
     from_value: str = "",
-    to_value: str = "AI-Fix",
+    to_value: str = "ai-agent",
     assignee: str | None = None,
 ) -> dict[str, Any]:
     payload = jira_issue_created_payload(
@@ -96,9 +96,10 @@ def jira_issue_updated_payload(
 def jira_comment_created_payload(
     issue_key: str = "PROJ-123",
     comment_id: str = "10001",
-    body: str = "Test comment",
+    body: str | dict[str, Any] = "Test comment",
     author: str = "testuser",
     assignee: str | None = None,
+    account_type: str = "atlassian",
 ) -> dict[str, Any]:
     assignee_field = None
     if assignee:
@@ -117,7 +118,7 @@ def jira_comment_created_payload(
             "fields": {
                 "summary": "Test Issue",
                 "description": "Test description",
-                "labels": ["AI-Fix"],
+                "labels": ["ai-agent"],
                 "assignee": assignee_field,
                 "project": {
                     "key": "PROJ",
@@ -130,6 +131,7 @@ def jira_comment_created_payload(
             "author": {
                 "displayName": author,
                 "emailAddress": f"{author}@example.com",
+                "accountType": account_type,
             },
             "created": "2026-01-31T12:00:00.000+0000",
             "updated": "2026-01-31T12:00:00.000+0000",

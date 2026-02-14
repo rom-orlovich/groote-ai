@@ -11,7 +11,7 @@ Slack operations using MCP tools for all API interactions.
 
 ## Key Principles
 
-1. **Always use MCP tools** (`slack:post_message`) for API operations
+1. **Always use MCP tools** (`slack:send_slack_message`) for API operations
 2. **Reply in thread** using `thread_ts` when responding to messages
 3. **Use rich blocks** for interactive notifications (approval buttons)
 4. **Post responses** using MCP tools after task completion
@@ -25,13 +25,13 @@ Slack operations using MCP tools for all API interactions.
 
 **Always use MCP tools for Slack API operations:**
 
-- `slack:post_message` - Send messages, reply in threads, use rich blocks
+- `slack:send_slack_message` - Send messages, reply in threads, use rich blocks
 
 See [flow.md](flow.md) for complete workflow examples.
 
 ## Response Posting
 
-**IMPORTANT**: Always post responses after task completion using `slack:post_message`.
+**IMPORTANT**: Always post responses after task completion using `slack:send_slack_message`.
 
 **For webhook tasks:** Always reply in thread using `thread_ts` from task metadata.
 

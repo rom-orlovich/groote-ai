@@ -37,6 +37,19 @@ Handle directly when:
 
 ## Team Strategies
 
+### parallel_implementation
+Execute implementation plans with independent tasks in parallel. Use for complex multi-phase plans from `docs/plans/`.
+```
+Read the implementation plan from docs/plans/YYYY-MM-DD-<feature>.md.
+Identify tasks that are truly independent (no shared files, no sequential dependencies).
+Create an agent team. Spawn:
+- Service-specialist teammates for each affected service (e.g., api-gateway, agent-engine, dashboard-api)
+- Each teammate owns specific tasks from the plan within their service boundary
+- Assign tasks via TaskUpdate with clear file ownership
+- Review each deliverable before integration
+Use skill: superpowers:dispatching-parallel-agents or superpowers:subagent-driven-development
+```
+
 ### parallel_review
 Multiple reviewers analyze different aspects simultaneously. Use for PR reviews.
 ```
@@ -75,9 +88,21 @@ Each owns their service directory exclusively.
 
 ## File Ownership Rules
 
-- Assign each teammate specific directories/files
+- Assign each teammate specific directories/files (max 300 lines of changes per task)
 - No two teammates should edit the same file
 - Cross-cutting concerns are resolved by YOU (the lead) after teammates complete
+- For implementation plans: decompose into micro-tasks aligned with service boundaries
+
+## Decomposition Guidelines
+
+When executing implementation plans:
+
+1. **Read the plan** - Understand all phases and dependencies
+2. **Identify boundaries** - Group tasks by service (api-gateway, agent-engine, dashboard-api, etc.)
+3. **Check independence** - Ensure tasks have no shared files or blocking dependencies
+4. **Size appropriately** - Each task should be < 300 lines of code changes
+5. **Assign specialists** - Match service-specialist agents to service directories
+6. **Coordinate completion** - Review all deliverables before marking plan complete
 
 ## Synthesis
 

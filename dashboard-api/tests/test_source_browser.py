@@ -100,7 +100,9 @@ class TestBrowseGitHubRepos:
             data = response.json()
             assert data["resources"][1]["description"] == ""
 
-    async def test_returns_403_when_oauth_not_connected(self, async_client, mock_oauth_disconnected):
+    async def test_returns_403_when_oauth_not_connected(
+        self, async_client, mock_oauth_disconnected
+    ):
         response = await async_client.get("/api/sources/browse/github/repos")
         assert response.status_code == 403
 
@@ -118,7 +120,9 @@ class TestBrowseJiraProjects:
             assert resource["id"] == "PROJ"
             assert resource["id"] == resource["metadata"]["key"]
 
-    async def test_returns_403_when_oauth_not_connected(self, async_client, mock_oauth_disconnected):
+    async def test_returns_403_when_oauth_not_connected(
+        self, async_client, mock_oauth_disconnected
+    ):
         response = await async_client.get("/api/sources/browse/jira/projects")
         assert response.status_code == 403
 
@@ -137,7 +141,9 @@ class TestBrowseConfluenceSpaces:
             assert resource["id"] == resource["metadata"]["key"]
             assert resource["description"] == "Eng docs"
 
-    async def test_returns_403_when_oauth_not_connected(self, async_client, mock_oauth_disconnected):
+    async def test_returns_403_when_oauth_not_connected(
+        self, async_client, mock_oauth_disconnected
+    ):
         response = await async_client.get("/api/sources/browse/confluence/spaces")
         assert response.status_code == 403
 

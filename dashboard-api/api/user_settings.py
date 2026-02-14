@@ -153,15 +153,16 @@ async def save_agent_scaling(
         is_sensitive=False,
     )
 
-    provider_setting = await get_user_setting(
-        db, user_id, "ai_provider", "provider"
-    )
+    provider_setting = await get_user_setting(db, user_id, "ai_provider", "provider")
     provider = provider_setting or os.environ.get("CLI_PROVIDER", "claude")
 
-    await redis_client.publish("cli:scaling", {
-        "provider": provider,
-        "agent_count": settings.agent_count,
-    })
+    await redis_client.publish(
+        "cli:scaling",
+        {
+            "provider": provider,
+            "agent_count": settings.agent_count,
+        },
+    )
 
     return {"status": "scaling", "agent_count": settings.agent_count}
 

@@ -7,11 +7,93 @@ import structlog
 from config import get_settings
 from fastapi import APIRouter, Header, Request
 from fastapi.responses import JSONResponse
+from services.event_publisher import EventPublisher
+from services.loop_prevention import LoopPrevention
+from services.slack_notifier import (
+    get_notification_channel,
+    notify_task_failed,
+    notify_task_started,
+)
 
 from .events import extract_task_info, should_process_event
+from .response import send_error_response, send_immediate_response
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/webhooks/github", tags=["github-webhook"])
+
+DEDUP_TTL_SECONDS = 3600
+
+
+async def _is_duplicate_webhook(settings: object, event_type: str, data: dict) -> bool:
+    comment_id = data.get("comment", {}).get("id")
+    if not comment_id:
+        return False
+    key = f"webhook:dedup:github:{event_type}:{comment_id}"
+    try:
+        redis_client = redis.from_url(settings.redis_url)
+        was_set = await redis_client.set(key, "1", nx=True, ex=DEDUP_TTL_SECONDS)
+        await redis_client.aclose()
+        return not was_set
+    except Exception as e:
+        logger.warning("github_dedup_check_failed", error=str(e))
+        return False
+
+
+def _resolve_handler_name(
+    event_type: str,
+    task_info: dict,
+    approve_patterns: list[str] | None = None,
+    improve_keywords: set[str] | None = None,
+) -> str:
+    if approve_patterns is None or improve_keywords is None:
+        from config import get_settings
+
+        settings = get_settings()
+        if approve_patterns is None:
+            approve_patterns = settings.approve_patterns
+        if improve_keywords is None:
+            improve_keywords = settings.improve_keyword_set
+    if event_type in ("pull_request", "pull_request_review_comment"):
+        return "github-pr-review"
+    if event_type == "issue_comment":
+        issue = task_info.get("issue", {})
+        title = issue.get("title", "")
+        comment_body = task_info.get("comment", {}).get("body", "").lower()
+        has_pr = bool(issue.get("pull_request") if isinstance(issue, dict) else False)
+        if (
+            has_pr
+            and title.startswith("[PLAN]")
+            and any(p in comment_body for p in approve_patterns)
+        ):
+            return "github-pr-review"
+        if has_pr and any(kw in comment_body for kw in improve_keywords):
+            return "github-pr-review"
+    return "github-issue-handler"
+
+
+def _get_publisher(request: Request) -> EventPublisher | None:
+    return getattr(request.app.state, "event_publisher", None)
+
+
+def _extract_github_context(data: dict, event_type: str) -> dict:
+    repo = data.get("repository", {})
+    full_name = repo.get("full_name", "")
+    parts = full_name.split("/", 1)
+    owner = parts[0] if len(parts) == 2 else ""
+    repo_name = parts[1] if len(parts) == 2 else ""
+    comment_id = data.get("comment", {}).get("id")
+    issue_number = None
+    if event_type in ("issues", "issue_comment"):
+        issue_number = data.get("issue", {}).get("number")
+    elif event_type in ("pull_request", "pull_request_review_comment"):
+        issue_number = data.get("pull_request", {}).get("number")
+    return {
+        "owner": owner,
+        "repo_name": repo_name,
+        "full_name": full_name,
+        "comment_id": comment_id,
+        "issue_number": issue_number,
+    }
 
 
 @router.post("")
@@ -22,6 +104,9 @@ async def handle_github_webhook(
     payload = await request.body()
     data = json.loads(payload)
     action = data.get("action")
+    settings = get_settings()
+    publisher = _get_publisher(request)
+    webhook_event_id = EventPublisher.generate_webhook_event_id() if publisher else ""
 
     logger.info(
         "github_webhook_received",
@@ -30,21 +115,212 @@ async def handle_github_webhook(
         repository=data.get("repository", {}).get("full_name"),
     )
 
-    if not should_process_event(x_github_event, action):
+    if publisher:
+        await publisher.publish_webhook_received(
+            webhook_event_id=webhook_event_id,
+            source="github",
+            event_type=x_github_event,
+            payload_size=len(payload),
+        )
+        await publisher.publish_webhook_validated(
+            webhook_event_id=webhook_event_id,
+            source="github",
+            signature_valid=True,
+        )
+        await publisher.publish_webhook_payload(
+            webhook_event_id=webhook_event_id,
+            source="github",
+            event_type=x_github_event,
+            payload=data,
+        )
+
+    if x_github_event == "installation":
+        logger.info(
+            "github_installation_event",
+            action=action,
+            installation_id=data.get("installation", {}).get("id"),
+        )
+        if publisher:
+            await publisher.publish_webhook_skipped(
+                webhook_event_id=webhook_event_id,
+                source="github",
+                event_type="installation",
+                reason="installation_event",
+            )
+        return JSONResponse(
+            status_code=200,
+            content={"status": "acknowledged", "event": "installation", "action": action},
+        )
+
+    if not should_process_event(x_github_event, action, payload=data):
         logger.debug("github_event_skipped", event_type=x_github_event, action=action)
+        if publisher:
+            await publisher.publish_webhook_skipped(
+                webhook_event_id=webhook_event_id,
+                source="github",
+                event_type=x_github_event,
+                reason="event_type_not_processed",
+            )
         return JSONResponse(
             status_code=200,
             content={"status": "skipped", "reason": "Event type not processed"},
         )
 
+    if await _is_duplicate_webhook(settings, x_github_event, data):
+        logger.debug("github_event_deduplicated", event_type=x_github_event)
+        if publisher:
+            await publisher.publish_webhook_skipped(
+                webhook_event_id=webhook_event_id,
+                source="github",
+                event_type=x_github_event,
+                reason="duplicate_within_cooldown",
+            )
+        return JSONResponse(
+            status_code=200,
+            content={"status": "skipped", "reason": "Duplicate event within cooldown"},
+        )
+
+    if x_github_event in ("issue_comment", "pull_request_review_comment"):
+        comment_id = data.get("comment", {}).get("id")
+        if comment_id:
+            try:
+                redis_client = redis.from_url(settings.redis_url)
+                loop_prevention = LoopPrevention(redis_client)
+                if await loop_prevention.is_own_comment(str(comment_id)):
+                    await redis_client.aclose()
+                    logger.info("github_own_comment_skipped", comment_id=comment_id)
+                    if publisher:
+                        await publisher.publish_webhook_skipped(
+                            webhook_event_id=webhook_event_id,
+                            source="github",
+                            event_type=x_github_event,
+                            reason="own_comment_loop_prevention",
+                        )
+                    return JSONResponse(
+                        status_code=200,
+                        content={"status": "skipped", "reason": "Own comment detected"},
+                    )
+                await redis_client.aclose()
+            except Exception as e:
+                logger.warning("github_loop_prevention_check_failed", error=str(e))
+
+    notification_channel = await get_notification_channel(
+        settings.oauth_service_url,
+        settings.internal_service_key,
+        settings.slack_notification_channel,
+    )
+
+    ctx = _extract_github_context(data, x_github_event)
     task_info = extract_task_info(x_github_event, data)
     task_id = str(uuid.uuid4())
     task_info["task_id"] = task_id
 
-    settings = get_settings()
-    redis_client = redis.from_url(settings.redis_url)
-    await redis_client.lpush("agent:tasks", json.dumps(task_info))
-    await redis_client.aclose()
+    try:
+        immediate_result = await send_immediate_response(
+            github_api_url=settings.github_api_url,
+            event_type=x_github_event,
+            owner=ctx["owner"],
+            repo=ctx["repo_name"],
+            comment_id=ctx["comment_id"],
+            issue_number=ctx["issue_number"],
+        )
+        immediate_comment_id = (
+            immediate_result.get("comment_id") if isinstance(immediate_result, dict) else None
+        )
+        if immediate_comment_id:
+            try:
+                track_redis = redis.from_url(settings.redis_url)
+                loop_prev = LoopPrevention(track_redis)
+                await loop_prev.track_posted_comment(str(immediate_comment_id))
+                await track_redis.aclose()
+            except Exception as track_err:
+                logger.warning("github_immediate_tracking_failed", error=str(track_err))
+        if publisher:
+            await publisher.publish_response_immediate(
+                webhook_event_id=webhook_event_id,
+                task_id=task_id,
+                source="github",
+                response_type="eyes_reaction",
+                target=f"{ctx['full_name']}#{ctx['issue_number']}",
+            )
+    except Exception as e:
+        logger.warning("github_immediate_response_failed", error=str(e))
+
+    if publisher:
+        handler_name = _resolve_handler_name(x_github_event, task_info)
+        await publisher.publish_webhook_matched(
+            webhook_event_id=webhook_event_id,
+            source="github",
+            event_type=x_github_event,
+            matched_handler=handler_name,
+        )
+
+    try:
+        redis_client = redis.from_url(settings.redis_url)
+        await redis_client.lpush("agent:tasks", json.dumps(task_info))
+        await redis_client.aclose()
+    except Exception as e:
+        logger.error("github_task_queue_failed", error=str(e), task_id=task_id)
+        await send_error_response(
+            github_api_url=settings.github_api_url,
+            event_type=x_github_event,
+            owner=ctx["owner"],
+            repo=ctx["repo_name"],
+            comment_id=ctx["comment_id"],
+            issue_number=ctx["issue_number"],
+            error=str(e),
+        )
+        await notify_task_failed(
+            settings.slack_api_url,
+            notification_channel,
+            "github",
+            task_id,
+            str(e),
+        )
+        if publisher:
+            await publisher.publish_notification_ops(
+                webhook_event_id=webhook_event_id,
+                task_id=task_id,
+                source="github",
+                notification_type="task_failed",
+                channel=notification_channel,
+            )
+        return JSONResponse(status_code=500, content={"status": "error", "error": str(e)})
+
+    if publisher:
+        await publisher.publish_webhook_task_created(
+            webhook_event_id=webhook_event_id,
+            task_id=task_id,
+            source="github",
+            event_type=x_github_event,
+            input_message=task_info.get("prompt", ""),
+        )
+
+    issue_title = (
+        task_info.get("issue", {}).get("title")
+        or task_info.get("pull_request", {}).get("title")
+        or ""
+    )
+    started_title = (
+        f"{ctx['full_name']}#{ctx['issue_number']}: {issue_title}"
+        if issue_title
+        else (f"{ctx['full_name']} #{ctx['issue_number']} {x_github_event}")
+    )
+    await notify_task_started(
+        settings.slack_api_url,
+        notification_channel,
+        "github",
+        task_id,
+        started_title,
+    )
+    if publisher:
+        await publisher.publish_notification_ops(
+            webhook_event_id=webhook_event_id,
+            task_id=task_id,
+            source="github",
+            notification_type="task_started",
+            channel=notification_channel,
+        )
 
     logger.info("github_task_queued", task_id=task_id, event_type=x_github_event)
 

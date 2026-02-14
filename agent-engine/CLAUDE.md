@@ -89,7 +89,7 @@ REDIS_DB=0
 
 # Knowledge Services (optional)
 KNOWLEDGE_SERVICES_ENABLED=false
-LLAMAINDEX_URL=http://llamaindex-service:8100
+LLAMAINDEX_URL=http://llamaindex-service:8002
 KNOWLEDGE_GRAPH_URL=http://gkg-service:4000
 KNOWLEDGE_TIMEOUT_SECONDS=10.0
 KNOWLEDGE_RETRY_COUNT=2

@@ -16,6 +16,12 @@
 - **ALWAYS use async/await** for I/O - Use `httpx.AsyncClient`, NOT `requests`
 - **Structured logging**: `logger.info("task_started", task_id=task_id, user_id=user_id)`
 
+## Planning & Documentation
+
+- **Implementation plans** - Always write plans to `docs/plans/` directory
+- **Plan naming format** - Use `docs/plans/YYYY-MM-DD-<feature-name>.md`
+- **Plan structure** - Include context, phases, file changes, verification steps
+
 ## Key Commands
 
 ```bash
@@ -34,19 +40,59 @@ make tunnel                  # Start ngrok tunnel (alternative)
 make tunnel-setup            # First-time zrok setup
 ```
 
+## Docker Workflow
+
+- **Rebuild after code changes**: After modifying code in any service, rebuild its container to apply the changes:
+  ```bash
+  docker-compose up -d --build <service-name>
+  ```
+- Use `make up` only for full rebuilds of all services
+
 ## Architecture
 
 See `.claude/rules/microservices.md` for full service map, ports, health checks, and environment variables.
 
 ## Agent Teams
 
-This project supports Claude Code agent teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is enabled). When working as a team:
+This project supports Claude Code agent teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is enabled).
 
-- **Brain** is the team lead — it decomposes tasks and coordinates teammates
-- Each teammate owns a specific service or concern (security, performance, etc.)
-- Teammates MUST NOT edit files outside their assigned scope
-- All teammates follow the same code standards above
-- Use structured findings when reporting to the team lead
+### When to Use Team-Based Parallel Execution
+
+Use the `brain` agent as team lead with specialist teammates when:
+
+- **Complex multi-phase implementation plans** (5+ independent tasks)
+- **Cross-service features** requiring changes to 3+ microservices
+- **Parallel workstreams** with no blocking dependencies
+- **Large refactoring** affecting multiple services simultaneously
+- **Implementation plans with clear task boundaries** from `docs/plans/`
+
+**Required Skills:**
+- `superpowers:dispatching-parallel-agents` - For tasks in current session
+- `superpowers:subagent-driven-development` - For executing plans with independent tasks
+- `superpowers:executing-plans` - For separate session with review checkpoints
+
+### Team Structure
+
+- **Brain** (team lead) - Decomposes tasks, coordinates teammates, reviews deliverables
+- **Service specialists** - Own specific services (api-gateway, agent-engine, dashboard-api, etc.)
+- **Concern specialists** - Focus on security, performance, testing, documentation
+
+### Team Workflow Rules
+
+1. **Task Decomposition**: Brain creates micro-tasks in shared task list (max 300 lines per task)
+2. **Ownership**: Each teammate claims tasks via TaskUpdate (prefer lowest ID first)
+3. **Scope Boundaries**: Teammates MUST NOT edit files outside assigned scope
+4. **Code Standards**: All teammates follow same rules (no comments, strict types, 300 lines max)
+5. **Communication**: Use SendMessage tool (NOT text output) to communicate with team
+6. **Completion**: Teammates mark tasks completed, then check TaskList for next work
+7. **Review**: Brain reviews all deliverables before final integration
+
+### Parallel Execution Guidelines
+
+- Split tasks by service boundaries (api-gateway, dashboard-api, agent-engine, etc.)
+- Identify truly independent tasks (no shared state, no sequential dependencies)
+- Avoid premature parallelization (sequential is fine if tasks are small)
+- Use structured findings format when reporting to team lead
 
 ### Service Ownership for Teams
 

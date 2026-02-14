@@ -7,7 +7,6 @@ from .fixtures import (
 
 
 class TestSlackEventProcessing:
-
     def test_app_mention_creates_task(self):
         payload = slack_app_mention_payload(
             channel="C1234567890",
@@ -49,7 +48,6 @@ class TestSlackEventProcessing:
 
 
 class TestSlackTaskExtraction:
-
     def test_task_contains_slack_context(self):
         payload = slack_app_mention_payload(
             channel="C1234567890",
@@ -88,7 +86,6 @@ class TestSlackTaskExtraction:
 
 
 class TestSlackPromptField:
-
     def test_extracted_task_includes_prompt(self):
         payload = slack_app_mention_payload(
             text="<@U0BOTUSER> help me fix this bug",
@@ -112,7 +109,6 @@ class TestSlackPromptField:
 
 
 class TestSlackEventTypes:
-
     def test_supported_slack_events(self):
         mention_payload = slack_app_mention_payload()
         message_payload = slack_message_payload(

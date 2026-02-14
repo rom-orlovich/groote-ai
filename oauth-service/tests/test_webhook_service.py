@@ -9,6 +9,8 @@ from services.webhook_service import WebhookRegistrationResult, WebhookRegistrat
 def mock_settings():
     settings = MagicMock()
     settings.frontend_url = "https://example.com"
+    settings.public_url = ""
+    settings.webhook_base_url = "https://example.com"
     settings.github_app_id = "123456"
     settings.github_private_key = (
         "-----BEGIN RSA PRIVATE KEY-----\ntest\n-----END RSA PRIVATE KEY-----"
@@ -191,3 +193,69 @@ class TestGitHubWebhookConfiguration:
 
         assert result.success is False
         assert result.error is not None
+
+
+class TestWebhookBaseUrl:
+    def test_public_url_takes_precedence_over_frontend_url(self):
+        settings = MagicMock()
+        settings.frontend_url = "http://localhost:3005"
+        settings.public_url = "https://my-domain.ngrok.io"
+        settings.webhook_base_url = "https://my-domain.ngrok.io"
+
+        service = WebhookRegistrationService(settings)
+
+        assert service.base_webhook_url == "https://my-domain.ngrok.io"
+
+    def test_falls_back_to_frontend_url_when_no_public_url(self):
+        settings = MagicMock()
+        settings.frontend_url = "https://example.com"
+        settings.public_url = ""
+        settings.webhook_base_url = "https://example.com"
+
+        service = WebhookRegistrationService(settings)
+
+        assert service.base_webhook_url == "https://example.com"
+
+    @pytest.mark.asyncio
+    async def test_github_webhook_url_uses_public_url(self):
+        settings = MagicMock()
+        settings.public_url = "https://prod.example.com"
+        settings.webhook_base_url = "https://prod.example.com"
+        settings.github_app_id = "123"
+        settings.github_private_key = (
+            "-----BEGIN RSA PRIVATE KEY-----\ntest\n-----END RSA PRIVATE KEY-----"
+        )
+        settings.github_webhook_secret = "secret"
+
+        service = WebhookRegistrationService(settings)
+
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_instance = mock_client.return_value.__aenter__.return_value
+            mock_instance.patch = AsyncMock(return_value=mock_response)
+            with patch.object(service, "_generate_github_jwt", return_value="jwt"):
+                result = await service.configure_github_app_webhook()
+
+        assert result.webhook_url == "https://prod.example.com/webhooks/github"
+
+    @pytest.mark.asyncio
+    async def test_jira_webhook_url_uses_public_url(self):
+        settings = MagicMock()
+        settings.public_url = "https://prod.example.com"
+        settings.webhook_base_url = "https://prod.example.com"
+
+        service = WebhookRegistrationService(settings)
+
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"webhookRegistrationResult": []}
+        mock_response.raise_for_status = MagicMock()
+
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_instance = mock_client.return_value.__aenter__.return_value
+            mock_instance.post = AsyncMock(return_value=mock_response)
+
+            result = await service.register_jira_webhook("token", "cloud")
+
+        assert result.webhook_url == "https://prod.example.com/webhooks/jira"

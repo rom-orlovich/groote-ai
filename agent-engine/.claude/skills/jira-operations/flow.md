@@ -160,6 +160,52 @@ jira:transition_issue
 - Error response templates
 - MCP tool call examples
 
+### Workflow 4: Project & Board Setup
+
+1. Create project: `jira:create_jira_project`
+2. Create board: `jira:create_jira_board`
+3. Create initial epics and tasks: `jira:create_jira_issue`
+4. Post confirmation to Slack thread
+
+**Example: Create project + board**
+
+```json
+{
+  "tool": "jira:create_jira_project",
+  "arguments": {
+    "key": "GROOTE",
+    "name": "Groote AI",
+    "project_type_key": "software",
+    "description": "AI-powered development assistant for GitHub, Jira, and Slack"
+  }
+}
+```
+
+```json
+{
+  "tool": "jira:create_jira_board",
+  "arguments": {
+    "name": "Groote AI Kanban",
+    "project_key": "GROOTE",
+    "board_type": "kanban"
+  }
+}
+```
+
+### Workflow 5: Self-Directed Task Creation
+
+When the agent analyzes a repo and creates tickets:
+
+1. List existing projects: `jira:search_jira_issues` (JQL: `project = KEY`)
+2. Create structured issues using templates from [templates.md](templates.md)
+3. Use proper markdown with real newlines (never literal `\n`)
+4. Link related issues via description references
+
+**Issue format rules:**
+- Summary: `[Component] Action - Detail` (max 80 chars)
+- Description: Use markdown with `## Headings`, `- Bullets`, `` `code` ``
+- Always include: Overview, Acceptance Criteria, Technical Notes sections
+
 ## Error Handling
 
 **If task fails:**

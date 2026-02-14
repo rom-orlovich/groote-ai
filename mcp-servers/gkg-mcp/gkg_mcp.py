@@ -1,7 +1,7 @@
 import httpx
 import structlog
 from config import settings
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 logger = structlog.get_logger()
 

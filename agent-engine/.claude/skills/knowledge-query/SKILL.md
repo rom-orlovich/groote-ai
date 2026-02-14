@@ -106,6 +106,66 @@ This skill enables searching across:
      - repo: Repository filter
    ```
 
+5. **get_related_entities** - Get entities related to a code entity
+   ```
+   Args:
+     - entity: Entity name (function, class, module)
+     - entity_type: Type (function, class, module, file)
+     - org_id: Organization ID
+     - relationship: Relationship type (calls, imports, extends, references, all)
+   ```
+
+### Knowledge Graph MCP (knowledge-graph) — Knowledge Store
+
+These tools manage persistent knowledge (stored in ChromaDB vector store):
+
+1. **knowledge_store** - Store a knowledge document
+   ```
+   Args:
+     - collection: Collection name
+     - document_id: Unique document ID
+     - content: Document text content
+     - metadata: Key-value metadata (source, type, tags)
+   ```
+
+2. **knowledge_query** - Query stored knowledge
+   ```
+   Args:
+     - collection: Collection name
+     - query: Natural language query
+     - n_results: Number of results (default: 5)
+     - where: Metadata filter (e.g., {"source": "jira"})
+   ```
+
+3. **knowledge_collections** - List or create collections
+   ```
+   Args:
+     - action: "list" or "create"
+     - name: Collection name (required for create)
+   ```
+
+4. **knowledge_update** - Update a stored document
+   ```
+   Args:
+     - collection: Collection name
+     - document_id: Document ID to update
+     - content: New content (optional)
+     - metadata: New metadata (optional)
+   ```
+
+5. **knowledge_delete** - Delete a stored document
+   ```
+   Args:
+     - collection: Collection name
+     - document_id: Document ID to delete
+   ```
+
+## Important: org_id Parameter
+
+The `org_id` for all knowledge queries is provided in the task header as `Knowledge-Org-ID`. Use that value for ALL knowledge tool calls. If not present, use `"default-org"`.
+
+Do NOT guess the org_id from the user's question or repo name — it must match the value used during indexing.
+
 ## Workflow
 
 ### Step 1: Identify Query Intent
@@ -125,7 +185,7 @@ Use the appropriate MCP tool with relevant filters:
 # Example: Find authentication-related code
 llamaindex:code_search(
   query="user authentication OAuth token validation",
-  org_id="acme",
+  org_id="default-org",
   language="python",
   top_k=10
 )
@@ -133,7 +193,7 @@ llamaindex:code_search(
 # Example: Find related Jira tickets
 llamaindex:search_jira_tickets(
   query="login authentication failure",
-  org_id="acme",
+  org_id="default-org",
   project="ENG",
   status="Open"
 )
@@ -141,7 +201,7 @@ llamaindex:search_jira_tickets(
 # Example: Analyze function callers
 gkg:get_call_graph(
   function_name="authenticate_user",
-  org_id="acme",
+  org_id="default-org",
   repo="backend-api",
   direction="callers"
 )
@@ -176,27 +236,27 @@ Use gathered information to:
 
 ```
 1. Search for related tickets:
-   search_jira_tickets(query="authentication timeout", org_id="acme")
+   search_jira_tickets(query="authentication timeout", org_id="default-org")
 
 2. Find relevant code:
-   code_search(query="auth timeout handling", org_id="acme", repo_filter="backend-*")
+   code_search(query="auth timeout handling", org_id="default-org", repo_filter="backend-*")
 
 3. Analyze impact:
-   get_call_graph(function_name="handle_auth_timeout", org_id="acme", repo="backend-api")
+   get_call_graph(function_name="handle_auth_timeout", org_id="default-org", repo="backend-api")
 
 4. Check documentation:
-   search_confluence(query="authentication architecture timeout", org_id="acme")
+   search_confluence(query="authentication architecture timeout", org_id="default-org")
 ```
 
 ### Feature Implementation Scenario
 
 ```
 1. Find similar implementations:
-   knowledge_query(query="user preference settings implementation", org_id="acme")
+   knowledge_query(query="user preference settings implementation", org_id="default-org")
 
 2. Understand dependencies:
-   analyze_dependencies(file_path="src/settings/preferences.py", org_id="acme", repo="backend-api")
+   analyze_dependencies(file_path="src/settings/preferences.py", org_id="default-org", repo="backend-api")
 
 3. Find patterns:
-   code_search(query="settings CRUD operations", org_id="acme", language="python")
+   code_search(query="settings CRUD operations", org_id="default-org", language="python")
 ```

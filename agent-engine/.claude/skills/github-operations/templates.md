@@ -1,199 +1,95 @@
 # GitHub Response Templates
 
-Templates for posting responses back to GitHub after completing tasks.
+Post responses using `github:add_issue_comment`. Always include issue/PR number and mark as automated.
 
-## Issue Comment Template
-
-### Task Complete
+## Issue Analysis
 
 ```markdown
-## ✅ Task Complete
-
-**Summary:** {brief_summary}
-
-### Findings
-
-{findings_list}
-
-### Changes Made
-
-{changes_list}
-
-### Next Steps
-
-{next_steps}
-
----
-
-_Automated response by Claude Agent_
-```
-
-**MCP Tool:**
-
-```json
-{
-  "tool": "github:add_issue_comment",
-  "arguments": {
-    "owner": "{owner}",
-    "repo": "{repo}",
-    "issue_number": {issue_number},
-    "body": "{formatted_markdown}"
-  }
-}
-```
-
-### Analysis Complete
-
-```markdown
-## ✅ Analysis Complete
+## Analysis Complete
 
 **Issue:** #{issue_number}
 
 ### Summary
-
 {summary}
 
 ### Findings
-
 {findings_list}
 
 ### Recommendations
-
 {recommendations}
 
 ### Files Analyzed
-
 {files_list}
 
 ---
-
-_Automated analysis by Claude Agent_
+_Automated analysis by Groote AI_
 ```
 
-### Bug Fix Complete
+## Fix Proposal
+
+When asked to fix code but cannot push (no git credentials):
 
 ```markdown
-## ✅ Bug Fix Complete
+## Proposed Fix
 
 **Issue:** #{issue_number}
-**Branch:** `{branch_name}`
 
-### Summary
+### Problem
+{problem_description}
 
-Fixed {bug_description}
+### Fix
 
-### Changes
+**File:** `{file_path}`
 
-- {change_1}
-- {change_2}
-
-### Testing
-
-- [x] Tests passing
-- [x] Manual testing completed
-
-### PR Created
-
-See PR #{pr_number} for review.
-
----
-
-_Automated fix by Claude Agent_
+```{language}
+{fixed_code}
 ```
 
-## PR Comment Template
+### How to Apply
+1. Edit `{file_path}` at line {line_number}
+2. Replace the existing code with the fix above
+3. Run tests: `{test_command}`
 
-### Code Review Complete
+### Testing
+{testing_notes}
+
+---
+_Automated fix proposal by Groote AI_
+```
+
+## Code Review
 
 ```markdown
-## ✅ Code Review Complete
+## Code Review
 
 **PR:** #{pr_number}
 
 ### Summary
-
 {review_summary}
 
 ### Findings
-
 {findings_list}
 
 ### Suggestions
-
 {suggestions_list}
 
-### Approval Status
-
-{approval_status}
-
 ---
-
-_Automated review by Claude Agent_
+_Automated review by Groote AI_
 ```
 
-### PR Ready for Review
+## Error Response
 
 ```markdown
-## ✅ PR Ready for Review
-
-**PR:** #{pr_number}
-
-### Summary
-
-{summary}
-
-### Changes
-
-{changes_list}
-
-### Testing
-
-{testing_notes}
-
-### Checklist
-
-- [x] Code follows project conventions
-- [x] Tests included/updated
-- [x] Documentation updated
-- [x] No breaking changes
-
----
-
-_Automated by Claude Agent_
-```
-
-## Error Response Template
-
-### Task Failed
-
-```markdown
-## ❌ Task Failed
+## Task Failed
 
 **Error:** {error_message}
 
-### Details
+### What Was Attempted
+{attempted_steps}
 
-{error_details}
-
-### Troubleshooting
-
-{troubleshooting_steps}
-
-### Next Steps
-
+### Suggested Next Steps
 {next_steps}
 
 ---
-
-_Automated response by Claude Agent_
+_Automated response by Groote AI_
 ```
-
-## Best Practices
-
-1. **Always include issue/PR number** in response
-2. **Use clear structure** - Headers, lists, code blocks
-3. **Include actionable next steps** - What should happen next?
-4. **Mark as automated** - Always include "_Automated by Claude Agent_"
-5. **Use appropriate emoji** - ✅ for success, ❌ for errors, ⚠️ for warnings
-6. **Keep it concise** - Focus on key findings and actions
-7. **Link to related resources** - PRs, commits, files

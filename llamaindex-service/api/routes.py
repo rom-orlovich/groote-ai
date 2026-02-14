@@ -1,5 +1,8 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import structlog
-from core.interfaces import VectorStoreProtocol
 from core.models import (
     CodeQueryRequest,
     DocsQueryRequest,
@@ -10,8 +13,13 @@ from core.models import (
     QueryResponse,
     TicketQueryRequest,
 )
-from core.query_engine import HybridQueryEngine
 from fastapi import APIRouter
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from core.interfaces import VectorStoreProtocol
+    from core.query_engine import HybridQueryEngine
 
 logger = structlog.get_logger()
 
@@ -128,8 +136,8 @@ def create_health_router(
     vector_store: VectorStoreProtocol,
     graph_store_enabled: bool,
     cache_enabled: bool,
-    check_graph_store: callable | None = None,
-    check_cache: callable | None = None,
+    check_graph_store: Callable | None = None,
+    check_cache: Callable | None = None,
 ) -> APIRouter:
     """Create health check routes."""
     router = APIRouter()

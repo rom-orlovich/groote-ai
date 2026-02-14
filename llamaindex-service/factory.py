@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse
 
 import structlog
 from adapters.chroma_adapter import ChromaVectorStore
@@ -88,7 +89,10 @@ class ServiceContainer:
         logger.info("service_container_initializing")
 
         if self._vector_store is None:
-            self._vector_store = ChromaVectorStore(self._config.chromadb_url)
+            parsed = urlparse(self._config.chromadb_url)
+            chroma_host = parsed.hostname or "chromadb"
+            chroma_port = parsed.port or 8000
+            self._vector_store = ChromaVectorStore(chroma_host, chroma_port)
             await self._vector_store.initialize()
 
         if self._config.enable_gkg and self._graph_store is None:

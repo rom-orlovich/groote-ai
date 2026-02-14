@@ -394,13 +394,20 @@ class GKGBinaryAdapter:
         output_dir = self._data_dir / org_id
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        _, stderr, code = await self._run_command(
-            ["index", "--output", str(output_dir)],
-            cwd=repo_path,
-        )
+        import httpx
 
-        if code != 0:
-            logger.error("gkg_index_failed", stderr=stderr)
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    "http://localhost:27495/api/workspace/index",
+                    json={"workspace_folder_path": repo_path},
+                    timeout=300.0,
+                )
+                if response.status_code >= 300:
+                    logger.error("gkg_index_failed", status=response.status_code)
+                    return False
+        except Exception as e:
+            logger.error("gkg_index_failed", error=str(e))
             return False
 
         logger.info("gkg_index_completed", org_id=org_id)

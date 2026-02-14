@@ -1,0 +1,53 @@
+name: github
+description: GitHub webhook for issues, PRs, and comments
+endpoint: /webhooks/github
+source: github
+agent_trigger:
+  prefix: "@agent"
+  aliases: ["@claude", "@bot", "@ai-agent"]
+default_command: analyze
+security:
+  requires_signature: true
+  signature_header: "X-Hub-Signature-256"
+  secret_env_var: "GITHUB_WEBHOOK_SECRET"
+commands:
+  - name: analyze
+    aliases: [analysis, analyze-issue]
+    target_agent: planning
+    requires_approval: false
+    template_file: prompts/analyze.md
+  - name: plan
+    aliases: [plan-fix, create-plan]
+    target_agent: planning
+    requires_approval: false
+    template_file: prompts/plan.md
+  - name: fix
+    aliases: [implement, execute]
+    target_agent: executor
+    requires_approval: true
+    template_file: prompts/fix.md
+  - name: review
+    aliases: [code-review, review-pr]
+    target_agent: planning
+    requires_approval: false
+    template_file: prompts/review.md
+  - name: approve
+    aliases: [lgtm, approved, ship-it]
+    target_agent: executor
+    requires_approval: false
+    template_file: prompts/approve.md
+  - name: reject
+    aliases: [changes-requested, request-changes]
+    target_agent: planning
+    requires_approval: false
+    template_file: prompts/reject.md
+  - name: improve
+    aliases: [enhance, refactor, optimize]
+    target_agent: executor
+    requires_approval: true
+    template_file: prompts/improve.md
+  - name: help
+    aliases: [commands, what-can-you-do]
+    target_agent: brain
+    requires_approval: false
+    template_file: prompts/help.md

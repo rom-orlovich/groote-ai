@@ -4,11 +4,18 @@ import json
 import math
 import uuid
 from datetime import UTC, datetime
+from pathlib import Path
 
 import structlog
 from core.config import settings
 from core.database import get_session as get_db_session
-from core.database.models import SessionDB, TaskDB, WebhookConfigDB, WebhookEventDB
+from core.database.models import (
+    SessionDB,
+    TaskDB,
+    WebhookConfigDB,
+    WebhookEventDB,
+    update_conversation_metrics,
+)
 from core.database.redis_client import redis_client
 from core.webhook_configs import WEBHOOK_CONFIGS
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -72,6 +79,18 @@ class TaskTableResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+class ExternalTaskCreate(BaseModel):
+    """Request model for external task creation (from webhooks)."""
+
+    task_id: str
+    source: str
+    source_metadata: dict
+    input_message: str
+    assigned_agent: str = "brain"
+    conversation_id: str | None = None
+    flow_id: str | None = None
 
 
 @router.get("/status")
@@ -201,20 +220,43 @@ async def get_task(task_id: str, db: AsyncSession = Depends(get_db_session)):
 
 @router.get("/tasks/{task_id}/logs")
 async def get_task_logs(task_id: str, db: AsyncSession = Depends(get_db_session)):
-    """Get task logs/output stream."""
+    """Get task logs/output stream with task-logger fallback."""
+    import os
+
+    import httpx
+
     result = await db.execute(select(TaskDB).where(TaskDB.task_id == task_id))
     task = result.scalar_one_or_none()
 
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    # Try to get live output from Redis first (for running tasks)
     redis_output = await redis_client.get_output(task_id)
+    output = redis_output or task.output_stream or ""
+
+    if not output:
+        task_logger_url = os.getenv("TASK_LOGGER_URL", "http://task-logger:8090")
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(f"{task_logger_url}/tasks/{task_id}/logs")
+                if response.status_code == 200:
+                    data = response.json()
+                    parts = []
+                    for entry in data.get("agent_output", []):
+                        content = entry.get("content", "")
+                        if content:
+                            parts.append(content)
+                    final = data.get("final_result", {})
+                    if final.get("result"):
+                        parts.append(final["result"])
+                    output = "\n".join(parts)
+        except Exception as e:
+            logger.warning("task_logger_fallback_failed", task_id=task_id, error=str(e))
 
     return {
         "task_id": task.task_id,
         "status": task.status,
-        "output": redis_output or task.output_stream or "",
+        "output": output,
         "error": task.error,
         "is_live": task.status == TaskStatus.RUNNING,
     }
@@ -242,6 +284,106 @@ async def stop_task(task_id: str, db: AsyncSession = Depends(get_db_session)):
     logger.info("Task stopped", task_id=task_id)
 
     return APIResponse(success=True, message="Task stopped successfully")
+
+
+@router.post("/tasks")
+async def create_external_task(
+    payload: ExternalTaskCreate, db: AsyncSession = Depends(get_db_session)
+):
+    """Register external task (from webhooks) in TaskDB."""
+    from core.database.models import SessionDB as SessionDBModel
+
+    session_result = await db.execute(
+        select(SessionDBModel).where(SessionDBModel.session_id == "webhook-system")
+    )
+    webhook_session = session_result.scalar_one_or_none()
+
+    if not webhook_session:
+        webhook_session = SessionDBModel(
+            session_id="webhook-system",
+            user_id="system",
+            machine_id="webhook",
+            active=True,
+        )
+        db.add(webhook_session)
+        await db.flush()
+
+    task = TaskDB(
+        task_id=payload.task_id,
+        session_id="webhook-system",
+        user_id="system",
+        input_message=payload.input_message,
+        source=payload.source,
+        source_metadata=json.dumps(
+            {
+                **payload.source_metadata,
+                "conversation_id": payload.conversation_id,
+                "flow_id": payload.flow_id,
+            }
+        ),
+        assigned_agent=payload.assigned_agent,
+        agent_type="webhook",
+        status=TaskStatus.QUEUED,
+    )
+    db.add(task)
+    await db.commit()
+
+    return {"task_id": payload.task_id, "conversation_id": payload.conversation_id}
+
+
+class TaskUpdatePayload(BaseModel):
+    status: str | None = None
+    output: str | None = None
+    error: str | None = None
+    cost_usd: float | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    duration_seconds: float | None = None
+    result: str | None = None
+
+
+@router.patch("/tasks/{task_id}")
+async def update_task(
+    task_id: str,
+    payload: TaskUpdatePayload,
+    db: AsyncSession = Depends(get_db_session),
+):
+    result = await db.execute(select(TaskDB).where(TaskDB.task_id == task_id))
+    task = result.scalar_one_or_none()
+
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    if payload.status:
+        task.status = payload.status
+        if payload.status in (TaskStatus.RUNNING,) and not task.started_at:
+            task.started_at = datetime.now(UTC)
+        if payload.status in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED):
+            task.completed_at = datetime.now(UTC)
+
+    if payload.output is not None:
+        task.output_stream = payload.output
+    if payload.error is not None:
+        task.error = payload.error
+    if payload.cost_usd is not None:
+        task.cost_usd = payload.cost_usd
+    if payload.input_tokens is not None:
+        task.input_tokens = payload.input_tokens
+    if payload.output_tokens is not None:
+        task.output_tokens = payload.output_tokens
+    if payload.duration_seconds is not None:
+        task.duration_seconds = payload.duration_seconds
+    if payload.result is not None:
+        task.result = payload.result
+
+    await db.commit()
+
+    source_meta = json.loads(task.source_metadata or "{}")
+    conv_id = source_meta.get("conversation_id")
+    if conv_id and payload.status in (TaskStatus.COMPLETED, TaskStatus.FAILED):
+        await update_conversation_metrics(conv_id, task, db)
+
+    return {"task_id": task_id, "status": task.status}
 
 
 @router.post("/chat")
@@ -462,7 +604,9 @@ async def chat_with_brain(
             "task_id": task_id,
             "session_id": session_id,
             "conversation_id": conversation_id,
+            "input_message": full_input_message,
             "source": "dashboard",
+            "assigned_agent": "brain",
         },
         task_id=task_id,
     )
@@ -635,11 +779,22 @@ async def get_webhook_stats(db: AsyncSession = Depends(get_db_session)):
 # Task Log Endpoints
 
 
+def _resolve_task_log_dir(task_id: str) -> Path:
+    base = settings.task_logs_dir
+    direct = base / task_id
+    if direct.exists():
+        return direct
+    symlink = base / ".by-id" / task_id
+    if symlink.exists():
+        return symlink.resolve()
+    return direct
+
+
 @router.get("/tasks/{task_id}/logs/metadata")
 async def get_task_log_metadata(task_id: str):
     """Get task metadata.json."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         metadata_file = log_dir / "metadata.json"
 
         if not metadata_file.exists():
@@ -648,6 +803,8 @@ async def get_task_log_metadata(task_id: str):
         with open(metadata_file) as f:
             return json.load(f)
 
+    except HTTPException:
+        raise
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Task logs not found")
     except json.JSONDecodeError:
@@ -661,7 +818,7 @@ async def get_task_log_metadata(task_id: str):
 async def get_task_log_input(task_id: str):
     """Get task input (01-input.json)."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         input_file = log_dir / "01-input.json"
 
         if not input_file.exists():
@@ -670,6 +827,8 @@ async def get_task_log_input(task_id: str):
         with open(input_file) as f:
             return json.load(f)
 
+    except HTTPException:
+        raise
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Task input log not found")
     except json.JSONDecodeError:
@@ -683,7 +842,7 @@ async def get_task_log_input(task_id: str):
 async def get_task_log_user_inputs(task_id: str):
     """Get user inputs (02-user-inputs.jsonl) as JSON array."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         user_inputs_file = log_dir / "02-user-inputs.jsonl"
 
         if not user_inputs_file.exists():
@@ -712,7 +871,7 @@ async def get_task_log_user_inputs(task_id: str):
 async def get_task_log_webhook_flow(task_id: str):
     """Get webhook flow events (03-webhook-flow.jsonl) as JSON array."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         webhook_file = log_dir / "03-webhook-flow.jsonl"
 
         if not webhook_file.exists():
@@ -727,6 +886,8 @@ async def get_task_log_webhook_flow(task_id: str):
 
         return events
 
+    except HTTPException:
+        raise
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Webhook flow log not found")
     except json.JSONDecodeError as e:
@@ -741,7 +902,7 @@ async def get_task_log_webhook_flow(task_id: str):
 async def get_task_log_agent_output(task_id: str):
     """Get agent output (04-agent-output.jsonl) as JSON array."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         output_file = log_dir / "04-agent-output.jsonl"
 
         if not output_file.exists():
@@ -756,6 +917,8 @@ async def get_task_log_agent_output(task_id: str):
 
         return outputs
 
+    except HTTPException:
+        raise
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Agent output log not found")
     except json.JSONDecodeError as e:
@@ -770,7 +933,7 @@ async def get_task_log_agent_output(task_id: str):
 async def get_task_log_final_result(task_id: str):
     """Get final result (06-final-result.json)."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         result_file = log_dir / "06-final-result.json"
 
         if not result_file.exists():
@@ -779,6 +942,8 @@ async def get_task_log_final_result(task_id: str):
         with open(result_file) as f:
             return json.load(f)
 
+    except HTTPException:
+        raise
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Final result log not found")
     except json.JSONDecodeError:
@@ -792,7 +957,7 @@ async def get_task_log_final_result(task_id: str):
 async def get_task_logs_full(task_id: str):
     """Get all task logs in a single combined response."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
 
         if not log_dir.exists():
             raise HTTPException(status_code=404, detail="Task logs not found")
@@ -863,6 +1028,8 @@ async def get_task_logs_full(task_id: str):
 
         return result
 
+    except HTTPException:
+        raise
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Task logs not found")
     except json.JSONDecodeError as e:
@@ -877,7 +1044,7 @@ async def get_task_logs_full(task_id: str):
 async def get_task_log_knowledge_interactions(task_id: str):
     """Get knowledge interactions (05-knowledge-interactions.jsonl) as JSON array."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         knowledge_file = log_dir / "05-knowledge-interactions.jsonl"
 
         if not knowledge_file.exists():
@@ -906,7 +1073,7 @@ async def get_task_log_knowledge_interactions(task_id: str):
 async def get_task_knowledge_summary(task_id: str):
     """Get a summary of knowledge service usage for a task."""
     try:
-        log_dir = settings.task_logs_dir / task_id
+        log_dir = _resolve_task_log_dir(task_id)
         knowledge_file = log_dir / "05-knowledge-interactions.jsonl"
 
         if not knowledge_file.exists():

@@ -14,7 +14,7 @@ logger = structlog.get_logger()
 
 def main():
     logger.info("llamaindex_mcp_starting", port=settings.mcp_port)
-    mcp.run(transport="sse")
+    mcp.run(transport="sse", host="0.0.0.0", port=settings.mcp_port)
 
 
 if __name__ == "__main__":

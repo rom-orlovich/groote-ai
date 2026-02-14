@@ -1,4 +1,31 @@
-check the converasiton work propeorply
-check the intergration work with all th e services ad platrfrom also for the knowlage layer adn the api
-checkthe flow of the webhooks work properly
-check everything the knowladte based is  ingrgrate with differnte serives
+run again make up
+run again  zork tunnel run
+
+you must allocate teams agents and trggier all the webhooks flow on this ticket
+https://agents-system-poc.atlassian.net/jira/software/projects/KAN/boards/2?selectedIssue=KAN-18
+and all the flow form this ticket (github,slack)
+
+  process and answer these:
+
+ you must check all the webhhooks flow
+inclduing aswhen change ticket asssinee that is will open pr in github with already detials plan
+and all the flow there?
+
+what i want to post on github and jira or slack is final reuslt output not all the thinking process
+the jira when analyiss and create pr should contain the summery with link to pr wit plan as draft
+
+github mentionin the comment if it trggier reivew or imporve reivew it add comment with the final revew and imrpove its make changes and push and  approve it exuecte the change ald push the changes
+
+
+where is all the notifation to slack in end process?
+
+
+the agent enigne must that the purpose of the platform is cross paltform assiatnat
+that can manage the dailyw workflow in these paltform
+
+also does it uses teams agent corrcetly and other agents it alwys uses brain and the claude code not allocate other agents?
+
+in the end after the webhooks flow trigger correectly you must analysis the /Users/romo/projects/groote-ai/data/logs/tasks with cirtcal thinker if it really fuliful my requreiemnt and the purpose of the skils and the agent and the busnisn requreiment
+
+the agent-enigne must be dependent and post to the paltform the final output by itself
+the the thinkin gprocess its only for the log monitor not for posting the platform

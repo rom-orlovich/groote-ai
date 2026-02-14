@@ -24,11 +24,33 @@ class Settings(BaseSettings):
     internal_dashboard_api_url: str = "http://internal-dashboard-api:5000"
     dashboard_api_url: str = "http://dashboard-api:5000"
 
-    knowledge_services_enabled: bool = False
+    slack_api_url: str = "http://slack-api:3003"
+    slack_notification_channel: str = ""
+    oauth_service_url: str = "http://oauth-service:8010"
+    internal_service_key: str = ""
+
+    knowledge_services_enabled: bool = True
     knowledge_graph_url: str = "http://gkg-service:4000"
-    llamaindex_url: str = "http://llamaindex-service:8100"
+    llamaindex_url: str = "http://llamaindex-service:8002"
     knowledge_timeout_seconds: float = 10.0
     knowledge_retry_count: int = 2
+
+    # Bot configuration
+    bot_mentions: str = "@agent,@groote"
+    bot_approve_command: str = "approve"
+    bot_improve_keywords: str = "improve,fix,update,refactor,change,implement,address"
+
+    @property
+    def bot_mention_list(self) -> list[str]:
+        return [m.strip().lower() for m in self.bot_mentions.split(",") if m.strip()]
+
+    @property
+    def approve_patterns(self) -> list[str]:
+        return [f"{m} {self.bot_approve_command}" for m in self.bot_mention_list]
+
+    @property
+    def improve_keyword_set(self) -> set[str]:
+        return {k.strip().lower() for k in self.bot_improve_keywords.split(",") if k.strip()}
 
     @property
     def redis_url(self) -> str:

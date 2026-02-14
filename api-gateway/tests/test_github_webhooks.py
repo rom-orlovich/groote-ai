@@ -9,8 +9,13 @@ from .fixtures import (
 )
 
 
-class TestGitHubEventFiltering:
+def _pr_comment_payload(body: str = "Test comment", user: str = "testuser") -> dict:
+    payload = github_issue_comment_payload(body=body, user=user)
+    payload["issue"]["pull_request"] = {"url": "https://api.github.com/repos/test/pulls/1"}
+    return payload
 
+
+class TestGitHubEventFiltering:
     def test_issue_opened_is_processed(self):
         assert should_process_event("issues", "opened") is True
 
@@ -20,17 +25,21 @@ class TestGitHubEventFiltering:
     def test_issue_labeled_is_processed(self):
         assert should_process_event("issues", "labeled") is True
 
-    def test_issue_comment_created_is_processed(self):
-        assert should_process_event("issue_comment", "created") is True
+    def test_issue_comment_on_issue_is_processed(self):
+        payload = github_issue_comment_payload(body="Some comment")
+        assert should_process_event("issue_comment", "created", payload) is True
 
-    def test_pr_opened_is_processed(self):
-        assert should_process_event("pull_request", "opened") is True
+    def test_pr_opened_not_auto_processed(self):
+        assert should_process_event("pull_request", "opened") is False
 
-    def test_pr_synchronize_is_processed(self):
-        assert should_process_event("pull_request", "synchronize") is True
+    def test_pr_synchronize_not_auto_processed(self):
+        assert should_process_event("pull_request", "synchronize") is False
 
-    def test_pr_reopened_is_processed(self):
-        assert should_process_event("pull_request", "reopened") is True
+    def test_pr_reopened_not_auto_processed(self):
+        assert should_process_event("pull_request", "reopened") is False
+
+    def test_pr_review_requested_is_processed(self):
+        assert should_process_event("pull_request", "review_requested") is True
 
     def test_pr_review_comment_is_processed(self):
         assert should_process_event("pull_request_review_comment", "created") is True
@@ -48,9 +57,24 @@ class TestGitHubEventFiltering:
         assert should_process_event("issues", "deleted") is False
         assert should_process_event("pull_request", "closed") is False
 
+    def test_pr_comment_with_bot_mention_is_processed(self):
+        payload = _pr_comment_payload(body="@agent please review this PR")
+        assert should_process_event("issue_comment", "created", payload) is True
+
+    def test_pr_comment_with_groote_mention_is_processed(self):
+        payload = _pr_comment_payload(body="@groote review this")
+        assert should_process_event("issue_comment", "created", payload) is True
+
+    def test_pr_comment_without_mention_is_skipped(self):
+        payload = _pr_comment_payload(body="Looks good to me")
+        assert should_process_event("issue_comment", "created", payload) is False
+
+    def test_issue_comment_without_mention_still_processed(self):
+        payload = github_issue_comment_payload(body="Some regular comment")
+        assert should_process_event("issue_comment", "created", payload) is True
+
 
 class TestGitHubTaskExtraction:
-
     def test_issue_opened_extracts_task_info(self):
         payload = github_issue_opened_payload(
             repo="myorg/myrepo",
@@ -144,17 +168,16 @@ class TestGitHubTaskExtraction:
 
     def test_labels_extracted_from_issue(self):
         payload = github_issue_opened_payload(
-            labels=["bug", "AI-Fix", "urgent"],
+            labels=["bug", "ai-agent", "urgent"],
         )
 
         task_info = extract_task_info("issues", payload)
 
-        assert "AI-Fix" in task_info["issue"]["labels"]
+        assert "ai-agent" in task_info["issue"]["labels"]
         assert "bug" in task_info["issue"]["labels"]
 
 
 class TestGitHubPromptField:
-
     def test_issue_prompt_from_title_and_body(self):
         payload = github_issue_opened_payload(
             title="Fix authentication bug",
@@ -213,7 +236,6 @@ class TestGitHubPromptField:
 
 
 class TestSupportedGitHubEvents:
-
     def test_supported_issues_actions(self):
         supported_actions = ["opened", "edited", "labeled"]
         for action in supported_actions:
@@ -222,10 +244,10 @@ class TestSupportedGitHubEvents:
     def test_supported_issue_comment_actions(self):
         assert should_process_event("issue_comment", "created") is True
 
-    def test_supported_pr_actions(self):
-        supported_actions = ["opened", "synchronize", "reopened"]
-        for action in supported_actions:
-            assert should_process_event("pull_request", action) is True
+    def test_pr_only_review_requested(self):
+        assert should_process_event("pull_request", "review_requested") is True
+        assert should_process_event("pull_request", "opened") is False
+        assert should_process_event("pull_request", "synchronize") is False
 
     def test_supported_pr_review_comment_actions(self):
         assert should_process_event("pull_request_review_comment", "created") is True

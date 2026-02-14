@@ -1,8 +1,8 @@
 import hashlib
 import re
 
+import httpx
 import structlog
-from atlassian import Confluence
 from config import settings
 from models import ConfluenceSourceConfig, DocumentChunk
 
@@ -10,21 +10,17 @@ logger = structlog.get_logger()
 
 
 class ConfluenceIndexer:
-    def __init__(self, org_id: str, config: ConfluenceSourceConfig):
+    def __init__(self, org_id: str, config: ConfluenceSourceConfig, jira_api_url: str):
         self.org_id = org_id
         self.config = config
-        self.client = Confluence(
-            url=settings.confluence_url,
-            username=settings.confluence_email,
-            password=settings.confluence_api_token,
-        )
+        self._api_url = jira_api_url.rstrip("/")
 
     async def fetch_pages(self) -> list[dict]:
-        pages = []
+        pages: list[dict] = []
 
         for space in self.config.spaces:
             try:
-                space_pages = self._fetch_space_pages(space)
+                space_pages = await self._fetch_space_pages(space)
                 pages.extend(space_pages)
             except Exception as e:
                 logger.error("confluence_space_fetch_failed", space=space, error=str(e))
@@ -32,35 +28,42 @@ class ConfluenceIndexer:
         logger.info("confluence_pages_fetched", count=len(pages), org_id=self.org_id)
         return pages
 
-    def _fetch_space_pages(self, space_key: str) -> list[dict]:
-        pages = []
+    async def _fetch_space_pages(self, space_key: str) -> list[dict]:
+        pages: list[dict] = []
         start = 0
         limit = 50
 
-        while True:
-            try:
-                result = self.client.get_all_pages_from_space(
-                    space=space_key,
-                    start=start,
-                    limit=limit,
-                    expand="body.storage,metadata.labels,version",
-                )
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            while True:
+                try:
+                    response = await client.get(
+                        f"{self._api_url}/api/v1/confluence/pages",
+                        params={
+                            "space_key": space_key,
+                            "start": start,
+                            "limit": limit,
+                            "expand": "body.storage,metadata.labels,version",
+                        },
+                    )
+                    response.raise_for_status()
+                    data = response.json()
 
-                if not result:
+                    results = data.get("results", [])
+                    if not results:
+                        break
+
+                    for page in results:
+                        if self._should_include_page(page):
+                            pages.append(page)
+
+                    if len(results) < limit:
+                        break
+
+                    start += limit
+
+                except Exception as e:
+                    logger.error("confluence_page_fetch_failed", space=space_key, error=str(e))
                     break
-
-                for page in result:
-                    if self._should_include_page(page):
-                        pages.append(page)
-
-                if len(result) < limit:
-                    break
-
-                start += limit
-
-            except Exception as e:
-                logger.error("confluence_page_fetch_failed", space=space_key, error=str(e))
-                break
 
         return pages
 

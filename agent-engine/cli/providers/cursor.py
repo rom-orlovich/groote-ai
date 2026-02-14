@@ -5,7 +5,7 @@ from pathlib import Path
 
 import structlog
 
-from cli.base import CLIResult
+from cli.base import CLIResult, EventCallback
 from cli.sanitization import contains_sensitive_data, sanitize_sensitive_content
 
 logger = structlog.get_logger()
@@ -23,6 +23,7 @@ class CursorCLIRunner:
         allowed_tools: str | None = None,
         agents: str | None = None,
         debug_mode: str | None = None,
+        event_callback: EventCallback | None = None,
         mode: str | None = None,
         force: bool = True,
     ) -> CLIResult:
@@ -35,6 +36,7 @@ class CursorCLIRunner:
             cwd=str(working_dir),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            limit=1024 * 1024,
             env={
                 **os.environ,
                 "CURSOR_TASK_ID": task_id,

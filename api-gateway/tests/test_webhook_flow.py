@@ -214,17 +214,14 @@ class WebhookHandler:
             for lbl in fields.get("labels", [])
         ]
 
-        assignee = fields.get("assignee") or {}
-        assignee_name = assignee.get("displayName", "").lower()
-        has_ai_label = "AI-Fix" in labels
-        has_ai_assignee = assignee_name == "ai-agent"
+        has_ai_label = "ai-agent" in labels
 
-        if not has_ai_label and not has_ai_assignee:
+        if not has_ai_label:
             return WebhookResponse(
                 status_code=200,
                 body={
                     "action": "ignored",
-                    "reason": "missing AI-Fix label or ai-agent assignee",
+                    "reason": "missing ai-agent label",
                 },
             )
 
@@ -336,7 +333,6 @@ def generate_jira_signature(payload: dict, secret: str = "test-jira-secret") -> 
 
 
 class TestGitHubWebhookFlow:
-
     @pytest.mark.asyncio
     async def test_github_issue_to_task_flow(self, webhook_handler, task_queue):
         payload = github_issue_opened_payload(
@@ -446,13 +442,12 @@ class TestGitHubWebhookFlow:
 
 
 class TestJiraWebhookFlow:
-
     @pytest.mark.asyncio
     async def test_jira_ai_fix_label_creates_task(self, webhook_handler, task_queue):
         payload = jira_issue_created_payload(
             issue_key="PROJ-123",
             summary="Fix authentication bug",
-            labels=["bug", "AI-Fix"],
+            labels=["bug", "ai-agent"],
         )
         signature = generate_jira_signature(payload)
 
@@ -477,12 +472,12 @@ class TestJiraWebhookFlow:
 
         assert response.status_code == 200
         assert response.body["action"] == "ignored"
-        assert response.body["reason"] == "missing AI-Fix label or ai-agent assignee"
+        assert response.body["reason"] == "missing ai-agent label"
         assert len(task_queue.tasks) == 0
 
     @pytest.mark.asyncio
     async def test_jira_invalid_signature_rejected(self, webhook_handler, task_queue):
-        payload = jira_issue_created_payload(labels=["AI-Fix"])
+        payload = jira_issue_created_payload(labels=["ai-agent"])
 
         response = await webhook_handler.handle_jira(payload, "invalid-signature")
 
@@ -495,7 +490,7 @@ class TestJiraWebhookFlow:
             issue_key="PROJ-456",
             summary="Implement new API endpoint",
             description="Create a REST endpoint for user preferences",
-            labels=["AI-Fix", "feature"],
+            labels=["ai-agent", "feature"],
         )
         signature = generate_jira_signature(payload)
 
@@ -508,7 +503,7 @@ class TestJiraWebhookFlow:
         assert "REST endpoint" in task.input_message
 
     @pytest.mark.asyncio
-    async def test_jira_assignee_ai_agent_creates_task(self, webhook_handler, task_queue):
+    async def test_jira_assignee_without_label_ignored(self, webhook_handler, task_queue):
         payload = jira_issue_created_payload(
             issue_key="PROJ-123",
             summary="Fix bug",
@@ -522,19 +517,15 @@ class TestJiraWebhookFlow:
 
         response = await webhook_handler.handle_jira(payload, signature)
 
-        assert response.status_code == 202
-        assert response.task_id is not None
-        task = await task_queue.get_task(response.task_id)
-        assert task is not None
-        assert task.source_metadata["provider"] == "jira"
-        assert task.source_metadata["issue_key"] == "PROJ-123"
+        assert response.status_code == 200
+        assert response.body["action"] == "ignored"
 
     @pytest.mark.asyncio
-    async def test_jira_assignee_plus_label_both_work(self, webhook_handler, task_queue):
+    async def test_jira_label_with_assignee_creates_task(self, webhook_handler, task_queue):
         payload = jira_issue_created_payload(
             issue_key="PROJ-456",
-            summary="Both triggers",
-            labels=["AI-Fix"],
+            summary="Both present",
+            labels=["ai-agent"],
         )
         payload["issue"]["fields"]["assignee"] = {
             "displayName": "ai-agent",
@@ -551,7 +542,6 @@ class TestJiraWebhookFlow:
 
 
 class TestSlackWebhookFlow:
-
     @pytest.mark.asyncio
     async def test_slack_app_mention_creates_task(self, webhook_handler, task_queue):
         payload = slack_app_mention_payload(
@@ -602,7 +592,6 @@ class TestSlackWebhookFlow:
 
 
 class TestLoopPreventionFlow:
-
     @pytest.mark.asyncio
     async def test_agent_posted_comment_ignored(self, webhook_handler, task_queue, loop_prevention):
         await loop_prevention.mark_as_posted("456")
@@ -646,7 +635,6 @@ class TestLoopPreventionFlow:
 
 
 class TestWebhookToTaskRouting:
-
     @pytest.mark.asyncio
     async def test_github_issue_routes_to_issue_handler(self, webhook_handler, task_queue):
         payload = github_issue_opened_payload(repo="myorg/myrepo")
@@ -669,7 +657,7 @@ class TestWebhookToTaskRouting:
 
     @pytest.mark.asyncio
     async def test_jira_routes_to_code_plan(self, webhook_handler, task_queue):
-        payload = jira_issue_created_payload(labels=["AI-Fix"])
+        payload = jira_issue_created_payload(labels=["ai-agent"])
         signature = generate_jira_signature(payload)
 
         await webhook_handler.handle_jira(payload, signature)
@@ -688,7 +676,6 @@ class TestWebhookToTaskRouting:
 
 
 class TestWebhookTaskShape:
-
     @pytest.mark.asyncio
     async def test_all_webhooks_produce_input_message(self, webhook_handler, task_queue):
         github_payload = github_issue_opened_payload(
@@ -702,7 +689,7 @@ class TestWebhookTaskShape:
         jira_payload = jira_issue_created_payload(
             issue_key="PROJ-1",
             summary="Jira task",
-            labels=["AI-Fix"],
+            labels=["ai-agent"],
         )
         jira_sig = generate_jira_signature(jira_payload)
         await webhook_handler.handle_jira(jira_payload, jira_sig)
@@ -715,7 +702,9 @@ class TestWebhookTaskShape:
 
         assert len(task_queue.tasks) == 3
         for task in task_queue.tasks:
-            assert task.input_message, f"Task from {task.source_metadata['provider']} has empty input_message"
+            assert task.input_message, (
+                f"Task from {task.source_metadata['provider']} has empty input_message"
+            )
 
     @pytest.mark.asyncio
     async def test_task_shape_matches_agent_engine_expectations(self, webhook_handler, task_queue):
@@ -723,7 +712,7 @@ class TestWebhookTaskShape:
         github_sig = generate_github_signature(github_payload)
         await webhook_handler.handle_github(github_payload, github_sig, event_type="issues")
 
-        jira_payload = jira_issue_created_payload(labels=["AI-Fix"])
+        jira_payload = jira_issue_created_payload(labels=["ai-agent"])
         jira_sig = generate_jira_signature(jira_payload)
         await webhook_handler.handle_jira(jira_payload, jira_sig)
 

@@ -17,7 +17,7 @@ from .models import Base
 
 
 def utc_now():
-    return datetime.now(UTC)
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 class OrganizationDB(Base):

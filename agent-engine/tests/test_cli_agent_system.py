@@ -69,19 +69,30 @@ class TestClaudeCLIAgentSystem:
         )
         assert "--dangerously-skip-permissions" in cmd
 
-    def test_agents_flag_passthrough(self):
+    def test_agent_flag_passthrough(self):
         runner = ClaudeCLIRunner()
-        agents_json = '{"brain": {"model": "opus"}}'
         cmd = runner._build_command(
             prompt="test",
             model=None,
             allowed_tools=None,
-            agents=agents_json,
+            agents="jira-code-plan",
             debug_mode=None,
         )
-        assert "--agents" in cmd
-        idx = cmd.index("--agents")
-        assert cmd[idx + 1] == agents_json
+        assert "--agent" in cmd
+        idx = cmd.index("--agent")
+        assert cmd[idx + 1] == "jira-code-plan"
+
+    def test_model_flag_skipped_when_agent_set(self):
+        runner = ClaudeCLIRunner()
+        cmd = runner._build_command(
+            prompt="test",
+            model="sonnet",
+            allowed_tools=None,
+            agents="jira-code-plan",
+            debug_mode=None,
+        )
+        assert "--agent" in cmd
+        assert "--model" not in cmd
 
 
 class TestCursorCLIAgentSystem:
@@ -121,6 +132,8 @@ class TestCursorCLIAgentSystem:
 class TestAgentFilesStructure:
     def test_all_agents_have_required_fields(self):
         for agent_file in AGENTS_DIR.glob("*.md"):
+            if agent_file.name == "MANIFEST.md":
+                continue
             frontmatter = _parse_frontmatter(agent_file)
             for field in REQUIRED_FRONTMATTER_FIELDS:
                 assert field in frontmatter, f"{agent_file.name} missing required field: {field}"
@@ -128,6 +141,8 @@ class TestAgentFilesStructure:
     def test_model_values_are_valid(self):
         valid_models = {"opus", "sonnet", "haiku", "inherit"}
         for agent_file in AGENTS_DIR.glob("*.md"):
+            if agent_file.name == "MANIFEST.md":
+                continue
             frontmatter = _parse_frontmatter(agent_file)
             model = frontmatter.get("model")
             assert model in valid_models, f"{agent_file.name} has invalid model: {model}"

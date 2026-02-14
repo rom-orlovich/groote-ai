@@ -11,13 +11,13 @@ from pathlib import Path
 AGENTS_DIR = Path(__file__).resolve().parent.parent / ".claude" / "agents"
 
 EXPECTED_MODELS = {
-    "brain": "opus",
+    "brain": "sonnet",
     "planning": "opus",
     "github-pr-review": "opus",
     "verifier": "opus",
     "executor": "sonnet",
-    "github-issue-handler": "sonnet",
-    "jira-code-plan": "sonnet",
+    "github-issue-handler": "opus",
+    "jira-code-plan": "opus",
     "slack-inquiry": "sonnet",
     "service-integrator": "sonnet",
 }
@@ -43,5 +43,7 @@ class TestAgentFrontmatter:
 
     def test_all_agent_files_have_model(self):
         for agent_file in AGENTS_DIR.glob("*.md"):
+            if agent_file.name == "MANIFEST.md":
+                continue
             model = _parse_frontmatter_model(agent_file)
             assert model is not None, f"{agent_file.name} is missing 'model:' in frontmatter"

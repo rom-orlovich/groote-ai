@@ -25,7 +25,7 @@ Templates for posting responses back to Slack after completing tasks.
 
 ```json
 {
-  "tool": "slack:post_message",
+  "tool": "slack:send_slack_message",
   "arguments": {
     "channel": "{channel_id}",
     "thread_ts": "{thread_ts}",
@@ -38,7 +38,7 @@ Templates for posting responses back to Slack after completing tasks.
 
 ```json
 {
-  "tool": "slack:post_message",
+  "tool": "slack:send_slack_message",
   "arguments": {
     "channel": "{channel_id}",
     "thread_ts": "{thread_ts}",
@@ -127,7 +127,7 @@ _Details:_ {error_details}
 
 ```json
 {
-  "tool": "slack:post_message",
+  "tool": "slack:send_slack_message",
   "arguments": {
     "channel": "{channel_id}",
     "blocks": [
@@ -183,6 +183,70 @@ _Details:_ {error_details}
 
 {troubleshooting_steps}
 ```
+
+## Cross-Platform Notification Templates
+
+These templates are used by non-Slack agents to send Slack notifications after completing their primary platform action.
+
+### GitHub Issue Processed
+
+```markdown
+*GitHub Issue Processed*
+
+*Issue:* <{issue_url}|#{issue_number} {issue_title}>
+*Repo:* `{repo}`
+*Intent:* {bug fix | feature request | question}
+*Action:* {what was done}
+```
+
+### PR Review Complete
+
+```markdown
+*PR Review Complete*
+
+*PR:* <{pr_url}|#{pr_number} {pr_title}>
+*Repo:* `{repo}`
+*Verdict:* {Approve | Request Changes | Comment}
+*Summary:* {one-line summary of key findings}
+```
+
+### Jira Task Complete
+
+Use `ticket_url` from the task metadata (e.g., `https://company.atlassian.net/browse/KAN-18`). Never hardcode or guess the Jira domain.
+
+```markdown
+*Jira Task Analyzed*
+
+*Ticket:* <{ticket_url}|{ticket_key} — {ticket_summary}>
+*Scope:* {small | medium | large}
+*Action:* {what was done}
+*Status:* {status or next steps}
+```
+
+### Error / Failure Notification
+
+```markdown
+*Task Failed*
+
+*Source:* {github | jira | slack}
+*Reference:* {issue/ticket/thread link}
+*Error:* {error_message}
+*Details:* {brief description of what went wrong}
+```
+
+**MCP Tool for all notifications:**
+
+```json
+{
+  "tool": "slack:send_slack_message",
+  "arguments": {
+    "channel": "{notification_channel from source_metadata or default}",
+    "text": "{formatted_markdown}"
+  }
+}
+```
+
+Notification failures are best-effort — log the error but do not fail the primary task.
 
 ## Best Practices
 

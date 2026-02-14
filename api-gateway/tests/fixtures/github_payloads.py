@@ -52,7 +52,7 @@ def github_issue_edited_payload(
 def github_issue_labeled_payload(
     repo: str = "test-org/test-repo",
     issue_number: int = 1,
-    label: str = "AI-Fix",
+    label: str = "ai-agent",
     user: str = "testuser",
 ) -> dict[str, Any]:
     return {
