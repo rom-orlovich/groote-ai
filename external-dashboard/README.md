@@ -10,28 +10,28 @@ The External Dashboard is a React + TypeScript frontend that provides a modern U
 
 ```
 User Browser
-     │
-     │ HTTP + WebSocket
-     ▼
-┌─────────────────────────────────────┐
-│   External Dashboard :3002          │
-│   (React + TypeScript + Vite)       │
-│                                     │
-│  Features:                          │
-│  - Overview (metrics, recent tasks) │
-│  - Analytics (costs, performance)   │
-│  - Ledger (task log with filters)   │
-│  - Webhooks (config & events)       │
-│  - Chat (conversations)             │
-│  - Registry (agents & status)       │
-└─────────────────────────────────────┘
-         │
-         │ HTTP + WebSocket
+    ↓
+    ↓ HTTP + WebSocket
+    ▼
+┌─────────────────────────────────────────┐
+│   External Dashboard :3005              │
+│   (React + TypeScript + Vite)           │
+│                                         │
+│  Features:                              │
+│  - Overview (metrics, recent tasks)     │
+│  - Analytics (costs, performance)       │
+│  - Ledger (task log with filters)      │
+│  - Webhooks (config & events)           │
+│  - Chat (conversations)                 │
+│  - Registry (agents & status)           │
+└─────────────────────────────────────────┘
+         ↓
+         ↓ HTTP + WebSocket
          ▼
-┌─────────────────────────────────────┐
-│   Dashboard API :5000              │
-│   (Backend API)                    │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│   Dashboard API :5000                   │
+│   (Backend API)                         │
+└─────────────────────────────────────────┘
 ```
 
 ## Folder Structure
@@ -39,26 +39,26 @@ User Browser
 ```
 external-dashboard/
 ├── src/
-│   ├── App.tsx                 # Main application
-│   ├── main.tsx                # Entry point
+│   ├── App.tsx                  # Main application
+│   ├── main.tsx                 # Entry point
 │   ├── components/
-│   │   ├── ui/                 # UI components
-│   │   └── TaskStatusModal.tsx # Task modal
+│   │   ├── ui/                  # UI components
+│   │   └── TaskStatusModal.tsx  # Task modal
 │   ├── features/
-│   │   ├── overview/           # Overview feature
-│   │   ├── analytics/          # Analytics feature
-│   │   ├── ledger/             # Ledger feature
-│   │   ├── webhooks/           # Webhooks feature
-│   │   ├── chat/               # Chat feature
-│   │   └── registry/           # Registry feature
+│   │   ├── overview/            # Overview feature
+│   │   ├── analytics/           # Analytics feature
+│   │   ├── ledger/              # Ledger feature
+│   │   ├── webhooks/            # Webhooks feature
+│   │   ├── chat/                # Chat feature
+│   │   └── registry/            # Registry feature
 │   ├── hooks/
-│   │   ├── useWebSocket.ts     # WebSocket hook
-│   │   ├── useCLIStatus.ts     # CLI status hook
-│   │   └── useTaskModal.ts     # Task modal hook
+│   │   ├── useWebSocket.ts      # WebSocket hook
+│   │   ├── useCLIStatus.ts      # CLI status hook
+│   │   └── useTaskModal.ts      # Task modal hook
 │   └── layouts/
-│       └── DashboardLayout.tsx # Main layout
-├── public/                     # Static assets
-└── package.json                # Dependencies
+│       └── DashboardLayout.tsx  # Main layout
+├── public/                      # Static assets
+└── package.json                 # Dependencies
 ```
 
 ## Features
@@ -77,7 +77,7 @@ external-dashboard/
 - Usage histograms
 - Token usage breakdown
 
-### Ledger
+## Ledger
 
 - Complete task log
 - Filtering and search
@@ -118,9 +118,9 @@ VITE_ENABLE_WEBHOOKS=true
 
 ```bash
 pnpm install
-pnpm dev          # Development server
-pnpm build        # Production build
-pnpm preview      # Preview production build
+pnpm dev           # Development server
+pnpm build         # Production build
+pnpm preview       # Preview production build
 ```
 
 ## Docker
