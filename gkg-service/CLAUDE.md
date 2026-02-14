@@ -1,4 +1,13 @@
-# GKG Service Development Guide
+# GKG Service
+
+GitLab Knowledge Graph service for code entity relationship analysis. Wraps the GKG binary to provide HTTP API access to code relationship queries.
+
+## Development
+
+- Port: 8003
+- Language: Python
+- Max 300 lines per file, no comments, strict types, async/await for I/O
+- Tests: `pytest tests/ -v`
 
 ## Architecture Overview
 
