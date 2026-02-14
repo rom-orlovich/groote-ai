@@ -80,7 +80,7 @@ If an agent or skill file is not found, proceed with general analysis using avai
 
 ## Development
 
-- Port: 8080-8089
+- Port: 8080-8089 (Docker deployment) / 9100 (default in settings.py)
 - CLI Provider: Set via `CLI_PROVIDER` env var (`claude` or `cursor`)
 - Tests: `PYTHONPATH=agent-engine:$PYTHONPATH uv run pytest agent-engine/tests/ -v`
 - Max 300 lines per file, no comments, strict types, async/await for I/O
