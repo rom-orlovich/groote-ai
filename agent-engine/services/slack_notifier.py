@@ -49,7 +49,10 @@ async def get_notification_channel(
 
 
 def _build_completed_blocks(
-    source: str, task_id: str, summary: str, view_url: str = "",
+    source: str,
+    task_id: str,
+    summary: str,
+    view_url: str = "",
 ) -> list[dict[str, Any]]:
     truncated = summary[:500] + "..." if len(summary) > 500 else summary
     blocks: list[dict[str, Any]] = [
@@ -62,31 +65,37 @@ def _build_completed_blocks(
         },
     ]
     if view_url:
-        blocks.append({
-            "type": "actions",
+        blocks.append(
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {"type": "plain_text", "text": "View"},
+                        "url": view_url,
+                        "action_id": f"view_{task_id}",
+                    },
+                ],
+            }
+        )
+    blocks.append(
+        {
+            "type": "context",
             "elements": [
                 {
-                    "type": "button",
-                    "text": {"type": "plain_text", "text": "View"},
-                    "url": view_url,
-                    "action_id": f"view_{task_id}",
+                    "type": "mrkdwn",
+                    "text": f"*Source:* {source} | *Task ID:* `{task_id}`",
                 },
             ],
-        })
-    blocks.append({
-        "type": "context",
-        "elements": [
-            {
-                "type": "mrkdwn",
-                "text": f"*Source:* {source} | *Task ID:* `{task_id}`",
-            },
-        ],
-    })
+        }
+    )
     return blocks
 
 
 def _build_failed_blocks(
-    source: str, task_id: str, error: str,
+    source: str,
+    task_id: str,
+    error: str,
 ) -> list[dict[str, Any]]:
     blocks: list[dict[str, Any]] = [
         {

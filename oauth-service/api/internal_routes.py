@@ -57,8 +57,12 @@ async def get_internal_token(
         if installation.metadata_json:
             metadata["site_url"] = installation.metadata_json.get("url", "")
     if platform == "slack" and installation.metadata_json:
-        metadata["notification_channel_id"] = installation.metadata_json.get("notification_channel_id")
-        metadata["notification_channel_name"] = installation.metadata_json.get("notification_channel_name")
+        metadata["notification_channel_id"] = installation.metadata_json.get(
+            "notification_channel_id"
+        )
+        metadata["notification_channel_name"] = installation.metadata_json.get(
+            "notification_channel_name"
+        )
 
     logger.info(
         "internal_token_retrieved",

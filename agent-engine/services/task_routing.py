@@ -28,7 +28,9 @@ async def _fetch_knowledge_context(prompt: str, org_id: str) -> dict[str, Any]:
                 json={"query": prompt, "org_id": org_id, "limit": 10},
             )
             responses = await asyncio.gather(
-                knowledge_task, code_task, return_exceptions=True,
+                knowledge_task,
+                code_task,
+                return_exceptions=True,
             )
 
             knowledge_resp = responses[0]
@@ -46,12 +48,14 @@ async def _fetch_knowledge_context(prompt: str, org_id: str) -> dict[str, Any]:
                     if repo and repo not in seen_repos:
                         seen_repos.add(repo)
                         result["repos"].append(repo)
-                    result["code_snippets"].append({
-                        "repo": repo,
-                        "file_path": item.get("file_path", ""),
-                        "content": item.get("content", "")[:500],
-                        "score": item.get("score", 0),
-                    })
+                    result["code_snippets"].append(
+                        {
+                            "repo": repo,
+                            "file_path": item.get("file_path", ""),
+                            "content": item.get("content", "")[:500],
+                            "score": item.get("score", 0),
+                        }
+                    )
     except Exception:
         logger.warning("knowledge_context_fetch_failed", org_id=org_id)
 
@@ -114,7 +118,8 @@ async def build_task_context(
     context_section = ""
     if conversation_context:
         filtered = [
-            msg for msg in conversation_context
+            msg
+            for msg in conversation_context
             if not _is_duplicate_content(msg.get("content", ""), base_prompt)
         ]
         if filtered:
@@ -139,9 +144,7 @@ Knowledge-Org-ID: {org_id}
 {base_prompt}""".strip()
 
 
-MCP_CALL_PATTERNS = [
-    re.compile(r"\[TOOL\]\s*Using\s+\S*" + tool) for tool in POSTING_TOOLS
-]
+MCP_CALL_PATTERNS = [re.compile(r"\[TOOL\]\s*Using\s+\S*" + tool) for tool in POSTING_TOOLS]
 
 
 def detect_mcp_posting(output: str | None) -> bool:

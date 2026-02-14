@@ -51,16 +51,13 @@ class BaseFlow(ABC):
         self._evidence = evidence_collector
 
     @abstractmethod
-    async def trigger(self) -> TriggerResult:
-        ...
+    async def trigger(self) -> TriggerResult: ...
 
     @abstractmethod
-    def expected_agent(self) -> str:
-        ...
+    def expected_agent(self) -> str: ...
 
     @abstractmethod
-    def flow_criteria(self) -> "FlowCriteria":
-        ...
+    def flow_criteria(self) -> "FlowCriteria": ...
 
     def requires_knowledge(self) -> bool:
         return True
@@ -96,15 +93,11 @@ class BaseFlow(ABC):
             await self._wait_for_completion(task_id)
             await self._wait_for_response_posted(task_id)
             conversation_id = await self._extract_conversation_id(task_id)
-            components = await self._run_component_audit(
-                task_id, trigger_result, conversation_id
-            )
+            components = await self._run_component_audit(task_id, trigger_result, conversation_id)
             quality = await self._run_quality_evaluation(task_id)
             await self._save_evidence(task_id, components, quality)
 
-            all_components_ok = all(
-                c.status != "failed" for c in components
-            )
+            all_components_ok = all(c.status != "failed" for c in components)
 
             return FlowResult(
                 name=self.name,
@@ -114,7 +107,9 @@ class BaseFlow(ABC):
                 quality_score=quality.overall_score,
                 quality_report=quality.model_dump(),
                 duration_seconds=round(time.monotonic() - start, 2),
-                evidence_dir=str(self._evidence.base_dir) if self._evidence and hasattr(self._evidence, "base_dir") else None,
+                evidence_dir=str(self._evidence.base_dir)
+                if self._evidence and hasattr(self._evidence, "base_dir")
+                else None,
                 task_id=task_id,
                 conversation_id=conversation_id,
                 trigger_result=trigger_result.model_dump(),
@@ -132,13 +127,10 @@ class BaseFlow(ABC):
     async def _discover_task_id(self, trigger_result: TriggerResult) -> str:
         source = trigger_result.platform
         timeout = self._config.timeout_task_created * self._config.timeout_multiplier
-        event = await self._monitor.wait_for_source_event(
-            source, "webhook:task_created", timeout
-        )
+        event = await self._monitor.wait_for_source_event(source, "webhook:task_created", timeout)
         if not event:
             raise TimeoutError(
-                f"No webhook:task_created event for source={source} "
-                f"within {timeout}s"
+                f"No webhook:task_created event for source={source} within {timeout}s"
             )
         task_id = event.get("data", {}).get("task_id", "")
         if not task_id:
@@ -148,20 +140,14 @@ class BaseFlow(ABC):
 
     async def _wait_for_completion(self, task_id: str) -> None:
         timeout = self._config.timeout_execution * self._config.timeout_multiplier
-        event = await self._monitor.wait_for_event(
-            task_id, "task:completed", timeout
-        )
+        event = await self._monitor.wait_for_event(task_id, "task:completed", timeout)
         if not event:
-            raise TimeoutError(
-                f"task:completed not received for {task_id} within {timeout}s"
-            )
+            raise TimeoutError(f"task:completed not received for {task_id} within {timeout}s")
         logger.info("task_completed", extra={"task_id": task_id})
 
     async def _wait_for_response_posted(self, task_id: str) -> None:
         timeout = self._config.timeout_response * self._config.timeout_multiplier
-        event = await self._monitor.wait_for_event(
-            task_id, "task:response_posted", timeout
-        )
+        event = await self._monitor.wait_for_event(task_id, "task:response_posted", timeout)
         if event:
             logger.info("response_posted_received", extra={"task_id": task_id})
         else:
@@ -169,9 +155,7 @@ class BaseFlow(ABC):
 
     async def _extract_conversation_id(self, task_id: str) -> str | None:
         events = await self._monitor.get_events_for_task(task_id)
-        context_events = [
-            e for e in events if e.get("type") == "task:context_built"
-        ]
+        context_events = [e for e in events if e.get("type") == "task:context_built"]
         if context_events:
             return context_events[0].get("data", {}).get("conversation_id")
         return None
@@ -209,9 +193,7 @@ class BaseFlow(ABC):
         try:
             events = await self._monitor.get_events_for_task(task_id)
             await self._evidence.save_events(events)
-            await self._evidence.save_component_status(
-                [c.model_dump() for c in components]
-            )
+            await self._evidence.save_component_status([c.model_dump() for c in components])
             await self._evidence.save_quality_report(quality.model_dump())
         except Exception:
             logger.exception("evidence_save_failed", extra={"task_id": task_id})

@@ -192,7 +192,9 @@ async def handle_slack_webhook(request: Request):
         )
 
     user_text = event.get("text", "")
-    started_title = user_text[:120] if user_text else f"channel={channel} {event.get('type', 'unknown')}"
+    started_title = (
+        user_text[:120] if user_text else f"channel={channel} {event.get('type', 'unknown')}"
+    )
     await notify_task_started(
         settings.slack_api_url,
         notification_channel,

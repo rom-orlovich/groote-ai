@@ -106,11 +106,7 @@ def build_conversation_title(task: dict) -> str:
         channel_name = metadata.get("channel_name", "unknown")
         text = metadata.get("text", "")
         text_preview = text[:50] + "..." if len(text) > 50 else text
-        return (
-            f"Slack: #{channel_name} - {text_preview}"
-            if text
-            else f"Slack: #{channel_name}"
-        )
+        return f"Slack: #{channel_name} - {text_preview}" if text else f"Slack: #{channel_name}"
 
     return f"{source.title()}: Unknown"
 
@@ -125,9 +121,7 @@ async def _lookup_flow(client: httpx.AsyncClient, dashboard_url: str, flow_id: s
     return None
 
 
-async def get_or_create_flow_conversation(
-    dashboard_url: str, task: dict
-) -> str:
+async def get_or_create_flow_conversation(dashboard_url: str, task: dict) -> str:
     flow_id = build_flow_id(task)
 
     async with httpx.AsyncClient(timeout=10.0) as client:
@@ -177,9 +171,7 @@ async def fetch_conversation_context(
         return response.json()
 
 
-async def register_task(
-    dashboard_url: str, task: dict, conversation_id: str
-) -> None:
+async def register_task(dashboard_url: str, task: dict, conversation_id: str) -> None:
     async with httpx.AsyncClient(timeout=10.0) as client:
         response = await client.post(
             f"{dashboard_url}/api/tasks",
@@ -244,7 +236,10 @@ async def post_system_message(
 
 
 async def post_fallback_notice(
-    dashboard_url: str, conversation_id: str, source: str, posted: bool,
+    dashboard_url: str,
+    conversation_id: str,
+    source: str,
+    posted: bool,
     task_id: str | None = None,
 ) -> None:
     if posted:

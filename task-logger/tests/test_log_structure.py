@@ -70,7 +70,6 @@ class TestJsonFileValidity:
 
 
 class TestJsonlFileValidity:
-
     def test_webhook_flow_jsonl_valid(self, tmp_path):
         logger = TaskLogger("task-001", tmp_path)
 

@@ -88,20 +88,24 @@ class ComponentMonitor:
         checks: list[ComponentCheck] = []
 
         created = next((e for e in events if e["type"] == "task:created"), None)
-        checks.append(ComponentCheck(
-            check_name="Task created event found",
-            passed=created is not None,
-            detail="task:created " + ("found" if created else "missing"),
-        ))
+        checks.append(
+            ComponentCheck(
+                check_name="Task created event found",
+                passed=created is not None,
+                detail="task:created " + ("found" if created else "missing"),
+            )
+        )
 
         if created:
             assigned = created.get("data", {}).get("assigned_agent", "")
-            checks.append(ComponentCheck(
-                check_name="Correct agent assigned",
-                passed=assigned == expected_agent,
-                detail=f"Expected {expected_agent}, got {assigned}",
-                evidence={"assigned_agent": assigned, "expected": expected_agent},
-            ))
+            checks.append(
+                ComponentCheck(
+                    check_name="Correct agent assigned",
+                    passed=assigned == expected_agent,
+                    detail=f"Expected {expected_agent}, got {assigned}",
+                    evidence={"assigned_agent": assigned, "expected": expected_agent},
+                )
+            )
 
         return ComponentStatus(name="task-routing", status=_derive_status(checks), checks=checks)
 
@@ -112,35 +116,43 @@ class ComponentMonitor:
         checks: list[ComponentCheck] = []
 
         ctx = next((e for e in events if e["type"] == "task:context_built"), None)
-        checks.append(ComponentCheck(
-            check_name="Context built event",
-            passed=ctx is not None,
-            detail="task:context_built " + ("found" if ctx else "missing"),
-        ))
+        checks.append(
+            ComponentCheck(
+                check_name="Context built event",
+                passed=ctx is not None,
+                detail="task:context_built " + ("found" if ctx else "missing"),
+            )
+        )
 
         if ctx:
             flow_id = ctx.get("data", {}).get("flow_id", "")
-            checks.append(ComponentCheck(
-                check_name="Flow ID matches",
-                passed=flow_id == expected_flow_id,
-                detail=f"Expected {expected_flow_id}, got {flow_id}",
-                evidence={"flow_id": flow_id},
-            ))
+            checks.append(
+                ComponentCheck(
+                    check_name="Flow ID matches",
+                    passed=flow_id == expected_flow_id,
+                    detail=f"Expected {expected_flow_id}, got {flow_id}",
+                    evidence={"flow_id": flow_id},
+                )
+            )
 
         try:
             conv = await self.client.get_conversation_by_flow(expected_flow_id)
-            checks.append(ComponentCheck(
-                check_name="Conversation exists in dashboard",
-                passed=True,
-                detail=f"Conversation found for {expected_flow_id}",
-                evidence={"conversation_id": conv.get("id")},
-            ))
+            checks.append(
+                ComponentCheck(
+                    check_name="Conversation exists in dashboard",
+                    passed=True,
+                    detail=f"Conversation found for {expected_flow_id}",
+                    evidence={"conversation_id": conv.get("id")},
+                )
+            )
         except Exception as exc:
-            checks.append(ComponentCheck(
-                check_name="Conversation exists in dashboard",
-                passed=False,
-                detail=f"Failed to fetch conversation: {exc}",
-            ))
+            checks.append(
+                ComponentCheck(
+                    check_name="Conversation exists in dashboard",
+                    passed=False,
+                    detail=f"Failed to fetch conversation: {exc}",
+                )
+            )
 
         return ComponentStatus(
             name="conversation-bridge", status=_derive_status(checks), checks=checks
@@ -153,8 +165,7 @@ class ComponentMonitor:
         errors = [r for r in tool_results if r.get("data", {}).get("is_error")]
 
         task_completed = any(
-            e["type"] == "task:completed"
-            and e.get("data", {}).get("status") != "failed"
+            e["type"] == "task:completed" and e.get("data", {}).get("status") != "failed"
             for e in events
         )
         critical_errors = errors if not task_completed else []
@@ -191,11 +202,13 @@ class ComponentMonitor:
             return ComponentStatus(
                 name="knowledge-layer",
                 status="healthy",
-                checks=[ComponentCheck(
-                    check_name="Knowledge layer usage",
-                    passed=True,
-                    detail="Not used in this flow (optional)",
-                )],
+                checks=[
+                    ComponentCheck(
+                        check_name="Knowledge layer usage",
+                        passed=True,
+                        detail="Not used in this flow (optional)",
+                    )
+                ],
             )
 
         checks = [
@@ -212,9 +225,7 @@ class ComponentMonitor:
                 evidence={"result_count": len(k_results)},
             ),
         ]
-        return ComponentStatus(
-            name="knowledge-layer", status=_derive_status(checks), checks=checks
-        )
+        return ComponentStatus(name="knowledge-layer", status=_derive_status(checks), checks=checks)
 
     async def check_response_poster(self, task_id: str) -> ComponentStatus:
         events = await self._events(task_id)
@@ -226,24 +237,30 @@ class ComponentMonitor:
         try:
             messages = await self.client.get_conversation_messages(conversation_id)
             roles = {m.get("role") for m in messages}
-            checks.append(ComponentCheck(
-                check_name="Messages exist",
-                passed=len(messages) > 0,
-                detail=f"{len(messages)} message(s) found",
-                evidence={"message_count": len(messages), "roles": sorted(roles)},
-            ))
+            checks.append(
+                ComponentCheck(
+                    check_name="Messages exist",
+                    passed=len(messages) > 0,
+                    detail=f"{len(messages)} message(s) found",
+                    evidence={"message_count": len(messages), "roles": sorted(roles)},
+                )
+            )
             for role in ["system", "assistant"]:
-                checks.append(ComponentCheck(
-                    check_name=f"{role.capitalize()} message present",
-                    passed=role in roles,
-                    detail=f"{role} role {'found' if role in roles else 'missing'}",
-                ))
+                checks.append(
+                    ComponentCheck(
+                        check_name=f"{role.capitalize()} message present",
+                        passed=role in roles,
+                        detail=f"{role} role {'found' if role in roles else 'missing'}",
+                    )
+                )
         except Exception as exc:
-            checks.append(ComponentCheck(
-                check_name="Fetch conversation messages",
-                passed=False,
-                detail=f"Failed: {exc}",
-            ))
+            checks.append(
+                ComponentCheck(
+                    check_name="Fetch conversation messages",
+                    passed=False,
+                    detail=f"Failed: {exc}",
+                )
+            )
         return ComponentStatus(name="dashboard-api", status=_derive_status(checks), checks=checks)
 
     async def check_task_logger(self, task_id: str) -> ComponentStatus:
@@ -253,22 +270,26 @@ class ComponentMonitor:
             return ComponentStatus(
                 name="task-logger",
                 status="healthy" if has_data else "degraded",
-                checks=[ComponentCheck(
-                    check_name="Task logs available",
-                    passed=has_data,
-                    detail=f"Log data {'present' if has_data else 'empty'}",
-                    evidence={"keys": list(logs.keys()) if isinstance(logs, dict) else []},
-                )],
+                checks=[
+                    ComponentCheck(
+                        check_name="Task logs available",
+                        passed=has_data,
+                        detail=f"Log data {'present' if has_data else 'empty'}",
+                        evidence={"keys": list(logs.keys()) if isinstance(logs, dict) else []},
+                    )
+                ],
             )
         except Exception as exc:
             return ComponentStatus(
                 name="task-logger",
                 status="failed",
-                checks=[ComponentCheck(
-                    check_name="Task logs available",
-                    passed=False,
-                    detail=f"Failed to fetch logs: {exc}",
-                )],
+                checks=[
+                    ComponentCheck(
+                        check_name="Task logs available",
+                        passed=False,
+                        detail=f"Failed to fetch logs: {exc}",
+                    )
+                ],
             )
 
     async def full_component_audit(

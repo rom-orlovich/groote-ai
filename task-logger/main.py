@@ -123,10 +123,9 @@ async def get_metrics():
                 lag = group.get("lag", 0)
                 break
 
-        tasks_processed = len([
-            d for d in settings.logs_dir.iterdir()
-            if d.is_dir() and d.name != ".by-id"
-        ])
+        tasks_processed = len(
+            [d for d in settings.logs_dir.iterdir() if d.is_dir() and d.name != ".by-id"]
+        )
 
         return {
             "queue_depth": stream_length,

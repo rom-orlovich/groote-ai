@@ -24,7 +24,9 @@ def extract_posted_comment_ids(tool_events: list[dict] | None) -> list[str]:
         try:
             result_data = json.loads(content) if isinstance(content, str) else content
             if isinstance(result_data, dict):
-                comment_id = result_data.get("id") or result_data.get("ts") or result_data.get("comment_id")
+                comment_id = (
+                    result_data.get("id") or result_data.get("ts") or result_data.get("comment_id")
+                )
                 if comment_id:
                     ids.append(str(comment_id))
         except (json.JSONDecodeError, TypeError):

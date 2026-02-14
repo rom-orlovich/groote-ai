@@ -162,16 +162,18 @@ class TestMCPToolLayer:
 
         await create_issue.fn("owner", "repo", "Bug", "desc", ["bug", "urgent"])
         assert mock_github_api.last_call["args"] == (
-            "owner", "repo", "Bug", "desc", ["bug", "urgent"]
+            "owner",
+            "repo",
+            "Bug",
+            "desc",
+            ["bug", "urgent"],
         )
 
     async def test_create_issue_without_labels(self, mock_github_api):
         from main import create_issue
 
         await create_issue.fn("owner", "repo", "Feature", None, None)
-        assert mock_github_api.last_call["args"] == (
-            "owner", "repo", "Feature", None, None
-        )
+        assert mock_github_api.last_call["args"] == ("owner", "repo", "Feature", None, None)
 
     async def test_search_code_default_per_page(self, mock_github_api):
         from main import search_code

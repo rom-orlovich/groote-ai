@@ -3,7 +3,9 @@ from typing import Any
 SUPPORTED_EVENT_TYPES = ["message", "app_mention"]
 
 
-def should_process_event(event: dict[str, Any], bot_user_id: str | None = None, bot_mentions: list[str] | None = None) -> bool:
+def should_process_event(
+    event: dict[str, Any], bot_user_id: str | None = None, bot_mentions: list[str] | None = None
+) -> bool:
     event_type = event.get("type")
     if event_type not in SUPPORTED_EVENT_TYPES:
         return False
@@ -21,6 +23,7 @@ def should_process_event(event: dict[str, Any], bot_user_id: str | None = None, 
         text = event.get("text", "").lower()
         if bot_mentions is None:
             from config import get_settings
+
             bot_mentions = get_settings().bot_mention_list
         has_mention = any(m in text for m in bot_mentions)
         if not has_mention and "<@" not in event.get("text", ""):

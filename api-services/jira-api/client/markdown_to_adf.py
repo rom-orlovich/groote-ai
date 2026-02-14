@@ -65,8 +65,7 @@ def _heading(level: int, content: list[AdfNode]) -> AdfNode:
 
 def _bullet_list(items: list[list[AdfNode]]) -> AdfNode:
     list_items = [
-        {"type": "listItem", "content": [_paragraph(item_content)]}
-        for item_content in items
+        {"type": "listItem", "content": [_paragraph(item_content)]} for item_content in items
     ]
     return {"type": "bulletList", "content": list_items}
 

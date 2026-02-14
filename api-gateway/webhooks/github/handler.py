@@ -39,14 +39,15 @@ async def _is_duplicate_webhook(settings: object, event_type: str, data: dict) -
         return False
 
 
-
 def _resolve_handler_name(
-    event_type: str, task_info: dict,
+    event_type: str,
+    task_info: dict,
     approve_patterns: list[str] | None = None,
     improve_keywords: set[str] | None = None,
 ) -> str:
     if approve_patterns is None or improve_keywords is None:
         from config import get_settings
+
         settings = get_settings()
         if approve_patterns is None:
             approve_patterns = settings.approve_patterns
@@ -59,7 +60,11 @@ def _resolve_handler_name(
         title = issue.get("title", "")
         comment_body = task_info.get("comment", {}).get("body", "").lower()
         has_pr = bool(issue.get("pull_request") if isinstance(issue, dict) else False)
-        if has_pr and title.startswith("[PLAN]") and any(p in comment_body for p in approve_patterns):
+        if (
+            has_pr
+            and title.startswith("[PLAN]")
+            and any(p in comment_body for p in approve_patterns)
+        ):
             return "github-pr-review"
         if has_pr and any(kw in comment_body for kw in improve_keywords):
             return "github-pr-review"
@@ -219,7 +224,9 @@ async def handle_github_webhook(
             comment_id=ctx["comment_id"],
             issue_number=ctx["issue_number"],
         )
-        immediate_comment_id = immediate_result.get("comment_id") if isinstance(immediate_result, dict) else None
+        immediate_comment_id = (
+            immediate_result.get("comment_id") if isinstance(immediate_result, dict) else None
+        )
         if immediate_comment_id:
             try:
                 track_redis = redis.from_url(settings.redis_url)
@@ -294,8 +301,10 @@ async def handle_github_webhook(
         or task_info.get("pull_request", {}).get("title")
         or ""
     )
-    started_title = f"{ctx['full_name']}#{ctx['issue_number']}: {issue_title}" if issue_title else (
-        f"{ctx['full_name']} #{ctx['issue_number']} {x_github_event}"
+    started_title = (
+        f"{ctx['full_name']}#{ctx['issue_number']}: {issue_title}"
+        if issue_title
+        else (f"{ctx['full_name']} #{ctx['issue_number']} {x_github_event}")
     )
     await notify_task_started(
         settings.slack_api_url,

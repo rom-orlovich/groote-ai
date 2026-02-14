@@ -23,15 +23,9 @@ FLOW_ALIASES: dict[str, list[str]] = {
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Groote AI End-to-End System Audit"
-    )
-    parser.add_argument(
-        "--flow", nargs="+", default=["all"], help="Flows to run"
-    )
-    parser.add_argument(
-        "--timeout-multiplier", type=float, default=1.0
-    )
+    parser = argparse.ArgumentParser(description="Groote AI End-to-End System Audit")
+    parser.add_argument("--flow", nargs="+", default=["all"], help="Flows to run")
+    parser.add_argument("--timeout-multiplier", type=float, default=1.0)
     parser.add_argument("--output-dir", default="./audit-results")
     parser.add_argument("--cleanup", action="store_true")
     parser.add_argument("--verbose", action="store_true")
@@ -41,7 +35,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--github-repo", default=None)
     parser.add_argument("--jira-project", default=None)
     parser.add_argument(
-        "--ticket", default=None,
+        "--ticket",
+        default=None,
         help="Existing ticket key to audit (e.g. KAN-41) instead of creating new",
     )
     return parser.parse_args()
@@ -63,9 +58,7 @@ def resolve_flows(flow_args: list[str]) -> list[str]:
     return deduped
 
 
-async def check_prerequisites(
-    client: AuditClient, config: AuditConfig
-) -> list[str]:
+async def check_prerequisites(client: AuditClient, config: AuditConfig) -> list[str]:
     services = {
         "API Gateway": config.api_gateway_url,
         "Dashboard API": config.dashboard_api_url,
@@ -143,10 +136,7 @@ async def main() -> int:
         if failures:
             for f in failures:
                 log.error("prerequisite_failed", extra={"detail": f})
-            print(
-                f"\nPrerequisite check failed ({len(failures)} issues). "
-                "Fix and retry."
-            )
+            print(f"\nPrerequisite check failed ({len(failures)} issues). Fix and retry.")
             return 1
 
         log.info("all_prerequisites_passed")
@@ -161,9 +151,7 @@ async def main() -> int:
             for flow_id in flow_ids:
                 flow_cls = FLOW_REGISTRY.get(flow_id)
                 if not flow_cls:
-                    log.warning(
-                        "unknown_flow_skipped", extra={"flow_id": flow_id}
-                    )
+                    log.warning("unknown_flow_skipped", extra={"flow_id": flow_id})
                     continue
 
                 evidence = EvidenceCollector(str(base_output), flow_id)
@@ -221,11 +209,7 @@ async def main() -> int:
 
         total_passed = sum(1 for r in flow_reports if r.passed)
         total_failed = len(flow_reports) - total_passed
-        scores = [
-            r.quality.overall_score
-            for r in flow_reports
-            if r.quality is not None
-        ]
+        scores = [r.quality.overall_score for r in flow_reports if r.quality is not None]
         avg_quality = sum(scores) / len(scores) if scores else 0.0
 
         report = AuditReport(

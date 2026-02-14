@@ -26,6 +26,7 @@ def _has_bot_mention(payload: dict[str, Any], bot_mentions: list[str] | None = N
     comment_body = payload.get("comment", {}).get("body", "").lower()
     if bot_mentions is None:
         from config import get_settings
+
         bot_mentions = get_settings().bot_mention_list
     return any(mention in comment_body for mention in bot_mentions)
 
@@ -36,7 +37,9 @@ def _is_pr_comment(payload: dict[str, Any]) -> bool:
 
 
 def should_process_event(
-    event_type: str, action: str | None, payload: dict[str, Any] | None = None,
+    event_type: str,
+    action: str | None,
+    payload: dict[str, Any] | None = None,
     bot_mentions: list[str] | None = None,
 ) -> bool:
     if event_type not in SUPPORTED_EVENTS:

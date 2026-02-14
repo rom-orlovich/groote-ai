@@ -138,7 +138,6 @@ class EventPublisher:
             notification_type=notification_type,
         )
 
-
     async def publish_webhook_payload(
         self, webhook_event_id: str, source: str, event_type: str, payload: dict
     ) -> None:

@@ -80,8 +80,7 @@ class FullChainFlow(BaseFlow):
 
         tool_calls = await self._monitor.get_tool_calls(task_id)
         pr_created = any(
-            "create_pull_request" in str(tc.get("data", {}).get("name", ""))
-            for tc in tool_calls
+            "create_pull_request" in str(tc.get("data", {}).get("name", "")) for tc in tool_calls
         )
 
         if not pr_created:

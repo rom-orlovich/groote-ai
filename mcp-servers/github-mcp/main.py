@@ -64,9 +64,7 @@ async def create_issue(
 
 
 @mcp.tool()
-async def add_issue_comment(
-    owner: str, repo: str, issue_number: int, body: str
-) -> dict[str, Any]:
+async def add_issue_comment(owner: str, repo: str, issue_number: int, body: str) -> dict[str, Any]:
     """
     Add a comment to a GitHub issue.
 
@@ -83,9 +81,7 @@ async def add_issue_comment(
 
 
 @mcp.tool()
-async def add_reaction(
-    owner: str, repo: str, comment_id: int, content: str
-) -> dict[str, Any]:
+async def add_reaction(owner: str, repo: str, comment_id: int, content: str) -> dict[str, Any]:
     """
     Add a reaction to an issue comment.
 
@@ -130,9 +126,7 @@ async def create_pull_request(
 
 
 @mcp.tool()
-async def get_pull_request(
-    owner: str, repo: str, pr_number: int
-) -> dict[str, Any]:
+async def get_pull_request(owner: str, repo: str, pr_number: int) -> dict[str, Any]:
     """
     Get details of a GitHub pull request.
 
@@ -197,9 +191,7 @@ async def get_file_contents(
 
 
 @mcp.tool()
-async def search_code(
-    query: str, per_page: int = 30, page: int = 1
-) -> dict[str, Any]:
+async def search_code(query: str, per_page: int = 30, page: int = 1) -> dict[str, Any]:
     """
     Search for code across GitHub repositories.
 

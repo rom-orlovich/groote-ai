@@ -109,15 +109,20 @@ class TaskWorker:
             task["assigned_agent"] = target_agent
 
             for event_type, extra in [
-                ("task:created", {
-                    "input_message": task.get("prompt", ""),
-                    "source": source,
-                    "assigned_agent": target_agent,
-                }),
+                (
+                    "task:created",
+                    {
+                        "input_message": task.get("prompt", ""),
+                        "source": source,
+                        "assigned_agent": target_agent,
+                    },
+                ),
                 ("task:started", {"conversation_id": conversation_id}),
             ]:
                 await publish_task_event(
-                    self._redis, task_id, event_type,
+                    self._redis,
+                    task_id,
+                    event_type,
                     {"task_id": task_id, "session_id": session_id, **extra},
                 )
 
@@ -132,13 +137,18 @@ class TaskWorker:
                 if not session_id:
                     session_id = webhook_conversation_id
 
-                await publish_task_event(self._redis, task_id, "task:context_built", {
-                    "task_id": task_id,
-                    "enriched_prompt": enriched_prompt[:50000],
-                    "flow_id": conversation_bridge.build_flow_id(task),
-                    "conversation_id": webhook_conversation_id,
-                    "source_metadata": {"source": source, "event_type": event_type_key},
-                })
+                await publish_task_event(
+                    self._redis,
+                    task_id,
+                    "task:context_built",
+                    {
+                        "task_id": task_id,
+                        "enriched_prompt": enriched_prompt[:50000],
+                        "flow_id": conversation_bridge.build_flow_id(task),
+                        "conversation_id": webhook_conversation_id,
+                        "source_metadata": {"source": source, "event_type": event_type_key},
+                    },
+                )
 
             await update_task_status(self._redis, task_id, "in_progress")
             await update_dashboard_task(dashboard_url, task_id, {"status": "running"})
@@ -165,7 +175,9 @@ class TaskWorker:
             if output:
                 await persist_output(self._redis, task_id, output)
                 await publish_task_event(
-                    self._redis, task_id, "task:output",
+                    self._redis,
+                    task_id,
+                    "task:output",
                     {"task_id": task_id, "content": output},
                 )
 
@@ -176,24 +188,36 @@ class TaskWorker:
                 logger.warning("auth_failure_detected", task_id=task_id, pattern=auth_error)
 
             status = "completed" if result.get("success", True) else "failed"
-            await publish_task_event(self._redis, task_id, "task:completed", {
-                "task_id": task_id, "session_id": session_id,
-                "conversation_id": conversation_id, "status": status,
-                "result": output, "duration_seconds": round(duration, 2),
-                "cost_usd": result.get("cost_usd"),
-                "input_tokens": result.get("input_tokens"),
-                "output_tokens": result.get("output_tokens"),
-            })
+            await publish_task_event(
+                self._redis,
+                task_id,
+                "task:completed",
+                {
+                    "task_id": task_id,
+                    "session_id": session_id,
+                    "conversation_id": conversation_id,
+                    "status": status,
+                    "result": output,
+                    "duration_seconds": round(duration, 2),
+                    "cost_usd": result.get("cost_usd"),
+                    "input_tokens": result.get("input_tokens"),
+                    "output_tokens": result.get("output_tokens"),
+                },
+            )
 
-            await update_dashboard_task(dashboard_url, task_id, {
-                "status": status,
-                "output": output[:10000] if output else "",
-                "error": result.get("error"),
-                "cost_usd": result.get("cost_usd"),
-                "input_tokens": result.get("input_tokens"),
-                "output_tokens": result.get("output_tokens"),
-                "duration_seconds": round(duration, 2),
-            })
+            await update_dashboard_task(
+                dashboard_url,
+                task_id,
+                {
+                    "status": status,
+                    "output": output[:10000] if output else "",
+                    "error": result.get("error"),
+                    "cost_usd": result.get("cost_usd"),
+                    "input_tokens": result.get("input_tokens"),
+                    "output_tokens": result.get("output_tokens"),
+                    "duration_seconds": round(duration, 2),
+                },
+            )
 
             target_conversation = conversation_id or webhook_conversation_id
             if target_conversation and result.get("output"):
@@ -203,8 +227,13 @@ class TaskWorker:
 
             if source in ("github", "jira", "slack"):
                 await self._handle_response_posting(
-                    task, result, task_id, source, mcp_already_posted,
-                    webhook_conversation_id, dashboard_url,
+                    task,
+                    result,
+                    task_id,
+                    source,
+                    mcp_already_posted,
+                    webhook_conversation_id,
+                    dashboard_url,
                 )
 
             slack_url = self._settings.slack_api_url
@@ -215,9 +244,13 @@ class TaskWorker:
             )
             if status == "completed":
                 view_url = _build_view_url(task, output)
-                await notify_task_completed(slack_url, slack_ch, source, task_id, output[:500] or "Done", view_url)
+                await notify_task_completed(
+                    slack_url, slack_ch, source, task_id, output[:500] or "Done", view_url
+                )
             elif status == "failed":
-                await notify_task_failed(slack_url, slack_ch, source, task_id, result.get("error", ""))
+                await notify_task_failed(
+                    slack_url, slack_ch, source, task_id, result.get("error", "")
+                )
             logger.info("task_completed", task_id=task_id)
         except Exception as e:
             logger.exception("task_failed", error=str(e))
@@ -227,7 +260,9 @@ class TaskWorker:
                     dashboard_url, task_id, {"status": "failed", "error": str(e)}
                 )
                 await publish_task_event(
-                    self._redis, task_id, "task:failed",
+                    self._redis,
+                    task_id,
+                    "task:failed",
                     {"task_id": task_id, "error": str(e)},
                 )
                 await notify_task_failed(
@@ -244,10 +279,12 @@ class TaskWorker:
         flow_id = conversation_bridge.build_flow_id(task)
         logger.info("webhook_flow_started", task_id=task_id, flow_id=flow_id)
 
-        webhook_conversation_id = (
-            await conversation_bridge.get_or_create_flow_conversation(dashboard_url, task)
+        webhook_conversation_id = await conversation_bridge.get_or_create_flow_conversation(
+            dashboard_url, task
         )
-        logger.info("webhook_conversation_ready", task_id=task_id, conversation_id=webhook_conversation_id)
+        logger.info(
+            "webhook_conversation_ready", task_id=task_id, conversation_id=webhook_conversation_id
+        )
 
         await conversation_bridge.register_task(dashboard_url, task, webhook_conversation_id)
         logger.info("webhook_task_registered", task_id=task_id, session_id=session_id)
@@ -257,25 +294,38 @@ class TaskWorker:
         )
 
         conversation_context = await conversation_bridge.fetch_conversation_context(
-            dashboard_url, webhook_conversation_id, limit=5,
+            dashboard_url,
+            webhook_conversation_id,
+            limit=5,
             roles="user,assistant",
         )
-        logger.info("webhook_context_fetched", task_id=task_id, messages_count=len(conversation_context))
+        logger.info(
+            "webhook_context_fetched", task_id=task_id, messages_count=len(conversation_context)
+        )
 
         task["_webhook_conversation_id"] = webhook_conversation_id
         return await task_routing.build_task_context(task, conversation_context)
 
-    async def _publish_raw_output(
-        self, task_id: str, result: dict[str, Any]
-    ) -> None:
+    async def _publish_raw_output(self, task_id: str, result: dict[str, Any]) -> None:
         raw_for_event = result.get("raw_output", result.get("output", ""))
-        await publish_task_event(self._redis, task_id, "task:raw_output", {
-            "task_id": task_id, "raw_output": raw_for_event[:204800],
-        })
+        await publish_task_event(
+            self._redis,
+            task_id,
+            "task:raw_output",
+            {
+                "task_id": task_id,
+                "raw_output": raw_for_event[:204800],
+            },
+        )
 
     async def _handle_response_posting(
-        self, task: dict, result: dict, task_id: str, source: str,
-        mcp_already_posted: bool, webhook_conversation_id: str | None,
+        self,
+        task: dict,
+        result: dict,
+        task_id: str,
+        source: str,
+        mcp_already_posted: bool,
+        webhook_conversation_id: str | None,
         dashboard_url: str,
     ) -> None:
         mcp_posted = mcp_already_posted
@@ -296,19 +346,32 @@ class TaskWorker:
                     await track_posted_comments(self._redis, [str(comment_id)], task_id, "fallback")
             else:
                 fallback_posted = bool(post_result)
-            logger.info("fallback_response_posted", task_id=task_id, source=source, posted=fallback_posted)
+            logger.info(
+                "fallback_response_posted", task_id=task_id, source=source, posted=fallback_posted
+            )
 
             if webhook_conversation_id:
                 await conversation_bridge.post_fallback_notice(
-                    dashboard_url, webhook_conversation_id, source, fallback_posted,
+                    dashboard_url,
+                    webhook_conversation_id,
+                    source,
+                    fallback_posted,
                     task_id=task_id,
                 )
 
         response_method = "mcp" if mcp_posted else ("fallback" if fallback_posted else "failed")
-        await publish_task_event(self._redis, task_id, "task:response_posted", {
-            "task_id": task_id, "method": response_method,
-            "source": source, "mcp_detected": mcp_posted, "fallback_posted": fallback_posted,
-        })
+        await publish_task_event(
+            self._redis,
+            task_id,
+            "task:response_posted",
+            {
+                "task_id": task_id,
+                "method": response_method,
+                "source": source,
+                "mcp_detected": mcp_posted,
+                "fallback_posted": fallback_posted,
+            },
+        )
 
     async def _execute_task(self, task: dict[str, Any]) -> dict[str, Any]:
         from pathlib import Path
@@ -323,9 +386,15 @@ class TaskWorker:
         output_queue: asyncio.Queue[str | None] = asyncio.Queue()
 
         async def _stream_event(event_type: str, event_data: dict[str, Any]) -> None:
-            await publish_task_event(self._redis, task_id, event_type, {
-                "task_id": task_id, **event_data,
-            })
+            await publish_task_event(
+                self._redis,
+                task_id,
+                event_type,
+                {
+                    "task_id": task_id,
+                    **event_data,
+                },
+            )
 
         try:
             result = await run_cli(

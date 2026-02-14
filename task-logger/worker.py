@@ -140,9 +140,7 @@ async def process_task_event(event: dict):
         task_logger.write_final_result(
             {"success": False, "error": data.get("error"), "completed_at": timestamp}
         )
-        task_logger.enrich_metadata(
-            {"status": "failed", "completed_at": timestamp}
-        )
+        task_logger.enrich_metadata({"status": "failed", "completed_at": timestamp})
 
     elif event_type == TaskEventType.TASK_CONTEXT_BUILT:
         task_logger.enrich_input(

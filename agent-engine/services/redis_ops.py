@@ -26,17 +26,18 @@ async def publish_task_event(
     data: dict[str, Any],
 ) -> None:
     if redis_client:
-        await redis_client.xadd("task_events", {
-            "type": event_type,
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "task_id": task_id,
-            "data": json.dumps(data),
-        })
+        await redis_client.xadd(
+            "task_events",
+            {
+                "type": event_type,
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "task_id": task_id,
+                "data": json.dumps(data),
+            },
+        )
 
 
-async def persist_output(
-    redis_client: redis.Redis | None, task_id: str, output: str
-) -> None:
+async def persist_output(redis_client: redis.Redis | None, task_id: str, output: str) -> None:
     if redis_client:
         key = f"task:{task_id}:output"
         await redis_client.set(key, output)

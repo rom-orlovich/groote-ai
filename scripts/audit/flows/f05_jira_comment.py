@@ -27,9 +27,7 @@ class JiraCommentFlow(BaseFlow):
         if not self._ticket_key:
             ticket = await trigger.create_ticket(
                 summary="[Audit] Analyze panel generator edge cases",
-                description=(
-                    "Review the manga-creator panel generator for edge cases."
-                ),
+                description=("Review the manga-creator panel generator for edge cases."),
                 labels=["ai-agent"],
             )
             self._ticket_key = ticket.artifact_id
@@ -38,8 +36,7 @@ class JiraCommentFlow(BaseFlow):
 
         return await trigger.add_comment(
             self._ticket_key,
-            "Can you also check if the panel generator handles edge cases "
-            "for very large images?",
+            "Can you also check if the panel generator handles edge cases for very large images?",
         )
 
     def expected_agent(self) -> str:

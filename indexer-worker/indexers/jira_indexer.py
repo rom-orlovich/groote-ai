@@ -32,8 +32,16 @@ class JiraIndexer:
                         "max_results": min(max_results, self.config.max_results - len(tickets)),
                         "expand": "renderedFields",
                         "fields": [
-                            "summary", "description", "status", "issuetype",
-                            "priority", "labels", "comment", "created", "updated", "project",
+                            "summary",
+                            "description",
+                            "status",
+                            "issuetype",
+                            "priority",
+                            "labels",
+                            "comment",
+                            "created",
+                            "updated",
+                            "project",
                         ],
                     }
                     if next_page_token:

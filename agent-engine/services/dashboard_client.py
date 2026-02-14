@@ -36,6 +36,4 @@ async def update_dashboard_task(
                 json={k: v for k, v in update.items() if v is not None},
             )
     except Exception as e:
-        logger.warning(
-            "dashboard_task_update_failed", task_id=task_id, error=str(e)
-        )
+        logger.warning("dashboard_task_update_failed", task_id=task_id, error=str(e))

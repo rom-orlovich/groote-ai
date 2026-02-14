@@ -110,9 +110,7 @@ class RedisEventMonitor:
             extra={"type": event_type, "task_id": task_id, "source": source},
         )
 
-    async def wait_for_event(
-        self, task_id: str, event_type: str, timeout: float
-    ) -> dict | None:
+    async def wait_for_event(self, task_id: str, event_type: str, timeout: float) -> dict | None:
         key = (task_id, event_type)
 
         existing = self._find_existing_event(task_id, event_type)
@@ -168,9 +166,7 @@ class RedisEventMonitor:
                 return evt
         return None
 
-    def _find_fresh_source_event(
-        self, source: str, event_type: str, min_epoch: int
-    ) -> dict | None:
+    def _find_fresh_source_event(self, source: str, event_type: str, min_epoch: int) -> dict | None:
         for evt in self._source_events.get(source, []):
             if evt["type"] == event_type and evt.get("_epoch", 0) >= min_epoch:
                 return evt
@@ -180,11 +176,7 @@ class RedisEventMonitor:
         return list(self._events.get(task_id, []))
 
     async def get_tool_calls(self, task_id: str) -> list[dict]:
-        return [
-            evt
-            for evt in self._events.get(task_id, [])
-            if evt["type"] == "task:tool_call"
-        ]
+        return [evt for evt in self._events.get(task_id, []) if evt["type"] == "task:tool_call"]
 
     def clear_source_events(self, source: str) -> None:
         self._epoch_counter += 1

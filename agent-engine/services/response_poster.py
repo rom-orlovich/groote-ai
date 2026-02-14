@@ -46,13 +46,25 @@ async def post_response_to_platform(task: dict, result: dict) -> dict[str, objec
     try:
         if source == "jira":
             post_result = await _post_jira_comment(metadata, output)
-            return post_result if isinstance(post_result, dict) else {"posted": post_result, "comment_id": None}
+            return (
+                post_result
+                if isinstance(post_result, dict)
+                else {"posted": post_result, "comment_id": None}
+            )
         if source == "github":
             post_result = await _post_github_comment(metadata, output)
-            return post_result if isinstance(post_result, dict) else {"posted": post_result, "comment_id": None}
+            return (
+                post_result
+                if isinstance(post_result, dict)
+                else {"posted": post_result, "comment_id": None}
+            )
         if source == "slack":
             post_result = await _post_slack_message(task, output)
-            return post_result if isinstance(post_result, dict) else {"posted": post_result, "comment_id": None}
+            return (
+                post_result
+                if isinstance(post_result, dict)
+                else {"posted": post_result, "comment_id": None}
+            )
     except Exception:
         logger.exception("response_post_failed", source=source)
         return {"posted": False, "comment_id": None}
@@ -107,7 +119,9 @@ async def _post_github_comment(metadata: dict, output: str) -> dict[str, object]
     except Exception:
         pass
 
-    logger.info("response_posted", platform="github", repo=repo, number=number, comment_id=comment_id)
+    logger.info(
+        "response_posted", platform="github", repo=repo, number=number, comment_id=comment_id
+    )
     return {"posted": True, "comment_id": comment_id}
 
 

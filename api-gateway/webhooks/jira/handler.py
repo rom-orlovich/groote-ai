@@ -141,7 +141,8 @@ async def handle_jira_webhook(request: Request):
     )
 
     jira_site = await get_jira_site_url(
-        settings.oauth_service_url, settings.internal_service_key,
+        settings.oauth_service_url,
+        settings.internal_service_key,
     )
     task_info = extract_task_info(webhook_event, data, jira_site_url=jira_site)
     task_id = str(uuid.uuid4())
@@ -149,7 +150,9 @@ async def handle_jira_webhook(request: Request):
 
     try:
         immediate_result = await send_immediate_response(settings.jira_api_url, issue_key)
-        immediate_comment_id = immediate_result.get("comment_id") if isinstance(immediate_result, dict) else None
+        immediate_comment_id = (
+            immediate_result.get("comment_id") if isinstance(immediate_result, dict) else None
+        )
         if immediate_comment_id:
             try:
                 track_redis = redis.from_url(settings.redis_url)

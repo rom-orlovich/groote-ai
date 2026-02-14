@@ -143,14 +143,10 @@ class GitHubTrigger:
 
     async def cleanup_issue(self, issue_number: int) -> None:
         path = f"{self._repo_prefix()}/issues/{issue_number}/comments"
-        await self._client.post_github_api(
-            path, json={"body": "Audit complete, closing"}
-        )
+        await self._client.post_github_api(path, json={"body": "Audit complete, closing"})
         logger.info("github_issue_cleanup", extra={"issue_number": issue_number})
 
     async def cleanup_pr(self, pr_number: int) -> None:
         path = f"{self._repo_prefix()}/issues/{pr_number}/comments"
-        await self._client.post_github_api(
-            path, json={"body": "Audit complete, closing"}
-        )
+        await self._client.post_github_api(path, json={"body": "Audit complete, closing"})
         logger.info("github_pr_cleanup", extra={"pr_number": pr_number})

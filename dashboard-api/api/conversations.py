@@ -561,9 +561,8 @@ async def get_conversation_context(
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    query = (
-        select(ConversationMessageDB)
-        .where(ConversationMessageDB.conversation_id == conversation_id)
+    query = select(ConversationMessageDB).where(
+        ConversationMessageDB.conversation_id == conversation_id
     )
     if roles:
         role_list = [r.strip() for r in roles.split(",")]

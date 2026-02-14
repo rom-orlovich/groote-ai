@@ -76,7 +76,12 @@ async def test_build_task_context_with_knowledge():
         "knowledge": "The login module uses JWT tokens",
         "repos": ["auth-service"],
         "code_snippets": [
-            {"repo": "auth-service", "file_path": "src/auth.py", "content": "def login():", "score": 0.95}
+            {
+                "repo": "auth-service",
+                "file_path": "src/auth.py",
+                "content": "def login():",
+                "score": 0.95,
+            }
         ],
     }
     with patch(
@@ -131,15 +136,26 @@ class TestDuplicateContentDetection:
 
     def test_different_content_not_duplicate(self):
         content = "The weather is nice today and the sun is shining brightly in the clear blue sky"
-        prompt = "Please fix the authentication bug in the login flow for the user management system"
+        prompt = (
+            "Please fix the authentication bug in the login flow for the user management system"
+        )
         assert _is_duplicate_content(content, prompt) is False
 
     @pytest.mark.asyncio
     async def test_duplicate_context_filtered_from_prompt(self):
-        task = {"prompt": "Fix the login bug in the authentication module for user sessions", "source": "jira"}
+        task = {
+            "prompt": "Fix the login bug in the authentication module for user sessions",
+            "source": "jira",
+        }
         context = [
-            {"role": "assistant", "content": "Fix the login bug in the authentication module for user sessions and handle edge cases"},
-            {"role": "assistant", "content": "The database migration was completed successfully with all tables created"},
+            {
+                "role": "assistant",
+                "content": "Fix the login bug in the authentication module for user sessions and handle edge cases",
+            },
+            {
+                "role": "assistant",
+                "content": "The database migration was completed successfully with all tables created",
+            },
         ]
         prompt = await build_task_context(task, context)
         assert "database migration" in prompt

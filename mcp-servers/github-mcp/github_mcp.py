@@ -76,9 +76,7 @@ class GitHubAPI:
         response.raise_for_status()
         return response.json()
 
-    async def get_pull_request(
-        self, owner: str, repo: str, pr_number: int
-    ) -> dict[str, Any]:
+    async def get_pull_request(self, owner: str, repo: str, pr_number: int) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.get(f"/api/v1/repos/{owner}/{repo}/pulls/{pr_number}")
         response.raise_for_status()
@@ -121,9 +119,7 @@ class GitHubAPI:
         response.raise_for_status()
         return response.json()
 
-    async def search_code(
-        self, query: str, per_page: int = 30, page: int = 1
-    ) -> dict[str, Any]:
+    async def search_code(self, query: str, per_page: int = 30, page: int = 1) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.get(
             "/api/v1/search/code",
@@ -161,9 +157,7 @@ class GitHubAPI:
         response.raise_for_status()
         return response.json()
 
-    async def list_repos(
-        self, per_page: int = 100, page: int = 1
-    ) -> dict[str, Any]:
+    async def list_repos(self, per_page: int = 100, page: int = 1) -> dict[str, Any]:
         client = await self._get_client()
         response = await client.get(
             "/api/v1/installation/repos",

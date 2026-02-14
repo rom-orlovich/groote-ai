@@ -116,9 +116,7 @@ class ReportGenerator:
         avg_color = ANSI_GREEN if report.average_quality >= 70 else ANSI_YELLOW
         if report.average_quality < 50:
             avg_color = ANSI_RED
-        lines.append(
-            f"  Average Quality: {avg_color}{report.average_quality:.1f}/100{ANSI_RESET}"
-        )
+        lines.append(f"  Average Quality: {avg_color}{report.average_quality:.1f}/100{ANSI_RESET}")
         lines.append(f"  Evidence: {report.evidence_dir}")
         lines.append(f"{'=' * 60}")
         lines.append("")

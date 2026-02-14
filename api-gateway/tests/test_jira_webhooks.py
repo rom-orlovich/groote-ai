@@ -159,7 +159,8 @@ class TestJiraTaskExtraction:
         payload = jira_issue_created_payload(issue_key="KAN-38")
 
         task_info = extract_task_info(
-            "jira:issue_created", payload,
+            "jira:issue_created",
+            payload,
             jira_site_url="https://mycompany.atlassian.net",
         )
 
@@ -245,29 +246,45 @@ class TestBotCommentDetection:
 
     def test_should_process_skips_bot_comment(self):
         payload = jira_comment_created_payload(
-            issue_key="PROJ-1", author="ai-agent",
+            issue_key="PROJ-1",
+            author="ai-agent",
         )
         payload["issue"]["fields"]["labels"] = ["ai-agent"]
-        assert should_process_event(
-            "comment_created", payload["issue"],
-            comment_data=payload["comment"],
-        ) is False
+        assert (
+            should_process_event(
+                "comment_created",
+                payload["issue"],
+                comment_data=payload["comment"],
+            )
+            is False
+        )
 
     def test_should_process_skips_adf_bot_comment(self):
         adf_body = {
             "type": "doc",
-            "content": [{"type": "paragraph", "content": [
-                {"type": "text", "text": "## Implementation Plan"},
-            ]}],
+            "content": [
+                {
+                    "type": "paragraph",
+                    "content": [
+                        {"type": "text", "text": "## Implementation Plan"},
+                    ],
+                }
+            ],
         }
         payload = jira_comment_created_payload(
-            issue_key="PROJ-1", body=adf_body, author="someone",
+            issue_key="PROJ-1",
+            body=adf_body,
+            author="someone",
         )
         payload["issue"]["fields"]["labels"] = ["ai-agent"]
-        assert should_process_event(
-            "comment_created", payload["issue"],
-            comment_data=payload["comment"],
-        ) is False
+        assert (
+            should_process_event(
+                "comment_created",
+                payload["issue"],
+                comment_data=payload["comment"],
+            )
+            is False
+        )
 
 
 class TestAIAgentLabelRequirement:

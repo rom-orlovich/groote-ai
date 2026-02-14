@@ -31,8 +31,16 @@ KNOWLEDGE_TOOL_PATTERNS = [
 ]
 
 DEFAULT_DOMAIN_TERMS = [
-    "manga", "creator", "panel", "page", "chapter",
-    "character", "story", "layout", "comic", "art",
+    "manga",
+    "creator",
+    "panel",
+    "page",
+    "chapter",
+    "character",
+    "story",
+    "layout",
+    "comic",
+    "art",
 ]
 
 RESPONSE_TOOL_PATTERNS = ["send_slack_message", "add_issue_comment", "add_jira_comment"]
@@ -122,7 +130,8 @@ def score_knowledge(tool_calls: list[dict], criteria: FlowCriteria) -> QualityDi
 
     called_tools = [tc.get("data", {}).get("name", "") for tc in tool_calls]
     used = [
-        tool_name for tool_name in called_tools
+        tool_name
+        for tool_name in called_tools
         if any(_tool_matches(pattern, tool_name) for pattern in KNOWLEDGE_TOOL_PATTERNS)
     ]
 
@@ -164,9 +173,7 @@ def score_knowledge_first(tool_calls: list[dict], criteria: FlowCriteria) -> Qua
     first_domain_idx = -1
 
     for i, tool_name in enumerate(called_tools):
-        is_knowledge = any(
-            _tool_matches(pattern, tool_name) for pattern in KNOWLEDGE_TOOL_PATTERNS
-        )
+        is_knowledge = any(_tool_matches(pattern, tool_name) for pattern in KNOWLEDGE_TOOL_PATTERNS)
         is_internal = tool_name in INTERNAL_TOOLS
         if is_knowledge and first_knowledge_idx == -1:
             first_knowledge_idx = i
@@ -209,7 +216,8 @@ def score_completeness(events: list[dict], criteria: FlowCriteria) -> QualityDim
         )
 
     found = sum(
-        1 for pattern in criteria.required_output_patterns
+        1
+        for pattern in criteria.required_output_patterns
         if re.search(pattern, output, re.IGNORECASE)
     )
     total = len(criteria.required_output_patterns)
@@ -251,8 +259,7 @@ def score_content_quality(events: list[dict], criteria: FlowCriteria) -> Quality
 
     if criteria.negative_output_patterns:
         neg_found = [
-            p for p in criteria.negative_output_patterns
-            if re.search(p, output, re.IGNORECASE)
+            p for p in criteria.negative_output_patterns if re.search(p, output, re.IGNORECASE)
         ]
         if neg_found:
             penalty = len(neg_found) * 25
@@ -280,10 +287,14 @@ def score_delivery(events: list[dict]) -> QualityDimension:
             method = evt.get("data", {}).get("method", "")
             if method == "mcp":
                 return QualityDimension(
-                    name="Delivery Success", score=100, detail="Response posted via MCP",
+                    name="Delivery Success",
+                    score=100,
+                    detail="Response posted via MCP",
                 )
             return QualityDimension(
-                name="Delivery Success", score=75, detail=f"Response posted via fallback: {method}",
+                name="Delivery Success",
+                score=75,
+                detail=f"Response posted via fallback: {method}",
             )
 
     tool_calls = [e for e in events if e["type"] == "task:tool_call"]
@@ -291,17 +302,22 @@ def score_delivery(events: list[dict]) -> QualityDimension:
         tool_name = tc.get("data", {}).get("name", "")
         if any(_tool_matches(p, tool_name) for p in RESPONSE_TOOL_PATTERNS):
             return QualityDimension(
-                name="Delivery Success", score=80,
+                name="Delivery Success",
+                score=80,
                 detail=f"Response tool called: {tool_name} (no confirmation event)",
             )
 
     has_output = any(evt["type"] in ("task:completed", "task:output") for evt in events)
     if has_output:
         return QualityDimension(
-            name="Delivery Success", score=25, detail="Task completed but response not confirmed posted",
+            name="Delivery Success",
+            score=25,
+            detail="Task completed but response not confirmed posted",
         )
     return QualityDimension(
-        name="Delivery Success", score=0, detail="No response delivery detected",
+        name="Delivery Success",
+        score=0,
+        detail="No response delivery detected",
     )
 
 
@@ -321,7 +337,9 @@ def score_execution(events: list[dict], criteria: FlowCriteria) -> QualityDimens
 
     if len(timestamps) < 2:
         return QualityDimension(
-            name="Execution Metrics", score=50, detail="Insufficient timestamps for duration calculation",
+            name="Execution Metrics",
+            score=50,
+            detail="Insufficient timestamps for duration calculation",
         )
 
     timestamps.sort()
@@ -329,7 +347,9 @@ def score_execution(events: list[dict], criteria: FlowCriteria) -> QualityDimens
 
     if duration <= 0:
         return QualityDimension(
-            name="Execution Metrics", score=50, detail="Could not compute duration",
+            name="Execution Metrics",
+            score=50,
+            detail="Could not compute duration",
         )
 
     max_seconds = criteria.max_execution_seconds
@@ -360,5 +380,9 @@ def score_errors(events: list[dict]) -> QualityDimension:
                 error_categories.add("task_failure")
 
     score = max(0, 100 - len(error_categories) * 25)
-    detail = "No errors detected" if not error_categories else f"Errors: {', '.join(sorted(error_categories))}"
+    detail = (
+        "No errors detected"
+        if not error_categories
+        else f"Errors: {', '.join(sorted(error_categories))}"
+    )
     return QualityDimension(name="Error Freedom", score=score, detail=detail)

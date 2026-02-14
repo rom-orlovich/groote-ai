@@ -70,19 +70,13 @@ async def test_get_or_create_flow_conversation_existing():
         "issue": {"key": "KAN-6", "summary": "Fix bug"},
     }
 
-    with patch(
-        "services.conversation_bridge.httpx.AsyncClient"
-    ) as mock_client:
+    with patch("services.conversation_bridge.httpx.AsyncClient") as mock_client:
         mock_response = AsyncMock()
         mock_response.status_code = 200
         mock_response.json = lambda: {"conversation_id": "conv-123"}
-        mock_client.return_value.__aenter__.return_value.get = AsyncMock(
-            return_value=mock_response
-        )
+        mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
 
-        conv_id = await get_or_create_flow_conversation(
-            "http://dashboard:5000", task
-        )
+        conv_id = await get_or_create_flow_conversation("http://dashboard:5000", task)
         assert conv_id == "conv-123"
 
 
@@ -93,9 +87,7 @@ async def test_get_or_create_flow_conversation_new():
         "issue": {"key": "KAN-7", "summary": "New bug"},
     }
 
-    with patch(
-        "services.conversation_bridge.httpx.AsyncClient"
-    ) as mock_client:
+    with patch("services.conversation_bridge.httpx.AsyncClient") as mock_client:
         mock_get_response = AsyncMock()
         mock_get_response.status_code = 404
 
@@ -104,23 +96,17 @@ async def test_get_or_create_flow_conversation_new():
         mock_post_response.json = lambda: {"conversation_id": "conv-456"}
         mock_post_response.raise_for_status = lambda: None
 
-        mock_client_instance = (
-            mock_client.return_value.__aenter__.return_value
-        )
+        mock_client_instance = mock_client.return_value.__aenter__.return_value
         mock_client_instance.get = AsyncMock(return_value=mock_get_response)
         mock_client_instance.post = AsyncMock(return_value=mock_post_response)
 
-        conv_id = await get_or_create_flow_conversation(
-            "http://dashboard:5000", task
-        )
+        conv_id = await get_or_create_flow_conversation("http://dashboard:5000", task)
         assert conv_id == "conv-456"
 
 
 @pytest.mark.asyncio
 async def test_fetch_conversation_context():
-    with patch(
-        "services.conversation_bridge.httpx.AsyncClient"
-    ) as mock_client:
+    with patch("services.conversation_bridge.httpx.AsyncClient") as mock_client:
         mock_response = AsyncMock()
         mock_response.status_code = 200
         mock_response.json = lambda: [
@@ -129,12 +115,8 @@ async def test_fetch_conversation_context():
             {"role": "user", "content": "Message 2"},
         ]
         mock_response.raise_for_status = lambda: None
-        mock_client.return_value.__aenter__.return_value.get = AsyncMock(
-            return_value=mock_response
-        )
+        mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
 
-        messages = await fetch_conversation_context(
-            "http://dashboard:5000", "conv-123", limit=5
-        )
+        messages = await fetch_conversation_context("http://dashboard:5000", "conv-123", limit=5)
         assert len(messages) == 3
         assert messages[0]["content"] == "Message 1"

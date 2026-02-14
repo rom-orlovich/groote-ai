@@ -182,12 +182,26 @@ class TestCLIHandlesResponsesViaMCP:
 class TestTaskOutputEventPublishing:
     @patch("services.slack_notifier.httpx.AsyncClient")
     @patch("worker.conversation_bridge.post_fallback_notice", new_callable=AsyncMock)
-    @patch("worker.conversation_bridge.fetch_conversation_context", new_callable=AsyncMock, return_value=[])
+    @patch(
+        "worker.conversation_bridge.fetch_conversation_context",
+        new_callable=AsyncMock,
+        return_value=[],
+    )
     @patch("worker.conversation_bridge.post_system_message", new_callable=AsyncMock)
     @patch("worker.conversation_bridge.register_task", new_callable=AsyncMock)
-    @patch("worker.conversation_bridge.get_or_create_flow_conversation", new_callable=AsyncMock, return_value="conv-123")
+    @patch(
+        "worker.conversation_bridge.get_or_create_flow_conversation",
+        new_callable=AsyncMock,
+        return_value="conv-123",
+    )
     async def test_task_output_published_after_cli_completes(
-        self, mock_get_conv, mock_register, mock_sys_msg, mock_fetch_ctx, mock_fallback, mock_http_cls
+        self,
+        mock_get_conv,
+        mock_register,
+        mock_sys_msg,
+        mock_fetch_ctx,
+        mock_fallback,
+        mock_http_cls,
     ):
         import json
 
@@ -271,7 +285,10 @@ class TestBuildViewUrl:
 
         task = {"source": "jira"}
         output = "PR created: https://github.com/rom-orlovich/manga-creator/pull/103"
-        assert _build_view_url(task, output) == "https://github.com/rom-orlovich/manga-creator/pull/103"
+        assert (
+            _build_view_url(task, output)
+            == "https://github.com/rom-orlovich/manga-creator/pull/103"
+        )
 
     def test_pr_url_extracted_from_markdown_link(self):
         from worker import _build_view_url

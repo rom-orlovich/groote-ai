@@ -89,7 +89,12 @@ class ClaudeCLIRunner:
 
                     stdout_line_count += 1
                     if stdout_line_count <= 3:
-                        logger.debug("cli_stdout_line", task_id=task_id, line_num=stdout_line_count, preview=line_str[:200])
+                        logger.debug(
+                            "cli_stdout_line",
+                            task_id=task_id,
+                            line_num=stdout_line_count,
+                            preview=line_str[:200],
+                        )
 
                     try:
                         data = json.loads(line_str)
@@ -303,7 +308,11 @@ class ClaudeCLIRunner:
 
         elif msg_type == "user":
             await handle_user_message(
-                data, accumulated_output, output_queue, tool_events, last_tool_name,
+                data,
+                accumulated_output,
+                output_queue,
+                tool_events,
+                last_tool_name,
                 event_callback,
             )
 

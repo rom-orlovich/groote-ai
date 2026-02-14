@@ -34,9 +34,7 @@ class QualityEvaluator:
         self._monitor = monitor
         self._pass_threshold = pass_threshold
 
-    async def evaluate(
-        self, task_id: str, criteria: FlowCriteria
-    ) -> QualityReport:
+    async def evaluate(self, task_id: str, criteria: FlowCriteria) -> QualityReport:
         events = await self._monitor.get_events_for_task(task_id)
         tool_calls = await self._monitor.get_tool_calls(task_id)
 
@@ -63,8 +61,7 @@ class QualityEvaluator:
         overall = weighted_sum // total_weight if total_weight > 0 else 0
 
         critical_failed = any(
-            dim.score < 50 for dim in dimensions
-            if dim.name in CRITICAL_DIMENSIONS
+            dim.score < 50 for dim in dimensions if dim.name in CRITICAL_DIMENSIONS
         )
         passed = overall >= self._pass_threshold and not critical_failed
 

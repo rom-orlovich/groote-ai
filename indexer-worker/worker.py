@@ -231,7 +231,9 @@ class IndexerWorker:
         if not isinstance(source.config, ConfluenceSourceConfig):
             return
 
-        indexer = ConfluenceIndexer(source.org_id, source.config, jira_api_url=settings.jira_api_url)
+        indexer = ConfluenceIndexer(
+            source.org_id, source.config, jira_api_url=settings.jira_api_url
+        )
 
         pages = await indexer.fetch_pages()
         status.items_total += len(pages)
