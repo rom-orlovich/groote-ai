@@ -77,8 +77,8 @@ Environment variables (via `config/settings.py`):
 
 ```bash
 # Core Settings
-PORT=8080
-CLI_PROVIDER=claude              # "claude" or "cursor"
+PORT=9100                             # Default port (Docker deployment uses 8080-8089)
+CLI_PROVIDER=claude                   # "claude" or "cursor"
 MAX_CONCURRENT_TASKS=5
 TASK_TIMEOUT_SECONDS=3600
 
@@ -88,15 +88,15 @@ REDIS_PORT=6379
 REDIS_DB=0
 
 # Knowledge Services (optional)
-KNOWLEDGE_SERVICES_ENABLED=false
+KNOWLEDGE_SERVICES_ENABLED=true       # Changed default to true
 LLAMAINDEX_URL=http://llamaindex-service:8002
 KNOWLEDGE_GRAPH_URL=http://gkg-service:4000
 KNOWLEDGE_TIMEOUT_SECONDS=10.0
 KNOWLEDGE_RETRY_COUNT=2
 
 # Model Selection
-CLAUDE_MODEL_COMPLEX=opus        # For planning tasks
-CLAUDE_MODEL_EXECUTION=sonnet    # For execution tasks
+CLAUDE_MODEL_COMPLEX=opus             # For planning tasks
+CLAUDE_MODEL_EXECUTION=sonnet         # For execution tasks
 CURSOR_MODEL_COMPLEX=claude-sonnet-4.5
 CURSOR_MODEL_EXECUTION=composer-1
 ```
