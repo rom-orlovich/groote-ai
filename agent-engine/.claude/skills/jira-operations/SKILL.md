@@ -25,14 +25,24 @@ Jira operations using MCP tools for all API interactions.
 
 **Always use MCP tools for Jira API operations:**
 
+### Issue Management
+- `jira:get_jira_issue` - Get issue details
+- `jira:create_jira_issue` - Create issue (markdown description auto-converted to ADF)
+- `jira:update_jira_issue` - Update issue fields
 - `jira:add_jira_comment` - Add comments (markdown auto-converted to ADF)
-- `jira:get_issue` - Get issue details
-- `jira:update_issue` - Update issue fields
-- `jira:transition_issue` - Change issue status
-- `jira:search_issues` - Search with JQL
+- `jira:transition_jira_issue` - Change issue status
+- `jira:search_jira_issues` - Search with JQL
+- `jira:get_jira_transitions` - List available transitions
+
+### Project & Board Management
+- `jira:create_jira_project` - Create a new Jira project
+- `jira:get_jira_boards` - List boards (optionally by project)
+- `jira:create_jira_board` - Create a Kanban or Scrum board
 
 **MCP tools are documented in [flow.md](flow.md)** including:
 
+- Project and board creation
+- Issue creation with structured templates
 - Comment posting with markdown
 - Issue updates and transitions
 - JQL search examples

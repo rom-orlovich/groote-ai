@@ -1,6 +1,86 @@
-# Jira Response Templates
+# Jira Templates
 
-Templates for posting responses back to Jira after completing tasks.
+Templates for creating issues and posting responses to Jira.
+
+## Issue Creation Templates
+
+### Standard Task
+
+```markdown
+Summary: [Component] Action verb - Brief detail (max 80 chars)
+```
+
+```markdown
+## Overview
+
+One paragraph explaining what this task accomplishes and why it matters.
+
+## Acceptance Criteria
+
+- First measurable criterion
+- Second measurable criterion
+- Third measurable criterion
+
+## Technical Notes
+
+- **Key files:** `path/to/file.py`, `path/to/other.ts`
+- **Dependencies:** List any blocking tickets (e.g., KAN-42)
+- **Scope:** S / M / L
+```
+
+### Bug Report
+
+```markdown
+Summary: [Component] Fix - Brief bug description
+```
+
+```markdown
+## Bug Description
+
+What is happening vs what should happen.
+
+## Steps to Reproduce
+
+1. First step
+2. Second step
+3. Observe the bug
+
+## Expected Behavior
+
+What should happen instead.
+
+## Technical Notes
+
+- **Affected files:** `path/to/file.py`
+- **Root cause:** Brief description if known
+- **Scope:** S / M / L
+```
+
+### Epic
+
+```markdown
+Summary: [Groote AI] Epic name - High-level goal
+```
+
+```markdown
+## Goal
+
+What this epic achieves when all child tasks are complete.
+
+## Scope
+
+- Feature area 1
+- Feature area 2
+- Feature area 3
+
+## Success Criteria
+
+- Measurable outcome 1
+- Measurable outcome 2
+```
+
+**IMPORTANT:** Always use real newlines in descriptions, never literal `\n`.
+Use markdown formatting (headings, bullets, bold, code) for structured readability.
 
 ## Comment Templates
 
