@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from services.task_routing import (
     _is_duplicate_content,
@@ -8,6 +8,18 @@ from services.task_routing import (
     detect_mcp_posting,
     resolve_target_agent,
 )
+
+
+@pytest.fixture(autouse=True)
+def _mock_bot_config():
+    mock_settings = MagicMock()
+    mock_settings.approve_patterns = ["@agent approve", "@groote approve"]
+    mock_settings.improve_keyword_set = {"improve", "fix", "update", "refactor", "change", "implement", "address"}
+    mock_settings.bot_mention_list = ["@agent", "@groote"]
+    with patch("services.task_routing._get_bot_config", return_value=(
+        mock_settings.approve_patterns, mock_settings.improve_keyword_set,
+    )):
+        yield mock_settings
 
 
 @pytest.fixture(autouse=True)
@@ -135,6 +147,27 @@ class TestPlanApprovalRouting:
             "comment": {"body": "@agent approve"},
         }
         assert _is_plan_approval(task) is False
+
+    def test_groote_approve_routes_to_pr_review(self):
+        task = {
+            "issue": {
+                "title": "[PLAN] Implement feature X",
+                "pull_request": {"url": "https://api.github.com/repos/test/pulls/1"},
+            },
+            "comment": {"body": "@groote approve this plan"},
+        }
+        assert _is_plan_approval(task) is True
+        assert resolve_target_agent("github", "issue_comment", task) == "github-pr-review"
+
+    def test_groote_approve_case_insensitive(self):
+        task = {
+            "issue": {
+                "title": "[PLAN] Some plan",
+                "pull_request": {"url": "https://api.github.com/repos/test/pulls/2"},
+            },
+            "comment": {"body": "@Groote Approve "},
+        }
+        assert _is_plan_approval(task) is True
 
     def test_pr_improve_request_via_issue_pull_request(self):
         task = {

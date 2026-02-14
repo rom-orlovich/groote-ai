@@ -38,10 +38,19 @@ async def _is_duplicate_webhook(settings: object, event_type: str, data: dict) -
         return False
 
 
-IMPROVE_KEYWORDS = {"improve", "fix", "update", "refactor", "change", "implement", "address"}
 
-
-def _resolve_handler_name(event_type: str, task_info: dict) -> str:
+def _resolve_handler_name(
+    event_type: str, task_info: dict,
+    approve_patterns: list[str] | None = None,
+    improve_keywords: set[str] | None = None,
+) -> str:
+    if approve_patterns is None or improve_keywords is None:
+        from config import get_settings
+        settings = get_settings()
+        if approve_patterns is None:
+            approve_patterns = settings.approve_patterns
+        if improve_keywords is None:
+            improve_keywords = settings.improve_keyword_set
     if event_type in ("pull_request", "pull_request_review_comment"):
         return "github-pr-review"
     if event_type == "issue_comment":
@@ -49,9 +58,9 @@ def _resolve_handler_name(event_type: str, task_info: dict) -> str:
         title = issue.get("title", "")
         comment_body = task_info.get("comment", {}).get("body", "").lower()
         has_pr = bool(issue.get("pull_request") if isinstance(issue, dict) else False)
-        if has_pr and title.startswith("[PLAN]") and "@agent approve" in comment_body:
+        if has_pr and title.startswith("[PLAN]") and any(p in comment_body for p in approve_patterns):
             return "github-pr-review"
-        if has_pr and any(kw in comment_body for kw in IMPROVE_KEYWORDS):
+        if has_pr and any(kw in comment_body for kw in improve_keywords):
             return "github-pr-review"
     return "github-issue-handler"
 

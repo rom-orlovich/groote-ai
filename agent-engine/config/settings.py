@@ -35,6 +35,23 @@ class Settings(BaseSettings):
     knowledge_timeout_seconds: float = 10.0
     knowledge_retry_count: int = 2
 
+    # Bot configuration
+    bot_mentions: str = "@agent,@groote"
+    bot_approve_command: str = "approve"
+    bot_improve_keywords: str = "improve,fix,update,refactor,change,implement,address"
+
+    @property
+    def bot_mention_list(self) -> list[str]:
+        return [m.strip().lower() for m in self.bot_mentions.split(",") if m.strip()]
+
+    @property
+    def approve_patterns(self) -> list[str]:
+        return [f"{m} {self.bot_approve_command}" for m in self.bot_mention_list]
+
+    @property
+    def improve_keyword_set(self) -> set[str]:
+        return {k.strip().lower() for k in self.bot_improve_keywords.split(",") if k.strip()}
+
     @property
     def redis_url(self) -> str:
         return f"redis://{self.redis_host}:{self.redis_port}/{self.redis_db}"

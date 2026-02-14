@@ -24,7 +24,7 @@ Determine your mode from the task metadata:
 
 - **REVIEW mode**: Event is `pull_request.opened`, `pull_request.synchronize`, or `pull_request.review_requested`
 - **IMPROVE mode**: Event is `issue_comment.created` or `pull_request_review_comment.created` on a PR, AND the comment body contains action keywords (`improve`, `fix`, `update`, `refactor`, `change`, `implement`, `address`)
-- **PLAN APPROVAL mode**: Event is `issue_comment.created` on a PR whose title starts with `[PLAN]`, AND the comment body contains `@agent approve`
+- **PLAN APPROVAL mode**: Event is `issue_comment.created` on a PR whose title starts with `[PLAN]`, AND the comment body contains `@agent approve` or `@groote approve`
 
 ## MCP Tools Used
 
@@ -207,7 +207,7 @@ Use the channel from `source_metadata.notification_channel` (or the default proj
 
 From task metadata:
 - Check if `source_metadata.pr_title` starts with `[PLAN]`
-- Check if `comment_body` contains `@agent approve`
+- Check if `comment_body` contains `@agent approve` OR `@groote approve`
 - If both conditions met, this is a plan approval
 
 ### 2. Load the Plan
@@ -219,19 +219,17 @@ From task metadata:
    - Per-repo file changes
    - Testing strategy
 
-### 3. Delegate to Brain
+### 3. Execute the Plan
 
-Pass the approved plan to the brain agent for team execution:
+**MANDATORY**: You MUST implement the plan changes yourself using MCP tools. Do NOT skip steps or delegate to other agents.
 
-```
-Task: Execute approved multi-repo plan
-Plan PR: {pr_url}
-Plan Content: {parsed plan}
-Source: {original task source}
-Affected Repos: {list from plan}
-```
+For each repo in the plan:
+1. Create a feature branch via `github:create_branch`
+2. Implement all file changes via `github:create_or_update_file`
+3. Create a PR via `github:create_pull_request` with body including `Closes #{plan_pr_number}`
+4. Post implementation summary as a comment on the plan PR
 
-The brain will create an execution team with per-repo executors and a verifier.
+> **IMPORTANT**: Use `Closes #{plan_pr_number}` (not "Closes plan PR #N") in the implementation PR body so GitHub auto-closes the plan PR.
 
 ### 4. Acknowledge Approval
 
@@ -239,7 +237,25 @@ Post a comment on the plan PR via `github:add_issue_comment`:
 ```markdown
 Plan approved. Starting implementation...
 
-Execution will create separate PRs for each repository with the actual code changes.
+Implementation PR: #{implementation_pr_number}
+Closes #{plan_pr_number}
+```
+
+### 5. Slack Notification
+
+After completing implementation, send a Slack notification:
+
+**Tool**: `slack:send_slack_message`
+
+Use the channel from `source_metadata.notification_channel` (or the default project channel).
+
+```markdown
+*Plan Approved & Implemented*
+
+*Plan PR:* <{plan_pr_url}|#{plan_pr_number} {plan_pr_title}>
+*Implementation PR:* <{impl_pr_url}|#{impl_pr_number}>
+*Repo:* `{repo}`
+*Summary:* {one-line summary of changes made}
 ```
 
 ---

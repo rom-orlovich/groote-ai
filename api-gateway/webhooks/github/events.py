@@ -8,8 +8,6 @@ SUPPORTED_EVENTS = {
     "push": None,
 }
 
-BOT_MENTION_PATTERNS = ("@agent", "@groote")
-
 
 def is_bot_sender(payload: dict[str, Any]) -> bool:
     sender = payload.get("sender", {})
@@ -24,9 +22,12 @@ def is_bot_sender(payload: dict[str, Any]) -> bool:
     return comment_user.get("type") == "Bot"
 
 
-def _has_bot_mention(payload: dict[str, Any]) -> bool:
+def _has_bot_mention(payload: dict[str, Any], bot_mentions: list[str] | None = None) -> bool:
     comment_body = payload.get("comment", {}).get("body", "").lower()
-    return any(mention in comment_body for mention in BOT_MENTION_PATTERNS)
+    if bot_mentions is None:
+        from config import get_settings
+        bot_mentions = get_settings().bot_mention_list
+    return any(mention in comment_body for mention in bot_mentions)
 
 
 def _is_pr_comment(payload: dict[str, Any]) -> bool:
@@ -35,7 +36,8 @@ def _is_pr_comment(payload: dict[str, Any]) -> bool:
 
 
 def should_process_event(
-    event_type: str, action: str | None, payload: dict[str, Any] | None = None
+    event_type: str, action: str | None, payload: dict[str, Any] | None = None,
+    bot_mentions: list[str] | None = None,
 ) -> bool:
     if event_type not in SUPPORTED_EVENTS:
         return False
@@ -49,7 +51,7 @@ def should_process_event(
             return False
 
     if payload and event_type == "issue_comment" and _is_pr_comment(payload):
-        if not _has_bot_mention(payload):
+        if not _has_bot_mention(payload, bot_mentions):
             return False
 
     return True

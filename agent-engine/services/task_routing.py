@@ -15,7 +15,7 @@ POSTING_TOOLS = {"add_jira_comment", "add_issue_comment", "send_slack_message"}
 GITHUB_PR_EVENTS = {"pull_request", "pull_request_review_comment"}
 GITHUB_ISSUE_EVENTS = {"issues", "issue_comment"}
 
-IMPROVE_KEYWORDS = {"improve", "fix", "update", "refactor", "change", "implement", "address"}
+
 
 AGENT_ROUTING: dict[str, str | dict[str, str]] = {
     "jira": "jira-code-plan",
@@ -29,17 +29,26 @@ AGENT_ROUTING: dict[str, str | dict[str, str]] = {
 }
 
 
-def _is_plan_approval(task: dict[str, Any]) -> bool:
+
+def _get_bot_config() -> tuple[list[str], set[str]]:
+    from config import get_settings
+    settings = get_settings()
+    return settings.approve_patterns, settings.improve_keyword_set
+
+
+def _is_plan_approval(task: dict[str, Any], approve_patterns: list[str] | None = None) -> bool:
     issue = task.get("issue", {})
     if not isinstance(issue, dict):
         return False
     title = issue.get("title", "")
     comment_body = task.get("comment", {}).get("body", "").lower()
     has_pr = bool(issue.get("pull_request"))
-    return has_pr and title.startswith("[PLAN]") and "@agent approve" in comment_body
+    if approve_patterns is None:
+        approve_patterns, _ = _get_bot_config()
+    return has_pr and title.startswith("[PLAN]") and any(p in comment_body for p in approve_patterns)
 
 
-def _is_pr_improve_request(task: dict[str, Any]) -> bool:
+def _is_pr_improve_request(task: dict[str, Any], improve_keywords: set[str] | None = None) -> bool:
     metadata = task.get("source_metadata", {})
     has_pr = bool(metadata.get("pr_number") or metadata.get("pull_request"))
     if not has_pr:
@@ -47,8 +56,10 @@ def _is_pr_improve_request(task: dict[str, Any]) -> bool:
         has_pr = bool(isinstance(issue, dict) and issue.get("pull_request"))
     if not has_pr:
         return False
+    if improve_keywords is None:
+        _, improve_keywords = _get_bot_config()
     prompt = task.get("prompt", "").lower()
-    return any(kw in prompt for kw in IMPROVE_KEYWORDS)
+    return any(kw in prompt for kw in improve_keywords)
 
 
 def resolve_target_agent(source: str, event_type: str, task: dict[str, Any] | None = None) -> str:
