@@ -7,6 +7,7 @@ from config import get_settings
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from services.event_publisher import EventPublisher
+from services.loop_prevention import LoopPrevention
 from services.slack_notifier import (
     get_notification_channel,
     notify_task_failed,
@@ -103,6 +104,28 @@ async def handle_slack_webhook(request: Request):
             )
     except Exception as e:
         logger.warning("slack_dedup_check_failed", error=str(e))
+
+    if event_ts:
+        try:
+            redis_client = redis.from_url(settings.redis_url)
+            loop_prevention = LoopPrevention(redis_client)
+            if await loop_prevention.is_own_comment(event_ts):
+                await redis_client.aclose()
+                logger.info("slack_own_message_skipped", event_ts=event_ts)
+                if publisher:
+                    await publisher.publish_webhook_skipped(
+                        webhook_event_id=webhook_event_id,
+                        source="slack",
+                        event_type=event.get("type", "unknown"),
+                        reason="own_comment_loop_prevention",
+                    )
+                return JSONResponse(
+                    status_code=200,
+                    content={"status": "skipped", "reason": "Own message detected"},
+                )
+            await redis_client.aclose()
+        except Exception as e:
+            logger.warning("slack_loop_prevention_check_failed", error=str(e))
 
     notification_channel = await get_notification_channel(
         settings.oauth_service_url,

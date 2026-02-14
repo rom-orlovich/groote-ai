@@ -45,7 +45,7 @@ class CheckpointRunner:
             self.checkpoints.append(checkpoint)
             logger.info(
                 "checkpoint_skipped",
-                extra={"name": name},
+                extra={"checkpoint_name": name},
             )
             return checkpoint
 
@@ -56,7 +56,7 @@ class CheckpointRunner:
             checkpoint.evidence = evidence
             logger.info(
                 "checkpoint_passed",
-                extra={"name": name, "duration": time.monotonic() - start},
+                extra={"checkpoint_name": name, "duration": time.monotonic() - start},
             )
         except Exception as exc:
             checkpoint.status = CheckpointStatus.FAILED
@@ -65,7 +65,7 @@ class CheckpointRunner:
                 self._failed_critical = True
             logger.warning(
                 "checkpoint_failed",
-                extra={"name": name, "error": str(exc), "critical": critical},
+                extra={"checkpoint_name": name, "error": str(exc), "critical": critical},
             )
         finally:
             checkpoint.duration_seconds = round(time.monotonic() - start, 3)

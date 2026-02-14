@@ -34,33 +34,36 @@ def _format_slack_response(output: str) -> str:
     return _truncate(output, MAX_SLACK_LENGTH)
 
 
-async def post_response_to_platform(task: dict, result: dict) -> bool:
+async def post_response_to_platform(task: dict, result: dict) -> dict[str, object]:
     source = task.get("source", "")
     output = result.get("output", "")
 
     if not output or not source:
-        return False
+        return {"posted": False, "comment_id": None}
 
     metadata = get_source_metadata(task)
 
     try:
         if source == "jira":
-            return await _post_jira_comment(metadata, output)
+            post_result = await _post_jira_comment(metadata, output)
+            return post_result if isinstance(post_result, dict) else {"posted": post_result, "comment_id": None}
         if source == "github":
-            return await _post_github_comment(metadata, output)
+            post_result = await _post_github_comment(metadata, output)
+            return post_result if isinstance(post_result, dict) else {"posted": post_result, "comment_id": None}
         if source == "slack":
-            return await _post_slack_message(task, output)
+            post_result = await _post_slack_message(task, output)
+            return post_result if isinstance(post_result, dict) else {"posted": post_result, "comment_id": None}
     except Exception:
         logger.exception("response_post_failed", source=source)
-        return False
+        return {"posted": False, "comment_id": None}
 
-    return False
+    return {"posted": False, "comment_id": None}
 
 
-async def _post_jira_comment(metadata: dict, output: str) -> bool:
+async def _post_jira_comment(metadata: dict, output: str) -> dict[str, object]:
     issue_key = metadata.get("key", "")
     if not issue_key:
-        return False
+        return {"posted": False, "comment_id": None}
 
     body = _format_jira_response(output, metadata)
 
@@ -71,15 +74,22 @@ async def _post_jira_comment(metadata: dict, output: str) -> bool:
         )
         response.raise_for_status()
 
-    logger.info("response_posted", platform="jira", issue_key=issue_key)
-    return True
+    comment_id = None
+    try:
+        resp_data = response.json()
+        comment_id = resp_data.get("id") or resp_data.get("comment_id")
+    except Exception:
+        pass
+
+    logger.info("response_posted", platform="jira", issue_key=issue_key, comment_id=comment_id)
+    return {"posted": True, "comment_id": comment_id}
 
 
-async def _post_github_comment(metadata: dict, output: str) -> bool:
+async def _post_github_comment(metadata: dict, output: str) -> dict[str, object]:
     repo = metadata.get("repo", "")
     number = metadata.get("number", "")
     if not repo or not number:
-        return False
+        return {"posted": False, "comment_id": None}
 
     body = _format_github_response(output)
 
@@ -90,15 +100,22 @@ async def _post_github_comment(metadata: dict, output: str) -> bool:
         )
         response.raise_for_status()
 
-    logger.info("response_posted", platform="github", repo=repo, number=number)
-    return True
+    comment_id = None
+    try:
+        resp_data = response.json()
+        comment_id = resp_data.get("id") or resp_data.get("comment_id")
+    except Exception:
+        pass
+
+    logger.info("response_posted", platform="github", repo=repo, number=number, comment_id=comment_id)
+    return {"posted": True, "comment_id": comment_id}
 
 
-async def _post_slack_message(task: dict, output: str) -> bool:
+async def _post_slack_message(task: dict, output: str) -> dict[str, object]:
     channel = task.get("channel", "")
     thread_ts = task.get("thread_ts", "")
     if not channel:
-        return False
+        return {"posted": False, "comment_id": None}
 
     body = _format_slack_response(output)
 
@@ -113,5 +130,12 @@ async def _post_slack_message(task: dict, output: str) -> bool:
         )
         response.raise_for_status()
 
-    logger.info("response_posted", platform="slack", channel=channel)
-    return True
+    comment_id = None
+    try:
+        resp_data = response.json()
+        comment_id = resp_data.get("ts") or resp_data.get("message_id")
+    except Exception:
+        pass
+
+    logger.info("response_posted", platform="slack", channel=channel, comment_id=comment_id)
+    return {"posted": True, "comment_id": comment_id}

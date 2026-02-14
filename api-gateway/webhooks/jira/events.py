@@ -25,11 +25,15 @@ BOT_COMMENT_SECTION_MARKERS = [
     "**Intent**:",
     "**Verdict**:",
     "_Automated by Groote AI_",
+    "Automated by Groote AI",
     "_Automated by Claude Agent_",
+    "Automated by Claude Agent",
     "<!-- FINAL_RESPONSE -->",
     "Status: Plan Already Exists",
     "Status: Plan Created",
     "Status: Implementation Complete",
+    "Status: Awaiting approval",
+    "Status Update",
 ]
 
 

@@ -175,7 +175,7 @@ async def main() -> int:
                     "config": config,
                     "evidence_collector": evidence,
                 }
-                if args.ticket and hasattr(flow_cls, "__init__"):
+                if args.ticket and flow_id in ("f02", "f05", "f09"):
                     flow_kwargs["existing_ticket_key"] = args.ticket
                 flow = flow_cls(**flow_kwargs)
                 cleanup_flows.append(flow)

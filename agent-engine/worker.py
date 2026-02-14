@@ -9,14 +9,18 @@ import structlog
 from services import conversation_bridge, task_routing
 from services.dashboard_client import post_assistant_message, update_dashboard_task
 from services.knowledge import KnowledgeService, NoopKnowledgeService
+from services.loop_tracking import extract_posted_comment_ids, track_posted_comments
 from services.output_validation import clean_agent_output, detect_auth_failure
 from services.redis_ops import persist_output, publish_task_event, update_task_status
-from services.slack_notifier import get_notification_channel, notify_task_completed, notify_task_failed
+from services.slack_notifier import (
+    get_notification_channel,
+    notify_task_completed,
+    notify_task_failed,
+)
 
 logger = structlog.get_logger(__name__)
 
 POSTING_TOOL_NAMES = {"send_slack_message", "add_issue_comment", "add_jira_comment"}
-
 
 _PR_URL_PATTERN = re.compile(r"https://github\.com/[^\s\)\]]+/pull/\d+")
 
@@ -101,7 +105,7 @@ class TaskWorker:
 
             source = task.get("source", "unknown")
             event_type_key = task.get("event_type", "unknown")
-            target_agent = task_routing.resolve_target_agent(source, event_type_key, task)
+            target_agent = "brain"
             task["assigned_agent"] = target_agent
 
             for event_type, extra in [
@@ -279,10 +283,19 @@ class TaskWorker:
 
         if mcp_posted:
             logger.info("mcp_response_posted", task_id=task_id, source=source)
+            comment_ids = extract_posted_comment_ids(result.get("tool_events"))
+            await track_posted_comments(self._redis, comment_ids, task_id, "mcp")
         else:
             from services.response_poster import post_response_to_platform
 
-            fallback_posted = await post_response_to_platform(task, result)
+            post_result = await post_response_to_platform(task, result)
+            if isinstance(post_result, dict):
+                fallback_posted = post_result.get("posted", False)
+                comment_id = post_result.get("comment_id")
+                if comment_id:
+                    await track_posted_comments(self._redis, [str(comment_id)], task_id, "fallback")
+            else:
+                fallback_posted = bool(post_result)
             logger.info("fallback_response_posted", task_id=task_id, source=source, posted=fallback_posted)
 
             if webhook_conversation_id:

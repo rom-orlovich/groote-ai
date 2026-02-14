@@ -7,6 +7,7 @@ from config import get_settings
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from services.event_publisher import EventPublisher
+from services.loop_prevention import LoopPrevention
 from services.oauth_config import get_jira_site_url
 from services.slack_notifier import (
     get_notification_channel,
@@ -109,6 +110,30 @@ async def handle_jira_webhook(request: Request):
     except Exception as e:
         logger.warning("jira_dedup_check_failed", error=str(e))
 
+    if webhook_event == "comment_created" and comment:
+        comment_id = comment.get("id")
+        if comment_id:
+            try:
+                redis_client = redis.from_url(settings.redis_url)
+                loop_prevention = LoopPrevention(redis_client)
+                if await loop_prevention.is_own_comment(str(comment_id)):
+                    await redis_client.aclose()
+                    logger.info("jira_own_comment_skipped", comment_id=comment_id)
+                    if publisher:
+                        await publisher.publish_webhook_skipped(
+                            webhook_event_id=webhook_event_id,
+                            source="jira",
+                            event_type=webhook_event,
+                            reason="own_comment_loop_prevention",
+                        )
+                    return JSONResponse(
+                        status_code=200,
+                        content={"status": "skipped", "reason": "Own comment detected"},
+                    )
+                await redis_client.aclose()
+            except Exception as e:
+                logger.warning("jira_loop_prevention_check_failed", error=str(e))
+
     notification_channel = await get_notification_channel(
         settings.oauth_service_url,
         settings.internal_service_key,
@@ -123,7 +148,16 @@ async def handle_jira_webhook(request: Request):
     task_info["task_id"] = task_id
 
     try:
-        await send_immediate_response(settings.jira_api_url, issue_key)
+        immediate_result = await send_immediate_response(settings.jira_api_url, issue_key)
+        immediate_comment_id = immediate_result.get("comment_id") if isinstance(immediate_result, dict) else None
+        if immediate_comment_id:
+            try:
+                track_redis = redis.from_url(settings.redis_url)
+                loop_prev = LoopPrevention(track_redis)
+                await loop_prev.track_posted_comment(str(immediate_comment_id))
+                await track_redis.aclose()
+            except Exception as track_err:
+                logger.warning("jira_immediate_tracking_failed", error=str(track_err))
         if publisher:
             await publisher.publish_response_immediate(
                 webhook_event_id=webhook_event_id,

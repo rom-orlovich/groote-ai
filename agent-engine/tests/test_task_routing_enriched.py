@@ -1,29 +1,25 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from services.task_routing import (
     _is_duplicate_content,
-    _is_plan_approval,
     build_task_context,
     detect_mcp_posting,
-    resolve_target_agent,
 )
 
 
 @pytest.fixture(autouse=True)
-def _mock_bot_config():
+def _mock_settings():
     mock_settings = MagicMock()
-    mock_settings.approve_patterns = ["@agent approve", "@groote approve"]
-    mock_settings.improve_keyword_set = {"improve", "fix", "update", "refactor", "change", "implement", "address"}
-    mock_settings.bot_mention_list = ["@agent", "@groote"]
-    with patch("services.task_routing._get_bot_config", return_value=(
-        mock_settings.approve_patterns, mock_settings.improve_keyword_set,
-    )):
+    mock_settings.bot_mentions = "@agent,@groote"
+    mock_settings.bot_approve_command = "approve"
+    mock_settings.bot_improve_keywords = "improve,fix,update,refactor,change,implement,address"
+    with patch("config.get_settings", return_value=mock_settings):
         yield mock_settings
 
 
 @pytest.fixture(autouse=True)
-def _mock_knowledge(monkeypatch):
+def _mock_knowledge():
     empty_ctx = {"knowledge": "", "repos": [], "code_snippets": []}
     with patch(
         "services.task_routing._fetch_knowledge_context",
@@ -97,6 +93,22 @@ async def test_build_task_context_with_knowledge():
         assert "Relevant Code" in prompt
 
 
+@pytest.mark.asyncio
+async def test_build_task_context_includes_bot_config():
+    task = {"prompt": "Fix the bug", "source": "github", "event_type": "issue_comment"}
+    prompt = await build_task_context(task)
+    assert "Bot-Mentions: @agent,@groote" in prompt
+    assert "Approve-Command: approve" in prompt
+    assert "Improve-Keywords: improve,fix,update,refactor,change,implement,address" in prompt
+
+
+@pytest.mark.asyncio
+async def test_build_task_context_no_target_agent():
+    task = {"prompt": "Fix the bug", "source": "github", "event_type": "issue_comment"}
+    prompt = await build_task_context(task)
+    assert "Target-Agent:" not in prompt
+
+
 def test_detect_mcp_posting_true():
     assert detect_mcp_posting("[TOOL] Using add_jira_comment\n  body: test")
     assert detect_mcp_posting("[TOOL] Using add_issue_comment\n  body: review")
@@ -107,77 +119,6 @@ def test_detect_mcp_posting_false():
     assert not detect_mcp_posting("General analysis output")
     assert not detect_mcp_posting(None)
     assert not detect_mcp_posting("")
-
-
-class TestPlanApprovalRouting:
-    def test_plan_approval_routes_to_pr_review(self):
-        task = {
-            "issue": {
-                "title": "[PLAN] Implement feature X",
-                "pull_request": {"url": "https://api.github.com/repos/test/pulls/1"},
-            },
-            "comment": {"body": "@agent approve this plan"},
-        }
-        assert _is_plan_approval(task) is True
-        assert resolve_target_agent("github", "issue_comment", task) == "github-pr-review"
-
-    def test_non_plan_pr_comment_not_detected(self):
-        task = {
-            "issue": {
-                "title": "Regular PR title",
-                "pull_request": {"url": "https://api.github.com/repos/test/pulls/1"},
-            },
-            "comment": {"body": "looks good"},
-        }
-        assert _is_plan_approval(task) is False
-
-    def test_plan_without_approve_keyword_not_detected(self):
-        task = {
-            "issue": {
-                "title": "[PLAN] Implement feature X",
-                "pull_request": {"url": "https://api.github.com/repos/test/pulls/1"},
-            },
-            "comment": {"body": "needs changes"},
-        }
-        assert _is_plan_approval(task) is False
-
-    def test_plan_on_issue_not_pr_not_detected(self):
-        task = {
-            "issue": {"title": "[PLAN] Implement feature X"},
-            "comment": {"body": "@agent approve"},
-        }
-        assert _is_plan_approval(task) is False
-
-    def test_groote_approve_routes_to_pr_review(self):
-        task = {
-            "issue": {
-                "title": "[PLAN] Implement feature X",
-                "pull_request": {"url": "https://api.github.com/repos/test/pulls/1"},
-            },
-            "comment": {"body": "@groote approve this plan"},
-        }
-        assert _is_plan_approval(task) is True
-        assert resolve_target_agent("github", "issue_comment", task) == "github-pr-review"
-
-    def test_groote_approve_case_insensitive(self):
-        task = {
-            "issue": {
-                "title": "[PLAN] Some plan",
-                "pull_request": {"url": "https://api.github.com/repos/test/pulls/2"},
-            },
-            "comment": {"body": "@Groote Approve "},
-        }
-        assert _is_plan_approval(task) is True
-
-    def test_pr_improve_request_via_issue_pull_request(self):
-        task = {
-            "issue": {
-                "title": "Fix auth flow",
-                "pull_request": {"url": "https://api.github.com/repos/test/pulls/1"},
-            },
-            "prompt": "Please fix the error handling",
-        }
-        assert resolve_target_agent("github", "issue_comment", task) == "github-pr-review"
 
 
 class TestDuplicateContentDetection:

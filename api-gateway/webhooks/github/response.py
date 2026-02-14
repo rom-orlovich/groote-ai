@@ -40,7 +40,7 @@ async def send_error_reaction(github_api_url: str, owner: str, repo: str, commen
 
 async def send_issue_comment(
     github_api_url: str, owner: str, repo: str, issue_number: int, body: str
-) -> bool:
+) -> dict[str, object]:
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.post(
@@ -48,10 +48,16 @@ async def send_issue_comment(
                 json={"body": body},
             )
             response.raise_for_status()
-        return True
+        comment_id = None
+        try:
+            resp_data = response.json()
+            comment_id = resp_data.get("id") or resp_data.get("comment_id")
+        except Exception:
+            pass
+        return {"sent": True, "comment_id": comment_id}
     except Exception as e:
         logger.warning("github_comment_failed", error=str(e))
-        return False
+        return {"sent": False, "comment_id": None}
 
 
 async def send_immediate_response(
@@ -61,9 +67,10 @@ async def send_immediate_response(
     repo: str,
     comment_id: int | None,
     issue_number: int | None,
-) -> bool:
+) -> dict[str, object]:
     if event_type == "issue_comment" and comment_id:
-        return await send_eyes_reaction(github_api_url, owner, repo, comment_id)
+        result = await send_eyes_reaction(github_api_url, owner, repo, comment_id)
+        return {"sent": result, "comment_id": None}
     if event_type == "issues" and issue_number:
         return await send_issue_comment(
             github_api_url, owner, repo, issue_number, MESSAGE_ISSUE_PROCESSING
@@ -72,7 +79,7 @@ async def send_immediate_response(
         return await send_issue_comment(
             github_api_url, owner, repo, issue_number, MESSAGE_PR_PROCESSING
         )
-    return True
+    return {"sent": True, "comment_id": None}
 
 
 async def send_error_response(
@@ -95,7 +102,7 @@ async def send_error_response(
 
 async def post_completion_comment(
     github_api_url: str, owner: str, repo: str, issue_number: int, output: str, success: bool
-) -> bool:
+) -> dict[str, object]:
     prefix = "" if success else "Task failed.\n\n"
     body = f"{prefix}{output}"
     if len(body) > 8000:

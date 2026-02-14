@@ -11,7 +11,7 @@ from pathlib import Path
 AGENTS_DIR = Path(__file__).resolve().parent.parent / ".claude" / "agents"
 
 EXPECTED_MODELS = {
-    "brain": "opus",
+    "brain": "sonnet",
     "planning": "opus",
     "github-pr-review": "opus",
     "verifier": "opus",

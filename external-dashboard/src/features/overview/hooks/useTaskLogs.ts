@@ -21,14 +21,16 @@ export interface AgentOutputEntry {
 export interface WebhookFlowEntry {
   stage: string;
   timestamp: string;
-  details?: Record<string, unknown>;
+  data?: Record<string, unknown>;
 }
 
 export interface KnowledgeInteraction {
   type: string;
-  query?: string;
-  result?: string;
   timestamp?: string;
+  tool_name?: string;
+  input?: string;
+  content?: string;
+  is_error?: boolean;
 }
 
 export interface FullTaskLogResponse {

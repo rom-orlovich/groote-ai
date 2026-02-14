@@ -23,7 +23,7 @@ class TestGitHubImmediateResponse:
             "http://github-api:3001", "issue_comment", "myorg", "myrepo", 456, 123
         )
 
-        assert result is True
+        assert result.get("sent", result) is True if isinstance(result, dict) else result is True
         url = mock_cls.return_value.__aenter__.return_value.post.call_args[0][0]
         assert "/reactions" in url
         payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
@@ -39,7 +39,7 @@ class TestGitHubImmediateResponse:
             "http://github-api:3001", "issues", "myorg", "myrepo", None, 123
         )
 
-        assert result is True
+        assert result.get("sent", result) is True if isinstance(result, dict) else result is True
         url = mock_cls.return_value.__aenter__.return_value.post.call_args[0][0]
         assert "/issues/123/comments" in url
 
@@ -53,7 +53,7 @@ class TestGitHubImmediateResponse:
             "http://github-api:3001", "pull_request", "myorg", "myrepo", None, 42
         )
 
-        assert result is True
+        assert result.get("sent", result) is True if isinstance(result, dict) else result is True
         url = mock_cls.return_value.__aenter__.return_value.post.call_args[0][0]
         assert "/issues/42/comments" in url
 
@@ -80,7 +80,7 @@ class TestGitHubImmediateResponse:
             "http://github-api:3001", "myorg", "myrepo", 123, "Here is the fix", True
         )
 
-        assert result is True
+        assert result.get("sent", result) is True if isinstance(result, dict) else result is True
         body = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]["body"]
         assert "Here is the fix" in body
 
@@ -107,7 +107,7 @@ class TestJiraImmediateResponse:
 
         result = await send_immediate_response("http://jira-api:3002", "PROJ-123")
 
-        assert result is True
+        assert result.get("sent", result) is True if isinstance(result, dict) else result is True
         url = mock_cls.return_value.__aenter__.return_value.post.call_args[0][0]
         assert "/issues/PROJ-123/comments" in url
 
@@ -119,7 +119,7 @@ class TestJiraImmediateResponse:
 
         result = await send_error_response("http://jira-api:3002", "PROJ-123", "Redis down")
 
-        assert result is True
+        assert result.get("sent", result) is True if isinstance(result, dict) else result is True
         body = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]["body"]
         assert "Redis down" in body
 
@@ -133,7 +133,7 @@ class TestJiraImmediateResponse:
             "http://jira-api:3002", "PROJ-123", "Task done", True
         )
 
-        assert result is True
+        assert result.get("sent", result) is True if isinstance(result, dict) else result is True
 
 
 class TestSlackImmediateResponse:
@@ -147,7 +147,7 @@ class TestSlackImmediateResponse:
             "http://slack-api:3003", "C123", "thread_ts_1", "event_ts_1"
         )
 
-        assert result is True
+        assert result.get("sent", result) is True if isinstance(result, dict) else result is True
         calls = mock_cls.return_value.__aenter__.return_value.post.call_args_list
         assert len(calls) >= 2
 
@@ -161,7 +161,7 @@ class TestSlackImmediateResponse:
             "http://slack-api:3003", "C123", "thread_ts_1", "event_ts_1", "Queue full"
         )
 
-        assert result is True
+        assert result.get("sent", result) is True if isinstance(result, dict) else result is True
 
     @patch("webhooks.slack.response.httpx.AsyncClient")
     async def test_thread_reply_uses_thread_ts(self, mock_cls):
@@ -171,7 +171,7 @@ class TestSlackImmediateResponse:
 
         result = await send_slack_message("http://slack-api:3003", "C123", "Hello", "thread_ts_1")
 
-        assert result is True
+        assert result.get("sent", result) is True if isinstance(result, dict) else result is True
         payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
         assert payload["thread_ts"] == "thread_ts_1"
         assert payload["channel"] == "C123"
@@ -186,7 +186,7 @@ class TestSlackImmediateResponse:
             "http://slack-api:3003", "C123", "thread_ts_1", "All done!", True
         )
 
-        assert result is True
+        assert result.get("sent", result) is True if isinstance(result, dict) else result is True
 
 
 class TestSlackNotifier:
@@ -200,7 +200,7 @@ class TestSlackNotifier:
             "http://slack-api:3003", "#ops", "github", "task-1", "Fix auth bug", agent="brain"
         )
 
-        assert result is True
+        assert result.get("sent", result) is True if isinstance(result, dict) else result is True
         payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
         assert "Task Started" in payload["text"]
         assert "blocks" in payload
@@ -219,7 +219,7 @@ class TestSlackNotifier:
             "http://slack-api:3003", "#ops", "jira", "task-2", "Timeout"
         )
 
-        assert result is True
+        assert result.get("sent", result) is True if isinstance(result, dict) else result is True
         payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
         assert "Task Failed" in payload["text"]
         assert "blocks" in payload
@@ -231,7 +231,7 @@ class TestSlackNotifier:
         result = await notify_task_started(
             "http://slack-api:3003", "", "github", "task-1", "summary"
         )
-        assert result is False
+        assert (result.get("sent", result) if isinstance(result, dict) else result) is False
 
     @patch("services.slack_notifier.httpx.AsyncClient")
     async def test_task_completed_sends_blocks_with_buttons(self, mock_cls):
@@ -243,7 +243,7 @@ class TestSlackNotifier:
             "http://slack-api:3003", "#ops", "slack", "task-3", "Done"
         )
 
-        assert result is True
+        assert result.get("sent", result) is True if isinstance(result, dict) else result is True
         payload = mock_cls.return_value.__aenter__.return_value.post.call_args[1]["json"]
         assert "Task Completed" in payload["text"]
         assert "blocks" in payload
@@ -264,7 +264,7 @@ class TestHttpFailuresHandledGracefully:
         mock_cls.return_value = mock_client
 
         result = await send_eyes_reaction("http://github-api:3001", "o", "r", 1)
-        assert result is False
+        assert (result.get("sent", result) if isinstance(result, dict) else result) is False
 
     @patch("webhooks.jira.response.httpx.AsyncClient")
     async def test_jira_comment_failure_returns_false(self, mock_cls):
@@ -278,7 +278,7 @@ class TestHttpFailuresHandledGracefully:
         mock_cls.return_value = mock_client
 
         result = await send_jira_comment("http://jira-api:3002", "K-1", "text")
-        assert result is False
+        assert (result.get("sent", result) if isinstance(result, dict) else result) is False
 
     @patch("webhooks.slack.response.httpx.AsyncClient")
     async def test_slack_message_failure_returns_false(self, mock_cls):
@@ -292,4 +292,4 @@ class TestHttpFailuresHandledGracefully:
         mock_cls.return_value = mock_client
 
         result = await send_slack_message("http://slack-api:3003", "C1", "text")
-        assert result is False
+        assert (result.get("sent", result) if isinstance(result, dict) else result) is False

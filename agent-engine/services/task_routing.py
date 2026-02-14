@@ -12,70 +12,6 @@ logger = structlog.get_logger(__name__)
 
 POSTING_TOOLS = {"add_jira_comment", "add_issue_comment", "send_slack_message"}
 
-GITHUB_PR_EVENTS = {"pull_request", "pull_request_review_comment"}
-GITHUB_ISSUE_EVENTS = {"issues", "issue_comment"}
-
-
-
-AGENT_ROUTING: dict[str, str | dict[str, str]] = {
-    "jira": "jira-code-plan",
-    "github": {
-        "issues": "github-issue-handler",
-        "issue_comment": "github-issue-handler",
-        "pull_request": "github-pr-review",
-        "pull_request_review_comment": "github-pr-review",
-    },
-    "slack": "slack-inquiry",
-}
-
-
-
-def _get_bot_config() -> tuple[list[str], set[str]]:
-    from config import get_settings
-    settings = get_settings()
-    return settings.approve_patterns, settings.improve_keyword_set
-
-
-def _is_plan_approval(task: dict[str, Any], approve_patterns: list[str] | None = None) -> bool:
-    issue = task.get("issue", {})
-    if not isinstance(issue, dict):
-        return False
-    title = issue.get("title", "")
-    comment_body = task.get("comment", {}).get("body", "").lower()
-    has_pr = bool(issue.get("pull_request"))
-    if approve_patterns is None:
-        approve_patterns, _ = _get_bot_config()
-    return has_pr and title.startswith("[PLAN]") and any(p in comment_body for p in approve_patterns)
-
-
-def _is_pr_improve_request(task: dict[str, Any], improve_keywords: set[str] | None = None) -> bool:
-    metadata = task.get("source_metadata", {})
-    has_pr = bool(metadata.get("pr_number") or metadata.get("pull_request"))
-    if not has_pr:
-        issue = task.get("issue", {})
-        has_pr = bool(isinstance(issue, dict) and issue.get("pull_request"))
-    if not has_pr:
-        return False
-    if improve_keywords is None:
-        _, improve_keywords = _get_bot_config()
-    prompt = task.get("prompt", "").lower()
-    return any(kw in prompt for kw in improve_keywords)
-
-
-def resolve_target_agent(source: str, event_type: str, task: dict[str, Any] | None = None) -> str:
-    if source == "github" and event_type == "issue_comment" and task:
-        if _is_plan_approval(task):
-            return "github-pr-review"
-        if _is_pr_improve_request(task):
-            return "github-pr-review"
-
-    route = AGENT_ROUTING.get(source)
-    if isinstance(route, str):
-        return route
-    if isinstance(route, dict):
-        return route.get(event_type, "brain")
-    return "brain"
-
 
 async def _fetch_knowledge_context(prompt: str, org_id: str) -> dict[str, Any]:
     llamaindex_url = os.getenv("LLAMAINDEX_URL", "http://llamaindex-service:8002")
@@ -159,12 +95,18 @@ def _is_duplicate_content(content: str, prompt: str) -> bool:
 async def build_task_context(
     task: dict[str, Any], conversation_context: list[dict] | None = None
 ) -> str:
+    from config import get_settings
+
     source = task.get("source", "unknown")
     event_type = task.get("event_type", "unknown")
     metadata = get_source_metadata(task)
     base_prompt = task.get("prompt", "")
-    target_agent = resolve_target_agent(source, event_type, task)
     org_id = os.getenv("ORG_ID", "default-org")
+
+    settings = get_settings()
+    bot_mentions = settings.bot_mentions
+    approve_command = settings.bot_approve_command
+    improve_keywords = settings.bot_improve_keywords
 
     knowledge_ctx = await _fetch_knowledge_context(base_prompt, org_id)
     knowledge_section = _format_knowledge_section(knowledge_ctx, org_id)
@@ -187,7 +129,9 @@ async def build_task_context(
     return f"""## Task
 Source: {source}
 Event: {event_type}
-Target-Agent: {target_agent}
+Bot-Mentions: {bot_mentions}
+Approve-Command: {approve_command}
+Improve-Keywords: {improve_keywords}
 Knowledge-Org-ID: {org_id}
 {metadata_lines}
 {knowledge_section}

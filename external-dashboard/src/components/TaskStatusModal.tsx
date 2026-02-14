@@ -1,9 +1,9 @@
 import { clsx } from "clsx";
-import { ChevronDown, ChevronRight, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { AgentOutputEntry } from "../features/overview/hooks/useTaskLogs";
 import { useFullTaskLogs } from "../features/overview/hooks/useTaskLogs";
 import { useTaskModal } from "../hooks/useTaskModal";
+import { AgentOutputTab, FinalResultTab, KnowledgeTab, WebhookFlowTab } from "./TaskModalTabs";
 
 type TabKey = "agent" | "webhook" | "knowledge" | "result";
 
@@ -137,166 +137,6 @@ export function TaskStatusModal() {
   );
 }
 
-function AgentOutputTab({ entries }: { entries?: AgentOutputEntry[] }) {
-  if (!entries?.length) return <EmptyState label="No agent output yet." />;
-
-  return (
-    <div className="space-y-1">
-      {entries.map((entry, i) => (
-        <AgentOutputLine key={`${entry.type}-${i}`} entry={entry} />
-      ))}
-    </div>
-  );
-}
-
-function AgentOutputLine({ entry }: { entry: AgentOutputEntry }) {
-  const [expanded, setExpanded] = useState(false);
-
-  if (entry.type === "thinking") {
-    return (
-      <div className="text-gray-500 italic pl-2 border-l border-gray-800 py-0.5">
-        {entry.content}
-      </div>
-    );
-  }
-
-  if (entry.type === "tool_call") {
-    return (
-      <div className="py-0.5">
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-1.5 w-full text-left"
-        >
-          {expanded ? (
-            <ChevronDown size={10} className="text-gray-500 shrink-0" />
-          ) : (
-            <ChevronRight size={10} className="text-gray-500 shrink-0" />
-          )}
-          <span className="bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded text-[9px] font-bold">
-            TOOL
-          </span>
-          <span className="text-yellow-300">{entry.tool_name || "unknown"}</span>
-        </button>
-        {expanded && entry.tool_input && (
-          <pre className="mt-1 ml-6 p-2 bg-gray-900/50 rounded text-gray-400 overflow-x-auto whitespace-pre-wrap text-[9px]">
-            {formatJson(entry.tool_input)}
-          </pre>
-        )}
-      </div>
-    );
-  }
-
-  if (entry.type === "tool_result") {
-    const isError = entry.is_error;
-    return (
-      <div className="py-0.5">
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-1.5 w-full text-left"
-        >
-          {expanded ? (
-            <ChevronDown size={10} className="text-gray-500 shrink-0" />
-          ) : (
-            <ChevronRight size={10} className="text-gray-500 shrink-0" />
-          )}
-          <span
-            className={clsx(
-              "px-1.5 py-0.5 rounded text-[9px] font-bold",
-              isError ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400",
-            )}
-          >
-            {isError ? "ERROR" : "RESULT"}
-          </span>
-          <span className={isError ? "text-red-300" : "text-green-300"}>
-            {entry.tool_name || "unknown"}
-          </span>
-        </button>
-        {expanded && entry.content && (
-          <pre className="mt-1 ml-6 p-2 bg-gray-900/50 rounded text-gray-400 overflow-x-auto whitespace-pre-wrap text-[9px] max-h-40 overflow-y-auto">
-            {entry.content}
-          </pre>
-        )}
-      </div>
-    );
-  }
-
-  if (entry.type === "raw_output") {
-    return (
-      <pre className="text-gray-400 bg-gray-900/30 p-1 rounded whitespace-pre-wrap">
-        {entry.content}
-      </pre>
-    );
-  }
-
-  return <div className="text-gray-200 py-0.5">{entry.content}</div>;
-}
-
-function WebhookFlowTab({
-  events,
-}: {
-  events?: { stage: string; timestamp: string; details?: Record<string, unknown> }[];
-}) {
-  if (!events?.length) return <EmptyState label="No webhook flow data." />;
-
-  return (
-    <div className="space-y-2">
-      {events.map((event) => (
-        <div key={`${event.stage}-${event.timestamp}`} className="flex gap-3 items-start">
-          <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-          <div>
-            <span className="text-blue-400 font-bold">{event.stage}</span>
-            <span className="text-gray-600 ml-2 text-[9px]">
-              {new Date(event.timestamp).toLocaleTimeString()}
-            </span>
-            {event.details && (
-              <pre className="text-gray-500 text-[9px] mt-0.5">
-                {JSON.stringify(event.details, null, 2)}
-              </pre>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function KnowledgeTab({
-  interactions,
-}: {
-  interactions?: { type: string; query?: string; result?: string; timestamp?: string }[];
-}) {
-  if (!interactions?.length) return <EmptyState label="No knowledge interactions." />;
-
-  return (
-    <div className="space-y-2">
-      {interactions.map((item) => (
-        <div
-          key={`${item.type}-${item.timestamp}`}
-          className="border-l border-purple-800 pl-2 py-1"
-        >
-          <span className="bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded text-[9px] font-bold">
-            {item.type}
-          </span>
-          {item.query && <div className="text-gray-400 mt-1">Q: {item.query}</div>}
-          {item.result && <div className="text-gray-300 mt-0.5">R: {item.result}</div>}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function FinalResultTab({ result }: { result?: Record<string, unknown> }) {
-  if (!result) return <EmptyState label="No final result yet." />;
-
-  return <pre className="text-gray-300 whitespace-pre-wrap">{JSON.stringify(result, null, 2)}</pre>;
-}
-
-function EmptyState({ label }: { label: string }) {
-  return <div className="text-gray-600 italic">{label}</div>;
-}
-
 function getStatusColor(status: string) {
   switch (status) {
     case "completed":
@@ -319,12 +159,4 @@ function MetadataField({ label, value }: { label: string; value: string }) {
       <div className="text-[10px] font-mono text-app-main truncate">{value}</div>
     </div>
   );
-}
-
-function formatJson(input: string): string {
-  try {
-    return JSON.stringify(JSON.parse(input), null, 2);
-  } catch {
-    return input;
-  }
 }

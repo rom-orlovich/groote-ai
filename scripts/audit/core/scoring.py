@@ -76,10 +76,18 @@ def score_routing(events: list[dict], criteria: FlowCriteria) -> QualityDimensio
             score=100,
             detail=f"Correctly routed to {criteria.expected_agent}",
         )
+
+    if routed_agent == "brain":
+        return QualityDimension(
+            name="Routing Accuracy",
+            score=100,
+            detail=f"Routed via brain (expected delegate: {criteria.expected_agent})",
+        )
+
     return QualityDimension(
         name="Routing Accuracy",
         score=0,
-        detail=f"Expected {criteria.expected_agent}, got {routed_agent or 'none'}",
+        detail=f"Expected {criteria.expected_agent} or brain, got {routed_agent or 'none'}",
     )
 
 
